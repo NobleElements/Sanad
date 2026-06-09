@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, CheckCircle2, Circle, Clock, Tag, MoreVertical, Loader2 } from 'lucide-react';
-import TaskDrawer from '../components/TaskDrawer';
+import TaskModal from '../components/TaskModal';
 
 export default function Tasks() {
   const [tasks, setTasks] = useState([]);
@@ -124,7 +124,7 @@ export default function Tasks() {
             {tasks.map((task) => (
               <li 
                 key={task.id}
-                className="group relative flex items-center justify-between p-4 sm:p-5 hover:bg-gray-50/80 dark:hover:bg-gray-800/50 transition-colors cursor-pointer"
+                className="group relative flex items-center justify-between py-2 px-4 hover:bg-gray-50/80 dark:hover:bg-gray-800/50 transition-colors cursor-pointer"
                 onClick={() => setSelectedTask(task)}
               >
                 <div className="flex items-start gap-4 min-w-0 flex-1">
@@ -185,7 +185,7 @@ export default function Tasks() {
         )}
       </div>
 
-      <TaskDrawer 
+      <TaskModal 
         isOpen={!!selectedTask}
         task={selectedTask} 
         onClose={() => setSelectedTask(null)} 

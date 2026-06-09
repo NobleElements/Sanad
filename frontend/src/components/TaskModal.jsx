@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, Save, Paperclip, MessageSquare, AlertCircle } from 'lucide-react';
 import TipTapEditor from './TipTapEditor';
 
-export default function TaskDrawer({ isOpen, task, onClose, onSave }) {
+export default function TaskModal({ isOpen, task, onClose, onSave }) {
   const [internalTask, setInternalTask] = useState(null);
   const [title, setTitle] = useState('');
   const [status, setStatus] = useState('ToDo');
@@ -56,16 +56,16 @@ export default function TaskDrawer({ isOpen, task, onClose, onSave }) {
   return (
     <>
       <div 
-        className={`fixed inset-0 bg-black/30 backdrop-blur-sm z-40 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        className={`fixed inset-0 bg-black/30 backdrop-blur-sm z-40 transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         onClick={onClose}
         aria-hidden="true"
       />
 
       <div 
-        className={`fixed inset-y-0 right-0 z-50 w-full sm:w-[500px] bg-white dark:bg-gray-900 shadow-2xl transform transition-transform duration-300 flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`fixed inset-0 m-auto z-50 w-full max-w-2xl h-fit max-h-[90vh] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl transform transition-all duration-200 flex flex-col overflow-hidden ${isOpen ? 'scale-100 opacity-100 pointer-events-auto' : 'scale-95 opacity-0 pointer-events-none'}`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 dark:border-gray-800">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
             {activeTask.isNew ? 'Create Task' : 'Edit Task'}
           </h2>
@@ -78,7 +78,7 @@ export default function TaskDrawer({ isOpen, task, onClose, onSave }) {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
           {error && (
             <div className="flex items-center gap-2 p-3 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 rounded-lg border border-red-200 dark:border-red-500/20">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -132,7 +132,7 @@ export default function TaskDrawer({ isOpen, task, onClose, onSave }) {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30">
+        <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30">
           <div className="flex justify-end gap-3">
             <button
               onClick={onClose}

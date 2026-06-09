@@ -64,7 +64,7 @@ export default function TipTapEditor({ content, onChange }) {
     },
     editorProps: {
       attributes: {
-        class: 'p-4 min-h-[150px] focus:outline-none tiptap-editor',
+        class: 'p-3 min-h-[100px] focus:outline-none tiptap-editor',
       },
     },
   });
