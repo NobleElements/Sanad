@@ -15,7 +15,7 @@ export default function Sidebar() {
         <Link to="/" className={getLinkClass('/')}>Dashboard</Link>
         <Link to="/tasks" className={getLinkClass('/tasks')}>Tasks</Link>
         <Link to="#" onClick={(e) => e.preventDefault()} className="p-2 rounded hover:bg-slate-800 transition text-slate-400">Notebook (Coming Soon)</Link>
-        <Link to="#" onClick={(e) => e.preventDefault()} className="p-2 rounded hover:bg-slate-800 transition text-slate-400">Finance (Coming Soon)</Link>
+        <Link to="/finance" className={getLinkClass('/finance')}>Finance</Link>
       </nav>
     </div>
   );
