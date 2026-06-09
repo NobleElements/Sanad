@@ -68,5 +68,46 @@ app.MapGet("/api/timeline", async (SanadDbContext db) =>
     
     return Results.Ok(timelineWithContent);
 });
+// GET tasks
+app.MapGet("/api/tasks", async (SanadDbContext db) =>
+{
+    return Results.Ok(await db.TaskItems.OrderByDescending(t => t.CreatedAt).ToListAsync());
+});
+
+// GET single task
+app.MapGet("/api/tasks/{id}", async (SanadDbContext db, Guid id) =>
+{
+    var task = await db.TaskItems.FindAsync(id);
+    if (task == null) return Results.NotFound();
+    
+    var comments = await db.TaskComments.Where(c => c.TaskItemId == id).OrderBy(c => c.CreatedAt).ToListAsync();
+    var attachments = await db.TaskAttachments.Where(a => a.TaskItemId == id).ToListAsync();
+    
+    return Results.Ok(new { Task = task, Comments = comments, Attachments = attachments });
+});
+
+// POST task
+app.MapPost("/api/tasks", async (SanadDbContext db, TaskItem input) =>
+{
+    db.TaskItems.Add(input);
+    await db.SaveChangesAsync();
+    return Results.Created($"/api/tasks/{input.Id}", input);
+});
+
+// PUT task
+app.MapPut("/api/tasks/{id}", async (SanadDbContext db, Guid id, TaskItem updatedTask) =>
+{
+    var task = await db.TaskItems.FindAsync(id);
+    if (task == null) return Results.NotFound();
+    
+    task.Title = updatedTask.Title;
+    task.Content = updatedTask.Content;
+    task.Status = updatedTask.Status;
+    task.Tags = updatedTask.Tags;
+    task.UpdatedAt = DateTime.UtcNow;
+    
+    await db.SaveChangesAsync();
+    return Results.NoContent();
+});
 
 app.Run();
