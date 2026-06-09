@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Sanad.Api.Data;
+using Sanad.Api.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,5 +29,44 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.MapGet("/", () => "Sanad API Running");
+
+// POST a thought
+app.MapPost("/api/thoughts", async (SanadDbContext db, Thought input) =>
+{
+    var thought = new Thought { Content = input.Content };
+    db.Thoughts.Add(thought);
+    
+    var timelineItem = new TimelineItem 
+    {
+        ItemType = "Thought",
+        ReferenceId = thought.Id
+    };
+    db.TimelineItems.Add(timelineItem);
+    
+    await db.SaveChangesAsync();
+    return Results.Ok(thought);
+});
+
+// GET timeline
+app.MapGet("/api/timeline", async (SanadDbContext db) =>
+{
+    var items = await db.TimelineItems
+        .OrderByDescending(t => t.CreatedAt)
+        .Take(10)
+        .ToListAsync();
+        
+    // For thoughts, we also want the content
+    var timelineWithContent = new List<object>();
+    foreach (var item in items)
+    {
+        if (item.ItemType == "Thought")
+        {
+            var thought = await db.Thoughts.FindAsync(item.ReferenceId);
+            timelineWithContent.Add(new { item.Id, item.ItemType, item.CreatedAt, Content = thought?.Content });
+        }
+    }
+    
+    return Results.Ok(timelineWithContent);
+});
 
 app.Run();
