@@ -150,15 +150,23 @@ app.MapDelete("/api/tasks/{id}", async (SanadDbContext db, Guid id) =>
 // POST comment
 app.MapPost("/api/tasks/{id}/comments", async (SanadDbContext db, Guid id, TaskComment comment) =>
 {
+    var taskExists = await db.TaskItems.AnyAsync(t => t.Id == id);
+    if (!taskExists) return Results.NotFound();
+
+    if (string.IsNullOrWhiteSpace(comment.Text)) return Results.BadRequest("Comment text is required");
+
     comment.TaskItemId = id;
     db.TaskComments.Add(comment);
     await db.SaveChangesAsync();
-    return Results.Ok(comment);
+    return Results.Created($"/api/tasks/{id}/comments/{comment.Id}", comment);
 });
 
 // POST attachment
 app.MapPost("/api/tasks/{id}/attachments", async (HttpRequest request, SanadDbContext db, Guid id) =>
 {
+    var taskExists = await db.TaskItems.AnyAsync(t => t.Id == id);
+    if (!taskExists) return Results.NotFound();
+
     if (!request.HasFormContentType) return Results.BadRequest("Invalid form data");
 
     var form = await request.ReadFormAsync();
@@ -168,7 +176,9 @@ app.MapPost("/api/tasks/{id}/attachments", async (HttpRequest request, SanadDbCo
     var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "Data", "attachments");
     Directory.CreateDirectory(uploadsDir);
 
-    var filePath = Path.Combine(uploadsDir, file.FileName);
+    var uniqueFileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
+    var filePath = Path.Combine(uploadsDir, uniqueFileName);
+
     using (var stream = new FileStream(filePath, FileMode.Create))
     {
         await file.CopyToAsync(stream);
@@ -178,12 +188,12 @@ app.MapPost("/api/tasks/{id}/attachments", async (HttpRequest request, SanadDbCo
     {
         TaskItemId = id,
         FileName = file.FileName,
-        FilePath = $"/attachments/{file.FileName}"
+        FilePath = $"/attachments/{uniqueFileName}"
     };
     db.TaskAttachments.Add(attachment);
     await db.SaveChangesAsync();
     
-    return Results.Ok(attachment);
+    return Results.Created($"/api/tasks/{id}/attachments/{attachment.Id}", attachment);
 });
 
 app.Run();
