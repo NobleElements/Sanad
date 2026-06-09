@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Sanad.Api.Data;
 
@@ -10,62 +11,14 @@ using Sanad.Api.Data;
 namespace Sanad.Api.Migrations
 {
     [DbContext(typeof(SanadDbContext))]
-    partial class SanadDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260609133106_AddProjectAndEstimatedMinutes")]
+    partial class AddProjectAndEstimatedMinutes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.8");
-
-            modelBuilder.Entity("Sanad.Api.Models.Note", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Content")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid>("NotebookId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("NotebookId");
-
-                    b.ToTable("Notes");
-                });
-
-            modelBuilder.Entity("Sanad.Api.Models.Notebook", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("SortOrder")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Notebooks");
-                });
 
             modelBuilder.Entity("Sanad.Api.Models.TaskAttachment", b =>
                 {
@@ -247,17 +200,6 @@ namespace Sanad.Api.Migrations
                     b.ToTable("TransactionCategories");
                 });
 
-            modelBuilder.Entity("Sanad.Api.Models.Note", b =>
-                {
-                    b.HasOne("Sanad.Api.Models.Notebook", "Notebook")
-                        .WithMany("Notes")
-                        .HasForeignKey("NotebookId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Notebook");
-                });
-
             modelBuilder.Entity("Sanad.Api.Models.TaskAttachment", b =>
                 {
                     b.HasOne("Sanad.Api.Models.TaskItem", "TaskItem")
@@ -289,11 +231,6 @@ namespace Sanad.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("Category");
-                });
-
-            modelBuilder.Entity("Sanad.Api.Models.Notebook", b =>
-                {
-                    b.Navigation("Notes");
                 });
 
             modelBuilder.Entity("Sanad.Api.Models.TaskItem", b =>

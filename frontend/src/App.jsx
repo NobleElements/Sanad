@@ -3,6 +3,7 @@ import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
 import Tasks from './pages/Tasks';
 import FinanceDashboard from './pages/FinanceDashboard';
+import Notebook from './pages/Notebook';
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/tasks" element={<Tasks />} />
           <Route path="/finance" element={<FinanceDashboard />} />
+          <Route path="/notebook" element={<Notebook />} />
         </Routes>
       </div>
     </BrowserRouter>

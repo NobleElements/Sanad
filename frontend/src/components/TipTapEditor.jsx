@@ -2,13 +2,20 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
-import { useEffect } from 'react';
-import { Bold, Italic, Strikethrough, List, ListOrdered, CheckSquare } from 'lucide-react';
+import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
+import Image from '@tiptap/extension-image';
+import { common, createLowlight } from 'lowlight';
+import { useEffect, useRef } from 'react';
+import { Bold, Italic, Strikethrough, List, ListOrdered, CheckSquare, Code, ImagePlus } from 'lucide-react';
 
-const MenuBar = ({ editor }) => {
+const lowlight = createLowlight(common);
+
+const MenuBar = ({ editor, onImageUpload }) => {
   if (!editor) {
     return null;
   }
+
+  const fileInputRef = useRef(null);
 
   const toggleBold = () => editor.chain().focus().toggleBold().run();
   const toggleItalic = () => editor.chain().focus().toggleItalic().run();
@@ -16,6 +23,25 @@ const MenuBar = ({ editor }) => {
   const toggleBulletList = () => editor.chain().focus().toggleBulletList().run();
   const toggleOrderedList = () => editor.chain().focus().toggleOrderedList().run();
   const toggleTaskList = () => editor.chain().focus().toggleTaskList().run();
+  const toggleCodeBlock = () => editor.chain().focus().toggleCodeBlock().run();
+
+  const handleImageClick = () => {
+    if (onImageUpload) {
+      fileInputRef.current?.click();
+    }
+  };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (file && onImageUpload) {
+      const url = await onImageUpload(file);
+      if (url) {
+        editor.chain().focus().setImage({ src: url }).run();
+      }
+    }
+    // Reset input so the same file can be selected again
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   const btnClass = (isActive) =>
     `p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
@@ -45,17 +71,46 @@ const MenuBar = ({ editor }) => {
       <button onClick={toggleTaskList} className={btnClass(editor.isActive('taskList'))} aria-label="Task List">
         <CheckSquare className="w-4 h-4" />
       </button>
+
+      <div className="w-px h-4 bg-gray-300 dark:bg-gray-600 mx-1" />
+
+      <button onClick={toggleCodeBlock} className={btnClass(editor.isActive('codeBlock'))} aria-label="Code Block">
+        <Code className="w-4 h-4" />
+      </button>
+      {onImageUpload && (
+        <>
+          <button onClick={handleImageClick} className={btnClass(false)} aria-label="Insert Image">
+            <ImagePlus className="w-4 h-4" />
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            className="hidden"
+          />
+        </>
+      )}
     </div>
   );
 };
 
-export default function TipTapEditor({ content, onChange }) {
+export default function TipTapEditor({ content, onChange, onImageUpload }) {
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        codeBlock: false,
+      }),
       TaskList,
       TaskItem.configure({
         nested: true,
+      }),
+      CodeBlockLowlight.configure({
+        lowlight,
+      }),
+      Image.configure({
+        inline: false,
+        allowBase64: false,
       }),
     ],
     content: content || '',
@@ -77,7 +132,7 @@ export default function TipTapEditor({ content, onChange }) {
 
   return (
     <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden bg-white dark:bg-gray-800 shadow-sm focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 transition-all">
-      <MenuBar editor={editor} />
+      <MenuBar editor={editor} onImageUpload={onImageUpload} />
       <EditorContent editor={editor} className="text-gray-900 dark:text-gray-100" />
     </div>
   );

@@ -14,7 +14,7 @@ export default function Sidebar() {
       <nav className="flex flex-col gap-2">
         <Link to="/" className={getLinkClass('/')}>Dashboard</Link>
         <Link to="/tasks" className={getLinkClass('/tasks')}>Tasks</Link>
-        <Link to="#" onClick={(e) => e.preventDefault()} className="p-2 rounded hover:bg-slate-800 transition text-slate-400">Notebook (Coming Soon)</Link>
+        <Link to="/notebook" className={getLinkClass('/notebook')}>Notebook</Link>
         <Link to="/finance" className={getLinkClass('/finance')}>Finance</Link>
       </nav>
     </div>

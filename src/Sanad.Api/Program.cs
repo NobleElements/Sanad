@@ -82,9 +82,12 @@ app.MapGet("/api/timeline", async (SanadDbContext db) =>
     return Results.Ok(timelineWithContent);
 });
 // GET tasks
-app.MapGet("/api/tasks", async (SanadDbContext db) =>
+app.MapGet("/api/tasks", async (SanadDbContext db, string? project) =>
 {
-    return Results.Ok(await db.TaskItems.OrderByDescending(t => t.CreatedAt).ToListAsync());
+    var query = db.TaskItems.AsQueryable();
+    if (!string.IsNullOrEmpty(project))
+        query = query.Where(t => t.Project == project);
+    return Results.Ok(await query.OrderByDescending(t => t.CreatedAt).ToListAsync());
 });
 
 // GET single task
@@ -131,8 +134,21 @@ app.MapPut("/api/tasks/{id}", async (SanadDbContext db, Guid id, TaskItem update
     task.Content = updatedTask.Content;
     task.Status = updatedTask.Status;
     task.Tags = updatedTask.Tags;
+    task.Project = updatedTask.Project;
+    task.EstimatedMinutes = updatedTask.EstimatedMinutes;
     task.UpdatedAt = DateTime.UtcNow;
     
+    await db.SaveChangesAsync();
+    return Results.NoContent();
+});
+
+// PATCH task status
+app.MapPatch("/api/tasks/{id}/status", async (SanadDbContext db, Guid id, StatusUpdateRequest request) =>
+{
+    var task = await db.TaskItems.FindAsync(id);
+    if (task == null) return Results.NotFound();
+    task.Status = request.Status;
+    task.UpdatedAt = DateTime.UtcNow;
     await db.SaveChangesAsync();
     return Results.NoContent();
 });
@@ -198,5 +214,17 @@ app.MapPost("/api/tasks/{id}/attachments", async (HttpRequest request, SanadDbCo
 });
 
 app.MapFinanceEndpoints();
+app.MapNotebookEndpoints();
+
+// Serve uploaded attachments
+var attachmentsDir = Path.Combine(Directory.GetCurrentDirectory(), "Data", "attachments");
+Directory.CreateDirectory(attachmentsDir);
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(attachmentsDir),
+    RequestPath = "/attachments"
+});
 
 app.Run();
+
+record StatusUpdateRequest(Sanad.Api.Models.TaskStatus Status);

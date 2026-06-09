@@ -1,14 +1,41 @@
-import { useState, useEffect } from 'react';
-import { Plus, CheckCircle2, Circle, Clock, Tag, MoreVertical, Loader2 } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Plus, CheckCircle2, Circle, Clock, Tag, Loader2, GripVertical, Filter, FolderKanban, Timer } from 'lucide-react';
 import TaskModal from '../components/TaskModal';
+
+const TAG_COLORS = [
+  'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300',
+  'bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-300',
+  'bg-pink-100 text-pink-700 dark:bg-pink-500/20 dark:text-pink-300',
+  'bg-teal-100 text-teal-700 dark:bg-teal-500/20 dark:text-teal-300',
+  'bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-300',
+  'bg-cyan-100 text-cyan-700 dark:bg-cyan-500/20 dark:text-cyan-300',
+];
+
+const COLUMNS = [
+  { status: 0, label: 'To Do', icon: Circle, color: 'text-slate-500 dark:text-slate-400', bgBadge: 'bg-slate-100 text-slate-600 dark:bg-slate-500/20 dark:text-slate-300', headerBorder: 'border-slate-300 dark:border-slate-600' },
+  { status: 1, label: 'In Progress', icon: Clock, color: 'text-amber-500 dark:text-amber-400', bgBadge: 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300', headerBorder: 'border-amber-300 dark:border-amber-600' },
+  { status: 2, label: 'Done', icon: CheckCircle2, color: 'text-emerald-500 dark:text-emerald-400', bgBadge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300', headerBorder: 'border-emerald-300 dark:border-emerald-600' },
+];
+
+const formatTime = (minutes) => {
+  if (!minutes) return null;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h && m) return `${h}h ${m}m`;
+  if (h) return `${h}h`;
+  return `${m}m`;
+};
 
 export default function Tasks() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedTask, setSelectedTask] = useState(null);
+  const [draggingId, setDraggingId] = useState(null);
+  const [dragOverColumn, setDragOverColumn] = useState(null);
+  const [projectFilter, setProjectFilter] = useState('');
 
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     try {
       setError(null);
       setLoading(true);
@@ -21,28 +48,107 @@ export default function Tasks() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchTasks();
-  }, []);
+  }, [fetchTasks]);
 
-  const getStatusIcon = (status) => {
-    if (status === 2 || status === 'Done') return <CheckCircle2 className="w-5 h-5 text-emerald-500" />;
-    if (status === 1 || status === 'InProgress') return <Clock className="w-5 h-5 text-amber-500" />;
-    return <Circle className="w-5 h-5 text-gray-400 dark:text-gray-500" />;
+  // Derive unique project values for filter dropdown
+  const projects = [...new Set(tasks.map(t => t.project).filter(Boolean))].sort();
+
+  // Filtered tasks
+  const filteredTasks = projectFilter
+    ? tasks.filter(t => t.project === projectFilter)
+    : tasks;
+
+  // Group tasks by status
+  const tasksByStatus = (status) => filteredTasks.filter(t => {
+    const s = typeof t.status === 'string'
+      ? (t.status === 'Done' ? 2 : t.status === 'InProgress' ? 1 : 0)
+      : t.status;
+    return s === status;
+  });
+
+  // --- Drag and Drop ---
+  const handleDragStart = (e, task) => {
+    e.dataTransfer.setData('taskId', task.id);
+    e.dataTransfer.effectAllowed = 'move';
+    setDraggingId(task.id);
   };
 
-  const getStatusLabel = (status) => {
-    if (status === 2 || status === 'Done') return 'Done';
-    if (status === 1 || status === 'InProgress') return 'In Progress';
-    return 'To Do';
+  const handleDragEnd = () => {
+    setDraggingId(null);
+    setDragOverColumn(null);
   };
 
-  const getStatusColor = (status) => {
-    if (status === 2 || status === 'Done') return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 ring-emerald-600/20';
-    if (status === 1 || status === 'InProgress') return 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 ring-amber-600/20';
-    return 'bg-gray-50 text-gray-700 dark:bg-gray-500/10 dark:text-gray-400 ring-gray-600/20';
+  const handleDragOver = (e, status) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverColumn(status);
+  };
+
+  const handleDragLeave = (e, status) => {
+    // Only clear if we're actually leaving the column
+    if (dragOverColumn === status) {
+      setDragOverColumn(null);
+    }
+  };
+
+  const handleDrop = async (e, newStatus) => {
+    e.preventDefault();
+    setDragOverColumn(null);
+    const taskId = e.dataTransfer.getData('taskId');
+    if (!taskId) return;
+
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    const currentStatus = typeof task.status === 'string'
+      ? (task.status === 'Done' ? 2 : task.status === 'InProgress' ? 1 : 0)
+      : task.status;
+
+    if (currentStatus === newStatus) return;
+
+    // Optimistic update
+    const prevTasks = [...tasks];
+    setTasks(tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
+
+    try {
+      const res = await fetch(`/api/tasks/${taskId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!res.ok) throw new Error('Failed to update status');
+    } catch {
+      // Revert on failure
+      setTasks(prevTasks);
+    }
+  };
+
+  // Quick complete toggle
+  const handleQuickComplete = async (e, task) => {
+    e.stopPropagation();
+    const currentStatus = typeof task.status === 'string'
+      ? (task.status === 'Done' ? 2 : task.status === 'InProgress' ? 1 : 0)
+      : task.status;
+    const newStatus = currentStatus === 2 ? 0 : 2;
+
+    // Optimistic update
+    const prevTasks = [...tasks];
+    setTasks(tasks.map(t => t.id === task.id ? { ...t, status: newStatus } : t));
+
+    try {
+      const res = await fetch(`/api/tasks/${task.id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!res.ok) throw new Error('Failed to update status');
+    } catch {
+      setTasks(prevTasks);
+    }
   };
 
   const handleSaveTask = async (taskData) => {
@@ -55,10 +161,8 @@ export default function Tasks() {
     
     const res = await fetch(url, {
       method,
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
     });
     
     if (!res.ok) throw new Error('Failed to save task');
@@ -68,7 +172,7 @@ export default function Tasks() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 p-4 md:p-6 lg:p-8">
+    <div className="max-w-full mx-auto space-y-6 p-4 md:p-6 lg:p-8">
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -76,114 +180,176 @@ export default function Tasks() {
             Tasks
           </h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1">
-            Manage your daily tasks and track progress.
+            Drag and drop tasks between columns to update their status.
           </p>
         </div>
-        <button
-          onClick={() => setSelectedTask({ isNew: true, title: '', status: 'ToDo', content: '' })}
-          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all shadow-sm hover:shadow-md dark:focus:ring-offset-gray-900 active:scale-95"
-        >
-          <Plus className="w-5 h-5" />
-          Create Task
-        </button>
+        <div className="flex items-center gap-3">
+          {/* Project Filter */}
+          {projects.length > 0 && (
+            <div className="relative">
+              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              <select
+                value={projectFilter}
+                onChange={(e) => setProjectFilter(e.target.value)}
+                className="pl-9 pr-4 py-2.5 text-sm bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-indigo-500 focus:border-indigo-500 transition-colors appearance-none cursor-pointer"
+              >
+                <option value="">All Projects</option>
+                {projects.map(p => (
+                  <option key={p} value={p}>{p}</option>
+                ))}
+              </select>
+            </div>
+          )}
+          <button
+            onClick={() => setSelectedTask({ isNew: true, title: '', status: 0, content: '', project: '', tags: '', estimatedMinutes: null })}
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all shadow-sm hover:shadow-md dark:focus:ring-offset-gray-900 active:scale-95"
+          >
+            <Plus className="w-5 h-5" />
+            Create Task
+          </button>
+        </div>
       </div>
 
       {/* Main Content */}
-      <div className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden">
-        {loading ? (
-          <div className="flex flex-col items-center justify-center h-64 text-gray-500 dark:text-gray-400">
-            <Loader2 className="w-8 h-8 animate-spin text-indigo-500 mb-4" />
-            <p>Loading tasks...</p>
+      {loading ? (
+        <div className="flex flex-col items-center justify-center h-64 text-gray-500 dark:text-gray-400">
+          <Loader2 className="w-8 h-8 animate-spin text-indigo-500 mb-4" />
+          <p>Loading tasks...</p>
+        </div>
+      ) : error ? (
+        <div className="flex flex-col items-center justify-center h-64 text-center px-4">
+          <div className="w-12 h-12 bg-red-100 dark:bg-red-500/10 rounded-full flex items-center justify-center mb-3">
+            <span className="text-red-600 dark:text-red-400 font-bold text-xl">!</span>
           </div>
-        ) : error ? (
-          <div className="flex flex-col items-center justify-center h-64 text-center px-4">
-            <div className="w-12 h-12 bg-red-100 dark:bg-red-500/10 rounded-full flex items-center justify-center mb-3">
-              <span className="text-red-600 dark:text-red-400 font-bold text-xl">!</span>
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Failed to load tasks</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{error}</p>
-            <button 
-              onClick={fetchTasks}
-              className="mt-4 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
-            >
-              Try again
-            </button>
-          </div>
-        ) : tasks.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64 text-center px-4">
-            <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-500/10 rounded-full flex items-center justify-center mb-4">
-              <CheckCircle2 className="w-8 h-8 text-indigo-500 dark:text-indigo-400" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">All caught up!</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-sm">
-              You don't have any tasks yet. Create one to get started.
-            </p>
-          </div>
-        ) : (
-          <ul className="divide-y divide-gray-100 dark:divide-gray-800/50">
-            {tasks.map((task) => (
-              <li 
-                key={task.id}
-                className="group relative flex items-center justify-between py-2 px-4 hover:bg-gray-50/80 dark:hover:bg-gray-800/50 transition-colors cursor-pointer"
-                onClick={() => setSelectedTask(task)}
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white">Failed to load tasks</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{error}</p>
+          <button 
+            onClick={fetchTasks}
+            className="mt-4 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
+          >
+            Try again
+          </button>
+        </div>
+      ) : (
+        <div className="kanban-board">
+          {COLUMNS.map(col => {
+            const colTasks = tasksByStatus(col.status);
+            const ColIcon = col.icon;
+            const isDragOver = dragOverColumn === col.status;
+
+            return (
+              <div
+                key={col.status}
+                className={`kanban-column ${isDragOver ? 'drag-over' : ''}`}
+                onDragOver={(e) => handleDragOver(e, col.status)}
+                onDragLeave={(e) => handleDragLeave(e, col.status)}
+                onDrop={(e) => handleDrop(e, col.status)}
               >
-                <div className="flex items-start gap-4 min-w-0 flex-1">
-                  <div className="mt-1 flex-shrink-0">
-                    {getStatusIcon(task.status)}
+                {/* Column Header */}
+                <div className={`flex items-center justify-between px-4 py-3 border-b-2 ${col.headerBorder}`}>
+                  <div className="flex items-center gap-2">
+                    <ColIcon className={`w-5 h-5 ${col.color}`} />
+                    <h3 className="font-semibold text-gray-900 dark:text-white text-sm">
+                      {col.label}
+                    </h3>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-3">
-                      <p className={`text-base font-semibold truncate ${
-                        (task.status === 2 || task.status === 'Done') 
-                          ? 'text-gray-500 dark:text-gray-400 line-through' 
-                          : 'text-gray-900 dark:text-gray-100'
-                      }`}>
-                        {task.title}
-                      </p>
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ring-1 ring-inset ${getStatusColor(task.status)}`}>
-                        {getStatusLabel(task.status)}
-                      </span>
+                  <span className={`inline-flex items-center justify-center min-w-[24px] h-6 px-2 rounded-full text-xs font-semibold ${col.bgBadge}`}>
+                    {colTasks.length}
+                  </span>
+                </div>
+
+                {/* Cards */}
+                <div className="flex-1 p-3 space-y-3 overflow-y-auto">
+                  {colTasks.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-gray-400 dark:text-gray-500 transition-colors">
+                      <GripVertical className="w-6 h-6 mb-2 opacity-40" />
+                      <p className="text-sm font-medium">Drop tasks here</p>
                     </div>
-                    {typeof task.tags === 'string' && (
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {task.tags.split(',').map((tag) => {
-                          const trimmedTag = tag.trim();
-                          if (!trimmedTag) return null;
-                          return (
-                            <span 
-                              key={trimmedTag} 
-                              className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-gray-100 dark:bg-gray-800 text-xs font-medium text-gray-600 dark:text-gray-300"
+                  ) : (
+                    colTasks.map(task => {
+                      const isDone = (typeof task.status === 'number' ? task.status : (task.status === 'Done' ? 2 : task.status === 'InProgress' ? 1 : 0)) === 2;
+                      const taskTags = task.tags
+                        ? task.tags.split(',').map(t => t.trim()).filter(Boolean)
+                        : [];
+                      const estTime = formatTime(task.estimatedMinutes);
+
+                      return (
+                        <div
+                          key={task.id}
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, task)}
+                          onDragEnd={handleDragEnd}
+                          onClick={() => setSelectedTask(task)}
+                          className={`kanban-card bg-white dark:bg-gray-800/80 border border-gray-100 dark:border-gray-700/60 p-3.5 ${draggingId === task.id ? 'dragging' : ''}`}
+                        >
+                          <div className="flex items-start gap-3">
+                            {/* Quick Complete Checkbox */}
+                            <button
+                              onClick={(e) => handleQuickComplete(e, task)}
+                              className={`mt-0.5 flex-shrink-0 transition-colors ${isDone ? 'text-emerald-500 hover:text-emerald-600' : 'text-gray-300 dark:text-gray-600 hover:text-emerald-400 dark:hover:text-emerald-500'}`}
+                              aria-label={isDone ? 'Mark as to do' : 'Mark as done'}
                             >
-                              <Tag className="w-3 h-3" />
-                              {trimmedTag}
-                            </span>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
+                              {isDone ? (
+                                <CheckCircle2 className="w-5 h-5" />
+                              ) : (
+                                <Circle className="w-5 h-5" />
+                              )}
+                            </button>
+
+                            <div className="flex-1 min-w-0">
+                              {/* Title */}
+                              <p className={`text-sm font-semibold leading-snug ${isDone ? 'text-gray-400 dark:text-gray-500 line-through' : 'text-gray-900 dark:text-gray-100'}`}>
+                                {task.title}
+                              </p>
+
+                              {/* Metadata row */}
+                              <div className="flex flex-wrap items-center gap-2 mt-2">
+                                {/* Project Badge */}
+                                {task.project && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-500/10 text-xs font-medium text-indigo-600 dark:text-indigo-400">
+                                    <FolderKanban className="w-3 h-3" />
+                                    {task.project}
+                                  </span>
+                                )}
+
+                                {/* Estimated Time Badge */}
+                                {estTime && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 text-xs font-medium text-gray-500 dark:text-gray-400">
+                                    <Timer className="w-3 h-3" />
+                                    {estTime}
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Tags */}
+                              {taskTags.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5 mt-2">
+                                  {taskTags.map((tag, i) => (
+                                    <span
+                                      key={tag}
+                                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${TAG_COLORS[i % TAG_COLORS.length]}`}
+                                    >
+                                      <Tag className="w-2.5 h-2.5" />
+                                      {tag}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Drag Handle */}
+                            <GripVertical className="w-4 h-4 flex-shrink-0 text-gray-300 dark:text-gray-600 mt-0.5" />
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
-                
-                <div className="flex items-center gap-4 ml-4">
-                  <div className="hidden sm:block text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">
-                    {task.createdAt && new Date(task.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                  </div>
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      console.log('task actions', task.id);
-                    }}
-                    className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
-                    aria-label="More options"
-                  >
-                    <MoreVertical className="w-5 h-5" />
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <TaskModal 
         isOpen={!!selectedTask}
