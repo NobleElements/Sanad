@@ -1,8 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5186/api';
-
 export default function FinanceDashboard() {
   const [summary, setSummary] = useState([]);
   const [transactions, setTransactions] = useState([]);
@@ -14,13 +12,18 @@ export default function FinanceDashboard() {
   const [categoryId, setCategoryId] = useState('');
   const [desc, setDesc] = useState('');
 
+  // category form state
+  const [newCatName, setNewCatName] = useState('');
+  const [newCatBudget, setNewCatBudget] = useState('');
+  const [newCatColor, setNewCatColor] = useState('#CBD5E1');
+
   const loadData = useCallback(async () => {
     try {
       setError(null);
       const [sumRes, catRes, txRes] = await Promise.all([
-        fetch(`${API_URL}/finances/summary`),
-        fetch(`${API_URL}/finances/categories`),
-        fetch(`${API_URL}/finances/transactions`)
+        fetch('/api/finances/summary'),
+        fetch('/api/finances/categories'),
+        fetch('/api/finances/transactions')
       ]);
 
       if (!sumRes.ok || !catRes.ok || !txRes.ok) {
@@ -48,7 +51,7 @@ export default function FinanceDashboard() {
     e.preventDefault();
     try {
       setError(null);
-      const res = await fetch(`${API_URL}/finances/transactions`, {
+      const res = await fetch('/api/finances/transactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -70,6 +73,34 @@ export default function FinanceDashboard() {
     } catch (err) {
       console.error(err);
       setError('Failed to log expense. Please try again.');
+    }
+  };
+
+  const handleCreateCategory = async (e) => {
+    e.preventDefault();
+    try {
+      setError(null);
+      const res = await fetch('/api/finances/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newCatName,
+          monthlyBudget: parseFloat(newCatBudget),
+          colorHex: newCatColor
+        })
+      });
+      
+      if (!res.ok) {
+        throw new Error('Failed to create category');
+      }
+
+      setNewCatName(''); 
+      setNewCatBudget('');
+      setNewCatColor('#CBD5E1');
+      loadData();
+    } catch (err) {
+      console.error(err);
+      setError('Failed to create category. Please try again.');
     }
   };
 
@@ -122,17 +153,32 @@ export default function FinanceDashboard() {
           </div>
 
           {/* Quick Log Form */}
-          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-            <h2 className="text-xl font-bold mb-4 text-slate-800">Quick Log</h2>
-            <form onSubmit={handleLog} className="flex flex-col gap-4">
-              <input type="number" placeholder="Amount" value={amount} onChange={e=>setAmount(e.target.value)} className="bg-white border border-slate-300 rounded p-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
-              <select value={categoryId} onChange={e=>setCategoryId(e.target.value)} className="bg-white border border-slate-300 rounded p-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                <option value="">Select Category...</option>
-                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-              <input type="text" placeholder="Description" value={desc} onChange={e=>setDesc(e.target.value)} className="bg-white border border-slate-300 rounded p-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded font-semibold transition-colors">Log Expense</button>
-            </form>
+          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-6">
+            <div>
+              <h2 className="text-xl font-bold mb-4 text-slate-800">Quick Log</h2>
+              <form onSubmit={handleLog} className="flex flex-col gap-4">
+                <input type="number" placeholder="Amount" value={amount} onChange={e=>setAmount(e.target.value)} className="bg-white border border-slate-300 rounded p-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+                <select value={categoryId} onChange={e=>setCategoryId(e.target.value)} className="bg-white border border-slate-300 rounded p-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                  <option value="">Select Category...</option>
+                  {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+                <input type="text" placeholder="Description" value={desc} onChange={e=>setDesc(e.target.value)} className="bg-white border border-slate-300 rounded p-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded font-semibold transition-colors">Log Expense</button>
+              </form>
+            </div>
+            
+            <div className="border-t border-slate-200 pt-6">
+              <h2 className="text-xl font-bold mb-4 text-slate-800">Create Category</h2>
+              <form onSubmit={handleCreateCategory} className="flex flex-col gap-4">
+                <input type="text" placeholder="Category Name" value={newCatName} onChange={e=>setNewCatName(e.target.value)} className="bg-white border border-slate-300 rounded p-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+                <input type="number" placeholder="Monthly Budget" value={newCatBudget} onChange={e=>setNewCatBudget(e.target.value)} className="bg-white border border-slate-300 rounded p-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+                <div className="flex items-center gap-2">
+                  <label className="text-slate-700 text-sm">Color:</label>
+                  <input type="color" value={newCatColor} onChange={e=>setNewCatColor(e.target.value)} className="w-10 h-10 p-1 bg-white border border-slate-300 rounded cursor-pointer" />
+                </div>
+                <button type="submit" className="bg-green-600 hover:bg-green-700 text-white p-2 rounded font-semibold transition-colors">Create Category</button>
+              </form>
+            </div>
           </div>
         </div>
 

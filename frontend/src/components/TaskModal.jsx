@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X, Save, Paperclip, MessageSquare, AlertCircle } from 'lucide-react';
 import TipTapEditor from './TipTapEditor';
 
 export default function TaskModal({ isOpen, task, onClose, onSave }) {
+  const titleInputRef = useRef(null);
   const [internalTask, setInternalTask] = useState(null);
   const [title, setTitle] = useState('');
   const [status, setStatus] = useState('ToDo');
@@ -18,6 +19,11 @@ export default function TaskModal({ isOpen, task, onClose, onSave }) {
                 task.status === 1 || task.status === 'InProgress' ? 'InProgress' : 'ToDo');
       setContent(task.content || '');
       setError(null);
+      
+      // Auto-focus the title input when opening
+      setTimeout(() => {
+        titleInputRef.current?.focus();
+      }, 100);
     }
   }, [isOpen, task]);
 
@@ -88,6 +94,7 @@ export default function TaskModal({ isOpen, task, onClose, onSave }) {
 
           <div className="space-y-1">
             <input
+              ref={titleInputRef}
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}

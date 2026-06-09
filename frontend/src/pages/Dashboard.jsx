@@ -105,7 +105,7 @@ export default function Dashboard() {
                  timeline.map(item => (
                    <div key={item.id} className="p-4 bg-slate-50 rounded border border-slate-100 flex flex-col gap-1">
                      <div className="text-xs text-slate-400">{new Date(item.createdAt).toLocaleString()} &bull; {item.itemType}</div>
-                     <div className="text-slate-800">{item.content}</div>
+                     <div className="text-slate-800" dangerouslySetInnerHTML={{ __html: item.content }} />
                    </div>
                  ))
                )}

@@ -56,13 +56,11 @@ public static class FinanceEndpoints
         var startOfMonth = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
         
         var categories = await db.TransactionCategories.ToListAsync();
-        var transactions = await db.Transactions
+        var categorySpends = await db.Transactions
             .Where(t => t.Date >= startOfMonth && t.Type == "Expense")
-            .ToListAsync();
-
-        var categorySpends = transactions
             .GroupBy(t => t.CategoryId)
-            .ToDictionary(g => g.Key, g => g.Sum(t => t.Amount));
+            .Select(g => new { CategoryId = g.Key, TotalAmount = g.Sum(t => t.Amount) })
+            .ToDictionaryAsync(g => g.CategoryId, g => g.TotalAmount);
 
         var summary = categories.Select(c => 
         {
