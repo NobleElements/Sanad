@@ -1,14 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Plus, CheckCircle2, Circle, Clock, Tag, MoreVertical, Loader2 } from 'lucide-react';
+import TaskDrawer from '../components/TaskDrawer';
 
 export default function Tasks() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  useEffect(() => {
-    fetchTasks();
-  }, []);
+  const [selectedTask, setSelectedTask] = useState(null);
 
   const fetchTasks = async () => {
     try {
@@ -24,6 +22,11 @@ export default function Tasks() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchTasks();
+  }, []);
 
   const getStatusIcon = (status) => {
     if (status === 2 || status === 'Done') return <CheckCircle2 className="w-5 h-5 text-emerald-500" />;
@@ -43,6 +46,33 @@ export default function Tasks() {
     return 'bg-gray-50 text-gray-700 dark:bg-gray-500/10 dark:text-gray-400 ring-gray-600/20';
   };
 
+  const handleSaveTask = async (taskData) => {
+    try {
+      const isNew = taskData.isNew;
+      const method = isNew ? 'POST' : 'PUT';
+      const url = isNew ? '/api/tasks' : `/api/tasks/${taskData.id}`;
+      
+      const payload = { ...taskData };
+      delete payload.isNew;
+      
+      const res = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+      
+      if (!res.ok) throw new Error('Failed to save task');
+      
+      await fetchTasks();
+      setSelectedTask(null);
+    } catch (err) {
+      console.error('Save error:', err);
+      alert('Failed to save task: ' + err.message);
+    }
+  };
+
   return (
     <div className="max-w-5xl mx-auto space-y-8 p-4 md:p-6 lg:p-8">
       {/* Header Section */}
@@ -56,7 +86,7 @@ export default function Tasks() {
           </p>
         </div>
         <button
-          onClick={() => console.log('create task')}
+          onClick={() => setSelectedTask({ isNew: true, title: '', status: 'ToDo', content: '' })}
           className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all shadow-sm hover:shadow-md dark:focus:ring-offset-gray-900 active:scale-95"
         >
           <Plus className="w-5 h-5" />
@@ -101,7 +131,7 @@ export default function Tasks() {
               <li 
                 key={task.id}
                 className="group relative flex items-center justify-between p-4 sm:p-5 hover:bg-gray-50/80 dark:hover:bg-gray-800/50 transition-colors cursor-pointer"
-                onClick={() => console.log('open task', task.id)}
+                onClick={() => setSelectedTask(task)}
               >
                 <div className="flex items-start gap-4 min-w-0 flex-1">
                   <div className="mt-1 flex-shrink-0">
@@ -160,6 +190,13 @@ export default function Tasks() {
           </ul>
         )}
       </div>
+
+      <TaskDrawer 
+        key={selectedTask ? (selectedTask.id || 'new') : 'empty'}
+        task={selectedTask} 
+        onClose={() => setSelectedTask(null)} 
+        onSave={handleSaveTask} 
+      />
     </div>
   );
 }
