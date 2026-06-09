@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using Sanad.Api.Data;
 using Sanad.Api.Endpoints;
@@ -8,9 +9,27 @@ var builder = WebApplication.CreateBuilder(args);
 // Add CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", builder =>
-        builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+    options.AddPolicy("AllowAll", policy =>
+        policy.WithOrigins("http://localhost:5173", "http://127.0.0.1:5173")
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials());
 });
+
+// Add Authentication and Authorization
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.Cookie.Name = "Sanad.Auth";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = SameSiteMode.Strict;
+        options.Events.OnRedirectToLogin = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return Task.CompletedTask;
+        };
+    });
+builder.Services.AddAuthorization();
 
 // Configure DB
 var dbPath = Path.Combine(Directory.GetCurrentDirectory(), "Data", "sanad.db");
@@ -22,21 +41,55 @@ builder.Services.AddDbContext<SanadDbContext>(options =>
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles);
 
+builder.Services.AddMcpServer()
+    .WithHttpTransport()
+    .WithTools<McpEndpoints>();
+
 var app = builder.Build();
 
 app.UseCors("AllowAll");
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 // Create DB if not exists
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<SanadDbContext>();
-    db.Database.EnsureCreated();
+    db.Database.Migrate();
 }
 
 app.MapGet("/", () => "Sanad API Running");
 
+app.MapAuthEndpoints();
+
+var api = app.MapGroup("").RequireAuthorization();
+
+// Generic Image Upload
+api.MapPost("/api/upload/image", async (HttpRequest request) =>
+{
+    if (!request.HasFormContentType) return Results.BadRequest("Invalid form data");
+
+    var form = await request.ReadFormAsync();
+    var file = form.Files.FirstOrDefault();
+    if (file == null || file.Length == 0) return Results.BadRequest("No file uploaded");
+
+    var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "Data", "attachments");
+    Directory.CreateDirectory(uploadsDir);
+
+    var uniqueFileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
+    var filePath = Path.Combine(uploadsDir, uniqueFileName);
+
+    using (var stream = new FileStream(filePath, FileMode.Create))
+    {
+        await file.CopyToAsync(stream);
+    }
+
+    return Results.Ok(new { url = $"/attachments/{uniqueFileName}" });
+});
+
 // POST a thought
-app.MapPost("/api/thoughts", async (SanadDbContext db, Thought input) =>
+api.MapPost("/api/thoughts", async (SanadDbContext db, Thought input) =>
 {
     var thought = new Thought { Content = input.Content };
     db.Thoughts.Add(thought);
@@ -52,8 +105,81 @@ app.MapPost("/api/thoughts", async (SanadDbContext db, Thought input) =>
     return Results.Ok(thought);
 });
 
+// GET thoughts
+api.MapGet("/api/thoughts", async (SanadDbContext db, int? page, int? pageSize, string? search) =>
+{
+    var p = page ?? 1;
+    var size = pageSize ?? 20;
+    var query = db.Thoughts.AsQueryable();
+    
+    if (!string.IsNullOrWhiteSpace(search))
+    {
+        var lowerSearch = search.ToLower();
+        query = query.Where(t => t.Content != null && t.Content.ToLower().Contains(lowerSearch));
+    }
+    
+    var thoughts = await query
+        .OrderByDescending(t => t.CreatedAt)
+        .Skip((p - 1) * size)
+        .Take(size)
+        .ToListAsync();
+    return Results.Ok(thoughts);
+});
+
+// PUT thought
+api.MapPut("/api/thoughts/{id}", async (SanadDbContext db, string id, Thought updated) =>
+{
+    var thought = await db.Thoughts.FindAsync(id);
+    if (thought == null) return Results.NotFound();
+    
+    thought.Content = updated.Content;
+    await db.SaveChangesAsync();
+    return Results.Ok(thought);
+});
+
+// DELETE thought
+api.MapDelete("/api/thoughts/{id}", async (SanadDbContext db, string id) =>
+{
+    var thought = await db.Thoughts.FindAsync(id);
+    if (thought == null) return Results.NotFound();
+    
+    var timelineItem = await db.TimelineItems.FirstOrDefaultAsync(t => t.ItemType == "Thought" && t.ReferenceId == id);
+    if (timelineItem != null)
+    {
+        db.TimelineItems.Remove(timelineItem);
+    }
+
+    db.Thoughts.Remove(thought);
+    await db.SaveChangesAsync();
+    return Results.NoContent();
+});
+
+// Daily Goals
+api.MapGet("/api/goals/{dateStr}", async (SanadDbContext db, string dateStr) =>
+{
+    var goal = await db.DailyGoals.FindAsync(dateStr);
+    if (goal == null) return Results.NoContent();
+    return Results.Ok(goal);
+});
+
+api.MapPut("/api/goals/{dateStr}", async (SanadDbContext db, string dateStr, DailyGoal input) =>
+{
+    var goal = await db.DailyGoals.FindAsync(dateStr);
+    if (goal == null)
+    {
+        goal = new DailyGoal { DateStr = dateStr, Goal = input.Goal };
+        db.DailyGoals.Add(goal);
+    }
+    else
+    {
+        goal.Goal = input.Goal;
+    }
+    await db.SaveChangesAsync();
+    return Results.Ok(goal);
+});
+
 // GET timeline
-app.MapGet("/api/timeline", async (SanadDbContext db) =>
+api.MapGet("/api/timeline", async (SanadDbContext db) =>
 {
     var items = await db.TimelineItems
         .OrderByDescending(t => t.CreatedAt)
@@ -82,7 +208,7 @@ app.MapGet("/api/timeline", async (SanadDbContext db) =>
     return Results.Ok(timelineWithContent);
 });
 // GET tasks
-app.MapGet("/api/tasks", async (SanadDbContext db, string? project) =>
+api.MapGet("/api/tasks", async (SanadDbContext db, string? project) =>
 {
     var query = db.TaskItems.AsQueryable();
     if (!string.IsNullOrEmpty(project))
@@ -91,7 +217,7 @@ app.MapGet("/api/tasks", async (SanadDbContext db, string? project) =>
 });
 
 // GET single task
-app.MapGet("/api/tasks/{id}", async (SanadDbContext db, Guid id) =>
+api.MapGet("/api/tasks/{id}", async (SanadDbContext db, Guid id) =>
 {
     var task = await db.TaskItems
         .Include(t => t.Comments.OrderBy(c => c.CreatedAt))
@@ -105,7 +231,7 @@ app.MapGet("/api/tasks/{id}", async (SanadDbContext db, Guid id) =>
 });
 
 // POST task
-app.MapPost("/api/tasks", async (SanadDbContext db, TaskItem input) =>
+api.MapPost("/api/tasks", async (SanadDbContext db, TaskItem input) =>
 {
     if (string.IsNullOrWhiteSpace(input.Title)) return Results.BadRequest("Title is required");
 
@@ -123,7 +249,7 @@ app.MapPost("/api/tasks", async (SanadDbContext db, TaskItem input) =>
 });
 
 // PUT task
-app.MapPut("/api/tasks/{id}", async (SanadDbContext db, Guid id, TaskItem updatedTask) =>
+api.MapPut("/api/tasks/{id}", async (SanadDbContext db, Guid id, TaskItem updatedTask) =>
 {
     if (string.IsNullOrWhiteSpace(updatedTask.Title)) return Results.BadRequest("Title is required");
 
@@ -143,7 +269,7 @@ app.MapPut("/api/tasks/{id}", async (SanadDbContext db, Guid id, TaskItem update
 });
 
 // PATCH task status
-app.MapPatch("/api/tasks/{id}/status", async (SanadDbContext db, Guid id, StatusUpdateRequest request) =>
+api.MapPatch("/api/tasks/{id}/status", async (SanadDbContext db, Guid id, StatusUpdateRequest request) =>
 {
     var task = await db.TaskItems.FindAsync(id);
     if (task == null) return Results.NotFound();
@@ -154,7 +280,7 @@ app.MapPatch("/api/tasks/{id}/status", async (SanadDbContext db, Guid id, Status
 });
 
 // DELETE task
-app.MapDelete("/api/tasks/{id}", async (SanadDbContext db, Guid id) =>
+api.MapDelete("/api/tasks/{id}", async (SanadDbContext db, Guid id) =>
 {
     var task = await db.TaskItems.FindAsync(id);
     if (task == null) return Results.NotFound();
@@ -165,7 +291,7 @@ app.MapDelete("/api/tasks/{id}", async (SanadDbContext db, Guid id) =>
 });
 
 // POST comment
-app.MapPost("/api/tasks/{id}/comments", async (SanadDbContext db, Guid id, TaskComment comment) =>
+api.MapPost("/api/tasks/{id}/comments", async (SanadDbContext db, Guid id, TaskComment comment) =>
 {
     var taskExists = await db.TaskItems.AnyAsync(t => t.Id == id);
     if (!taskExists) return Results.NotFound();
@@ -179,7 +305,7 @@ app.MapPost("/api/tasks/{id}/comments", async (SanadDbContext db, Guid id, TaskC
 });
 
 // POST attachment
-app.MapPost("/api/tasks/{id}/attachments", async (HttpRequest request, SanadDbContext db, Guid id) =>
+api.MapPost("/api/tasks/{id}/attachments", async (HttpRequest request, SanadDbContext db, Guid id) =>
 {
     var taskExists = await db.TaskItems.AnyAsync(t => t.Id == id);
     if (!taskExists) return Results.NotFound();
@@ -213,8 +339,10 @@ app.MapPost("/api/tasks/{id}/attachments", async (HttpRequest request, SanadDbCo
     return Results.Created($"/api/tasks/{id}/attachments/{attachment.Id}", attachment);
 });
 
-app.MapFinanceEndpoints();
-app.MapNotebookEndpoints();
+api.MapFinanceEndpoints();
+api.MapNotebookEndpoints();
+
+app.MapMcp("/mcp");
 
 // Serve uploaded attachments
 var attachmentsDir = Path.Combine(Directory.GetCurrentDirectory(), "Data", "attachments");
