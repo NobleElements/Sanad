@@ -147,4 +147,43 @@ app.MapDelete("/api/tasks/{id}", async (SanadDbContext db, Guid id) =>
     return Results.NoContent();
 });
 
+// POST comment
+app.MapPost("/api/tasks/{id}/comments", async (SanadDbContext db, Guid id, TaskComment comment) =>
+{
+    comment.TaskItemId = id;
+    db.TaskComments.Add(comment);
+    await db.SaveChangesAsync();
+    return Results.Ok(comment);
+});
+
+// POST attachment
+app.MapPost("/api/tasks/{id}/attachments", async (HttpRequest request, SanadDbContext db, Guid id) =>
+{
+    if (!request.HasFormContentType) return Results.BadRequest("Invalid form data");
+
+    var form = await request.ReadFormAsync();
+    var file = form.Files.FirstOrDefault();
+    if (file == null || file.Length == 0) return Results.BadRequest("No file uploaded");
+
+    var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "Data", "attachments");
+    Directory.CreateDirectory(uploadsDir);
+
+    var filePath = Path.Combine(uploadsDir, file.FileName);
+    using (var stream = new FileStream(filePath, FileMode.Create))
+    {
+        await file.CopyToAsync(stream);
+    }
+
+    var attachment = new TaskAttachment
+    {
+        TaskItemId = id,
+        FileName = file.FileName,
+        FilePath = $"/attachments/{file.FileName}"
+    };
+    db.TaskAttachments.Add(attachment);
+    await db.SaveChangesAsync();
+    
+    return Results.Ok(attachment);
+});
+
 app.Run();
