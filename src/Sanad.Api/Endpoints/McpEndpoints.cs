@@ -85,6 +85,15 @@ public class McpEndpoints
         return await _db.TransactionCategories.ToListAsync();
     }
 
+    [McpServerTool, Description("Create a transaction category")]
+    public async Task<TransactionCategory> CreateCategory(string name, decimal monthlyBudget, string colorHex = "#cccccc")
+    {
+        var category = new TransactionCategory { Name = name, MonthlyBudget = monthlyBudget, ColorHex = colorHex };
+        _db.TransactionCategories.Add(category);
+        await _db.SaveChangesAsync();
+        return category;
+    }
+
     [McpServerTool, Description("Get recent transactions")]
     public async Task<List<Transaction>> GetTransactions()
     {
