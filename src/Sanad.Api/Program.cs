@@ -17,6 +17,10 @@ Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
 builder.Services.AddDbContext<SanadDbContext>(options =>
     options.UseSqlite($"Data Source={dbPath}"));
 
+// Ignore JSON reference cycles
+builder.Services.ConfigureHttpJsonOptions(options =>
+    options.SerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles);
+
 var app = builder.Build();
 
 app.UseCors("AllowAll");
@@ -77,19 +81,31 @@ app.MapGet("/api/tasks", async (SanadDbContext db) =>
 // GET single task
 app.MapGet("/api/tasks/{id}", async (SanadDbContext db, Guid id) =>
 {
-    var task = await db.TaskItems.FindAsync(id);
+    var task = await db.TaskItems
+        .Include(t => t.Comments.OrderBy(c => c.CreatedAt))
+        .Include(t => t.Attachments)
+        .AsNoTracking()
+        .FirstOrDefaultAsync(t => t.Id == id);
+        
     if (task == null) return Results.NotFound();
     
-    var comments = await db.TaskComments.Where(c => c.TaskItemId == id).OrderBy(c => c.CreatedAt).ToListAsync();
-    var attachments = await db.TaskAttachments.Where(a => a.TaskItemId == id).ToListAsync();
-    
-    return Results.Ok(new { Task = task, Comments = comments, Attachments = attachments });
+    return Results.Ok(new { Task = task, Comments = task.Comments, Attachments = task.Attachments });
 });
 
 // POST task
 app.MapPost("/api/tasks", async (SanadDbContext db, TaskItem input) =>
 {
+    if (string.IsNullOrWhiteSpace(input.Title)) return Results.BadRequest("Title is required");
+
     db.TaskItems.Add(input);
+    
+    var timelineItem = new TimelineItem 
+    {
+        ItemType = "Task",
+        ReferenceId = input.Id.ToString()
+    };
+    db.TimelineItems.Add(timelineItem);
+    
     await db.SaveChangesAsync();
     return Results.Created($"/api/tasks/{input.Id}", input);
 });
@@ -97,6 +113,8 @@ app.MapPost("/api/tasks", async (SanadDbContext db, TaskItem input) =>
 // PUT task
 app.MapPut("/api/tasks/{id}", async (SanadDbContext db, Guid id, TaskItem updatedTask) =>
 {
+    if (string.IsNullOrWhiteSpace(updatedTask.Title)) return Results.BadRequest("Title is required");
+
     var task = await db.TaskItems.FindAsync(id);
     if (task == null) return Results.NotFound();
     
@@ -106,6 +124,17 @@ app.MapPut("/api/tasks/{id}", async (SanadDbContext db, Guid id, TaskItem update
     task.Tags = updatedTask.Tags;
     task.UpdatedAt = DateTime.UtcNow;
     
+    await db.SaveChangesAsync();
+    return Results.NoContent();
+});
+
+// DELETE task
+app.MapDelete("/api/tasks/{id}", async (SanadDbContext db, Guid id) =>
+{
+    var task = await db.TaskItems.FindAsync(id);
+    if (task == null) return Results.NotFound();
+    
+    db.TaskItems.Remove(task);
     await db.SaveChangesAsync();
     return Results.NoContent();
 });
