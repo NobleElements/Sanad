@@ -1,47 +1,76 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 
-const API_URL = 'http://localhost:5186/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5186/api';
 
 export default function FinanceDashboard() {
   const [summary, setSummary] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [error, setError] = useState(null);
   
   // form state
   const [amount, setAmount] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [desc, setDesc] = useState('');
 
-  const loadData = async () => {
-    const sumRes = await fetch(`${API_URL}/finances/summary`);
-    const sumData = await sumRes.json();
-    setSummary(sumData);
-    
-    const catRes = await fetch(`${API_URL}/finances/categories`);
-    setCategories(await catRes.json());
-    
-    const txRes = await fetch(`${API_URL}/finances/transactions`);
-    setTransactions(await txRes.json());
-  };
+  const loadData = useCallback(async () => {
+    try {
+      setError(null);
+      const [sumRes, catRes, txRes] = await Promise.all([
+        fetch(`${API_URL}/finances/summary`),
+        fetch(`${API_URL}/finances/categories`),
+        fetch(`${API_URL}/finances/transactions`)
+      ]);
 
-  useEffect(() => { loadData(); }, []);
+      if (!sumRes.ok || !catRes.ok || !txRes.ok) {
+        throw new Error('Failed to load financial data');
+      }
+
+      const [sumData, catData, txData] = await Promise.all([
+        sumRes.json(),
+        catRes.json(),
+        txRes.json()
+      ]);
+
+      setSummary(sumData);
+      setCategories(catData);
+      setTransactions(txData);
+    } catch (err) {
+      console.error(err);
+      setError('Failed to load data. Please try again later.');
+    }
+  }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
 
   const handleLog = async (e) => {
     e.preventDefault();
-    await fetch(`${API_URL}/finances/transactions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        amount: parseFloat(amount),
-        categoryId,
-        description: desc,
-        type: 'Expense',
-        date: new Date().toISOString()
-      })
-    });
-    setAmount(''); setDesc('');
-    loadData();
+    try {
+      setError(null);
+      const res = await fetch(`${API_URL}/finances/transactions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: parseFloat(amount),
+          categoryId,
+          description: desc,
+          type: 'Expense',
+          date: new Date().toISOString()
+        })
+      });
+      
+      if (!res.ok) {
+        throw new Error('Failed to log expense');
+      }
+
+      setAmount(''); 
+      setDesc('');
+      loadData();
+    } catch (err) {
+      console.error(err);
+      setError('Failed to log expense. Please try again.');
+    }
   };
 
   const totalBudget = summary.reduce((acc, curr) => acc + curr.category.monthlyBudget, 0);
@@ -51,6 +80,12 @@ export default function FinanceDashboard() {
     <div className="flex-1 p-8 overflow-y-auto bg-slate-50 text-slate-900">
       <div className="max-w-6xl mx-auto">
         <h1 className="text-3xl font-bold mb-6 text-slate-800">Financial Tracking</h1>
+        
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+            {error}
+          </div>
+        )}
         
         {/* Top Metrics */}
         <div className="grid grid-cols-3 gap-6 mb-8">
