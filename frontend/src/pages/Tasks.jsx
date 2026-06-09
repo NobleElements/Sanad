@@ -12,6 +12,7 @@ export default function Tasks() {
 
   const fetchTasks = async () => {
     try {
+      setError(null);
       setLoading(true);
       const res = await fetch('/api/tasks');
       if (!res.ok) throw new Error('Failed to fetch tasks');
@@ -119,14 +120,14 @@ export default function Tasks() {
                         {getStatusLabel(task.status)}
                       </span>
                     </div>
-                    {task.tags && (
+                    {typeof task.tags === 'string' && (
                       <div className="mt-2 flex flex-wrap gap-2">
-                        {task.tags.split(',').map((tag, idx) => {
+                        {task.tags.split(',').map((tag) => {
                           const trimmedTag = tag.trim();
                           if (!trimmedTag) return null;
                           return (
                             <span 
-                              key={idx} 
+                              key={trimmedTag} 
                               className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-gray-100 dark:bg-gray-800 text-xs font-medium text-gray-600 dark:text-gray-300"
                             >
                               <Tag className="w-3 h-3" />
@@ -141,7 +142,7 @@ export default function Tasks() {
                 
                 <div className="flex items-center gap-4 ml-4">
                   <div className="hidden sm:block text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">
-                    {new Date(task.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                    {task.createdAt && new Date(task.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                   </div>
                   <button 
                     onClick={(e) => {
