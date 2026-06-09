@@ -74,9 +74,10 @@ public class FinanceApiTests
         
         context.Transactions.AddRange(transaction1, transaction2, transaction3, transaction4);
         await context.SaveChangesAsync();
+        // Act
+        var result = await FinanceEndpoints.GetSummary(context, null, null);
 
-        var result = await FinanceEndpoints.GetSummary(context);
-        
+        // Assert
         var statusCodeResult = Assert.IsAssignableFrom<IStatusCodeHttpResult>(result);
         Assert.Equal(200, statusCodeResult.StatusCode);
 
@@ -84,13 +85,14 @@ public class FinanceApiTests
         var json = System.Text.Json.JsonSerializer.Serialize(valueResult.Value);
         var summary = System.Text.Json.JsonDocument.Parse(json).RootElement;
 
-        Assert.Equal(2, summary.GetArrayLength());
+        var categories = summary.GetProperty("Categories");
+        Assert.Equal(2, categories.GetArrayLength());
 
-        var foodSummary = summary.EnumerateArray().First(s => s.GetProperty("Category").GetProperty("Name").GetString() == "Food");
+        var foodSummary = categories.EnumerateArray().First(s => s.GetProperty("Category").GetProperty("Name").GetString() == "Food");
         Assert.Equal(200m, foodSummary.GetProperty("Spent").GetDecimal());
         Assert.Equal(300m, foodSummary.GetProperty("Remaining").GetDecimal()); // 500 - 200
 
-        var rentSummary = summary.EnumerateArray().First(s => s.GetProperty("Category").GetProperty("Name").GetString() == "Rent");
+        var rentSummary = categories.EnumerateArray().First(s => s.GetProperty("Category").GetProperty("Name").GetString() == "Rent");
         Assert.Equal(800m, rentSummary.GetProperty("Spent").GetDecimal());
         Assert.Equal(200m, rentSummary.GetProperty("Remaining").GetDecimal()); // 1000 - 800
     }
