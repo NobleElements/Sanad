@@ -6,7 +6,7 @@ export default function Sidebar() {
       <div className="text-2xl font-bold mb-8 tracking-wider">SANAD</div>
       <nav className="flex flex-col gap-2">
         <Link to="/" className="p-2 bg-slate-800 rounded hover:bg-slate-700 transition">Dashboard</Link>
-        <Link to="#" onClick={(e) => e.preventDefault()} className="p-2 rounded hover:bg-slate-800 transition text-slate-400">Tasks (Coming Soon)</Link>
+        <Link to="/tasks" className="p-2 rounded hover:bg-slate-800 transition text-slate-300">Tasks</Link>
         <Link to="#" onClick={(e) => e.preventDefault()} className="p-2 rounded hover:bg-slate-800 transition text-slate-400">Notebook (Coming Soon)</Link>
         <Link to="#" onClick={(e) => e.preventDefault()} className="p-2 rounded hover:bg-slate-800 transition text-slate-400">Finance (Coming Soon)</Link>
       </nav>
