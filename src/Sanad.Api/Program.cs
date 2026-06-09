@@ -196,4 +196,57 @@ app.MapPost("/api/tasks/{id}/attachments", async (HttpRequest request, SanadDbCo
     return Results.Created($"/api/tasks/{id}/attachments/{attachment.Id}", attachment);
 });
 
+// GET categories
+app.MapGet("/api/finances/categories", async (SanadDbContext db) => 
+    Results.Ok(await db.TransactionCategories.ToListAsync()));
+
+// POST category
+app.MapPost("/api/finances/categories", async (SanadDbContext db, TransactionCategory category) =>
+{
+    db.TransactionCategories.Add(category);
+    await db.SaveChangesAsync();
+    return Results.Created($"/api/finances/categories/{category.Id}", category);
+});
+
+// GET transactions
+app.MapGet("/api/finances/transactions", async (SanadDbContext db) =>
+    Results.Ok(await db.Transactions.Include(t => t.Category).OrderByDescending(t => t.Date).ToListAsync()));
+
+// POST transaction
+app.MapPost("/api/finances/transactions", async (SanadDbContext db, Transaction transaction) =>
+{
+    db.Transactions.Add(transaction);
+    
+    // Add to timeline
+    var timelineItem = new TimelineItem 
+    {
+        ItemType = "Transaction",
+        ReferenceId = transaction.Id.ToString()
+    };
+    db.TimelineItems.Add(timelineItem);
+    
+    await db.SaveChangesAsync();
+    return Results.Created($"/api/finances/transactions/{transaction.Id}", transaction);
+});
+
+// GET summary (spend vs budget)
+app.MapGet("/api/finances/summary", async (SanadDbContext db) =>
+{
+    var startOfMonth = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
+    
+    var categories = await db.TransactionCategories.ToListAsync();
+    var transactions = await db.Transactions
+        .Where(t => t.Date >= startOfMonth && t.Type == "Expense")
+        .ToListAsync();
+
+    var summary = categories.Select(c => new
+    {
+        Category = c,
+        Spent = transactions.Where(t => t.CategoryId == c.Id).Sum(t => t.Amount),
+        Remaining = c.MonthlyBudget - transactions.Where(t => t.CategoryId == c.Id).Sum(t => t.Amount)
+    });
+
+    return Results.Ok(summary);
+});
+
 app.Run();
