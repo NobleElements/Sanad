@@ -79,6 +79,12 @@ public class McpEndpoints
     }
 
     // Transactions Tools
+    [McpServerTool, Description("Get transaction categories")]
+    public async Task<List<TransactionCategory>> GetCategories()
+    {
+        return await _db.TransactionCategories.ToListAsync();
+    }
+
     [McpServerTool, Description("Get recent transactions")]
     public async Task<List<Transaction>> GetTransactions()
     {
