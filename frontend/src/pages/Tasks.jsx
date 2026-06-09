@@ -24,7 +24,6 @@ export default function Tasks() {
   };
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchTasks();
   }, []);
 
@@ -47,30 +46,25 @@ export default function Tasks() {
   };
 
   const handleSaveTask = async (taskData) => {
-    try {
-      const isNew = taskData.isNew;
-      const method = isNew ? 'POST' : 'PUT';
-      const url = isNew ? '/api/tasks' : `/api/tasks/${taskData.id}`;
-      
-      const payload = { ...taskData };
-      delete payload.isNew;
-      
-      const res = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
-      
-      if (!res.ok) throw new Error('Failed to save task');
-      
-      await fetchTasks();
-      setSelectedTask(null);
-    } catch (err) {
-      console.error('Save error:', err);
-      alert('Failed to save task: ' + err.message);
-    }
+    const isNew = taskData.isNew;
+    const method = isNew ? 'POST' : 'PUT';
+    const url = isNew ? '/api/tasks' : `/api/tasks/${taskData.id}`;
+    
+    const payload = { ...taskData };
+    delete payload.isNew;
+    
+    const res = await fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+    
+    if (!res.ok) throw new Error('Failed to save task');
+    
+    await fetchTasks();
+    setSelectedTask(null);
   };
 
   return (
@@ -192,7 +186,7 @@ export default function Tasks() {
       </div>
 
       <TaskDrawer 
-        key={selectedTask ? (selectedTask.id || 'new') : 'empty'}
+        isOpen={!!selectedTask}
         task={selectedTask} 
         onClose={() => setSelectedTask(null)} 
         onSave={handleSaveTask} 

@@ -1,57 +1,73 @@
 import { useState, useEffect } from 'react';
-import { X, Save, Paperclip, MessageSquare } from 'lucide-react';
+import { X, Save, Paperclip, MessageSquare, AlertCircle } from 'lucide-react';
 import TipTapEditor from './TipTapEditor';
 
-export default function TaskDrawer({ task, onClose, onSave }) {
-  const [title, setTitle] = useState(task?.title || '');
-  const [status, setStatus] = useState(() => {
-    if (!task) return 'ToDo';
-    return task.status === 2 || task.status === 'Done' ? 'Done' : 
-           task.status === 1 || task.status === 'InProgress' ? 'InProgress' : 'ToDo';
-  });
-  const [content, setContent] = useState(task?.content || '');
+export default function TaskDrawer({ isOpen, task, onClose, onSave }) {
+  const [internalTask, setInternalTask] = useState(null);
+  const [title, setTitle] = useState('');
+  const [status, setStatus] = useState('ToDo');
+  const [content, setContent] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (isOpen && task) {
+      setInternalTask(task);
+      setTitle(task.title || '');
+      setStatus(task.status === 2 || task.status === 'Done' ? 'Done' : 
+                task.status === 1 || task.status === 'InProgress' ? 'InProgress' : 'ToDo');
+      setContent(task.content || '');
+      setError(null);
+    }
+  }, [isOpen, task]);
 
   const handleSave = async () => {
+    setError(null);
     setIsSaving(true);
     const statusVal = status === 'Done' ? 2 : status === 'InProgress' ? 1 : 0;
     
-    await onSave({
-      ...task,
-      title,
-      status: statusVal,
-      content
-    });
-    setIsSaving(false);
+    try {
+      await onSave({
+        ...internalTask,
+        title,
+        status: statusVal,
+        content
+      });
+      // Error handling is handled by the try/catch here if onSave throws
+    } catch (err) {
+      setError(err.message || 'Failed to save task');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape' && isOpen) onClose();
     };
-    if (task) {
-      window.addEventListener('keydown', handleKeyDown);
-    }
+    window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [task, onClose]);
+  }, [isOpen, onClose]);
 
-  if (!task) return null;
+  // We need to render even if !isOpen to allow slide out animation
+  // If internalTask is null, we can render an empty shell or nothing
+  const activeTask = internalTask || {};
 
   return (
     <>
       <div 
-        className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 transition-opacity"
+        className={`fixed inset-0 bg-black/30 backdrop-blur-sm z-40 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         onClick={onClose}
         aria-hidden="true"
       />
 
       <div 
-        className="fixed inset-y-0 right-0 z-50 w-full sm:w-[500px] bg-white dark:bg-gray-900 shadow-2xl transform transition-transform duration-300 flex flex-col"
+        className={`fixed inset-y-0 right-0 z-50 w-full sm:w-[500px] bg-white dark:bg-gray-900 shadow-2xl transform transition-transform duration-300 flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-            {task.isNew ? 'Create Task' : 'Edit Task'}
+            {activeTask.isNew ? 'Create Task' : 'Edit Task'}
           </h2>
           <button 
             onClick={onClose}
@@ -63,6 +79,13 @@ export default function TaskDrawer({ task, onClose, onSave }) {
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          {error && (
+            <div className="flex items-center gap-2 p-3 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 rounded-lg border border-red-200 dark:border-red-500/20">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <p>{error}</p>
+            </div>
+          )}
+
           <div className="space-y-1">
             <input
               type="text"
