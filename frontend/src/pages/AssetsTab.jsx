@@ -5,6 +5,7 @@ import { Trash2 } from 'lucide-react';
 export default function AssetsTab() {
   const [assets, setAssets] = useState([]);
   const [history, setHistory] = useState([]);
+  const [chartLines, setChartLines] = useState([]);
   const [error, setError] = useState(null);
   
   // New asset form
@@ -31,32 +32,30 @@ export default function AssetsTab() {
       setAssets(assetsData);
       
       // Process history data for the chart
-      // Group by date (ignoring time) and sum all asset amounts
-      const points = [];
+      const pointsMap = new Map();
       const assetLatestValue = {};
+      const allAssetNames = new Set();
       
       histData.forEach(snapshot => {
         const dateStr = new Date(snapshot.recordedAt).toLocaleDateString();
-        assetLatestValue[snapshot.assetId] = snapshot.amount;
+        const name = snapshot.assetName || snapshot.assetId;
+        
+        assetLatestValue[name] = snapshot.amount;
+        allAssetNames.add(name);
         
         const totalNetWorth = Object.values(assetLatestValue).reduce((a, b) => a + b, 0);
-        points.push({
-            date: dateStr,
-            netWorth: totalNetWorth
+        const point = { date: dateStr, netWorth: totalNetWorth };
+        
+        Object.entries(assetLatestValue).forEach(([k, v]) => {
+          point[k] = v;
         });
+        
+        // Overwrite so we keep the latest values for that specific date
+        pointsMap.set(dateStr, point);
       });
-      
-      // Keep only the last point per day for cleaner chart
-      const dailyPoints = [];
-      const seenDates = new Set();
-      for (let i = points.length - 1; i >= 0; i--) {
-        if (!seenDates.has(points[i].date)) {
-            dailyPoints.unshift(points[i]);
-            seenDates.add(points[i].date);
-        }
-      }
 
-      setHistory(dailyPoints);
+      setChartLines(Array.from(allAssetNames));
+      setHistory(Array.from(pointsMap.values()));
     } catch (err) {
       console.error(err);
       setError('Failed to load data.');
@@ -140,8 +139,22 @@ export default function AssetsTab() {
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                         <XAxis dataKey="date" stroke="#94A3B8" fontSize={12} tickMargin={10} minTickGap={30} />
                         <YAxis stroke="#94A3B8" fontSize={12} tickFormatter={(value) => `₪${value}`} width={80} />
-                        <Tooltip formatter={(value) => [`₪${value}`, 'Net Worth']} labelStyle={{ color: '#1E293B' }} />
+                        <Tooltip formatter={(value, name) => [`₪${value}`, name === 'netWorth' ? 'Net Worth' : name]} labelStyle={{ color: '#1E293B' }} />
                         <Line type="monotone" dataKey="netWorth" stroke="#6366F1" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
+                        {chartLines.map((name, index) => {
+                            const colors = ['#10B981', '#F59E0B', '#3B82F6', '#EC4899', '#8B5CF6', '#14B8A6', '#F43F5E'];
+                            return (
+                                <Line 
+                                    key={name} 
+                                    type="monotone" 
+                                    dataKey={name} 
+                                    stroke={colors[index % colors.length]} 
+                                    strokeWidth={2} 
+                                    dot={{ r: 2 }} 
+                                    activeDot={{ r: 4 }} 
+                                />
+                            );
+                        })}
                     </LineChart>
                     </ResponsiveContainer>
                 ) : (
