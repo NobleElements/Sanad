@@ -341,6 +341,7 @@ api.MapPost("/api/tasks/{id}/attachments", async (HttpRequest request, SanadDbCo
 
 api.MapFinanceEndpoints();
 api.MapNotebookEndpoints();
+api.MapAssetEndpoints();
 
 app.MapMcp("/mcp");
 
