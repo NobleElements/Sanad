@@ -109,6 +109,25 @@ export default function TaskModal({ isOpen, task, onClose, onSave }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
+  const handleImageUpload = async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const res = await fetch('/api/upload/image', {
+        method: 'POST',
+        body: formData,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return `http://localhost:5000${data.url}`;
+      }
+    } catch (e) {
+      console.error('Failed to upload image:', e);
+      setError('Failed to upload image');
+    }
+    return null;
+  };
+
   // We need to render even if !isOpen to allow slide out animation
   // If internalTask is null, we can render an empty shell or nothing
   const activeTask = internalTask || {};
@@ -260,7 +279,7 @@ export default function TaskModal({ isOpen, task, onClose, onSave }) {
             <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
               Description
             </label>
-            <TipTapEditor content={content} onChange={setContent} />
+            <TipTapEditor content={content} onChange={setContent} onImageUpload={handleImageUpload} />
           </div>
 
           <div className="pt-4 space-y-4 border-t border-gray-100 dark:border-gray-800">

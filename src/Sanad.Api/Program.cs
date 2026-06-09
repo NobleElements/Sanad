@@ -42,7 +42,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles);
 
 builder.Services.AddMcpServer()
-    .WithHttpTransport()
+    .WithHttpTransport(options => options.Stateless = true)
     .WithTools<McpEndpoints>();
 
 var app = builder.Build();

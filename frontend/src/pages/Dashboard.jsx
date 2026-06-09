@@ -25,6 +25,7 @@ export default function Dashboard() {
   // Spending state
   const [categories, setCategories] = useState([]);
   const [recentTransactions, setRecentTransactions] = useState([]);
+  const [budgetSummary, setBudgetSummary] = useState({ monthlyBudget: 0, totalSpent: 0 });
   const [spendAmount, setSpendAmount] = useState('');
   const [spendCategoryId, setSpendCategoryId] = useState('');
   const [spendDesc, setSpendDesc] = useState('');
@@ -38,6 +39,12 @@ export default function Dashboard() {
   const [catDropdownOpen, setCatDropdownOpen] = useState(false);
   const [isCreatingCat, setIsCreatingCat] = useState(false);
   const catRef = useRef(null);
+
+  // Daily Goal state
+  const [dailyGoal, setDailyGoal] = useState('');
+  const [isEditingGoal, setIsEditingGoal] = useState(false);
+  const [editGoalValue, setEditGoalValue] = useState('');
+  const [isSavingGoal, setIsSavingGoal] = useState(false);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -122,9 +129,10 @@ export default function Dashboard() {
 
   const loadFinanceData = async () => {
     try {
-      const [catRes, txRes] = await Promise.all([
+      const [catRes, txRes, sumRes] = await Promise.all([
         fetch(`${API_URL}/finances/categories`),
-        fetch(`${API_URL}/finances/transactions`)
+        fetch(`${API_URL}/finances/transactions`),
+        fetch(`${API_URL}/finances/summary`)
       ]);
       if (catRes.ok) {
         setCategories(await catRes.json());
@@ -133,14 +141,63 @@ export default function Dashboard() {
         const txData = await txRes.json();
         setRecentTransactions(txData.slice(0, 5));
       }
+      if (sumRes.ok) {
+        const sumData = await sumRes.json();
+        setBudgetSummary({ monthlyBudget: sumData.monthlyBudget, totalSpent: sumData.totalSpent });
+      }
     } catch (e) {
       console.error('Failed to load finance data:', e);
+    }
+  };
+
+  const loadDailyGoal = async () => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const res = await fetch(`${API_URL}/goals/${today}`);
+      if (res.status === 204 || !res.ok) {
+        setDailyGoal('');
+        return;
+      }
+      const data = await res.json();
+      setDailyGoal(data.goal || '');
+    } catch (e) {
+      console.error('Failed to load daily goal:', e);
+    }
+  };
+
+  const saveDailyGoal = async () => {
+    try {
+      setIsSavingGoal(true);
+      const today = new Date().toISOString().split('T')[0];
+      const res = await fetch(`${API_URL}/goals/${today}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ goal: editGoalValue })
+      });
+      if (res.ok) {
+        setDailyGoal(editGoalValue);
+        setIsEditingGoal(false);
+      }
+    } catch (e) {
+      console.error('Failed to save daily goal:', e);
+    } finally {
+      setIsSavingGoal(false);
+    }
+  };
+
+  const handleGoalKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      saveDailyGoal();
+    } else if (e.key === 'Escape') {
+      setIsEditingGoal(false);
     }
   };
 
   useEffect(() => {
     loadTimeline();
     loadFinanceData();
+    loadDailyGoal();
   }, []);
 
   const handleSubmit = async (e) => {
@@ -219,11 +276,41 @@ export default function Dashboard() {
       <div className="grid grid-cols-3 gap-6 mb-8">
         <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
           <h3 className="text-sm text-slate-500 font-semibold uppercase">Spent Today</h3>
-          <p className="text-2xl font-bold">${totalSpentToday.toFixed(2)}</p>
+          <p className="text-2xl font-bold">₪{totalSpentToday.toFixed(2)}</p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
           <h3 className="text-sm text-slate-500 font-semibold uppercase">Today's Goals</h3>
-          <p className="text-slate-400 mt-2">No goals yet</p>
+          {isEditingGoal ? (
+            <div className="mt-2 flex items-center gap-2">
+              <input
+                type="text"
+                value={editGoalValue}
+                onChange={(e) => setEditGoalValue(e.target.value)}
+                onKeyDown={handleGoalKeyDown}
+                className="w-full border border-indigo-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="What is your goal today?"
+                autoFocus
+                disabled={isSavingGoal}
+              />
+              <button onClick={saveDailyGoal} disabled={isSavingGoal} className="text-emerald-600 hover:text-emerald-700 font-bold px-1 text-sm">✓</button>
+              <button onClick={() => setIsEditingGoal(false)} disabled={isSavingGoal} className="text-slate-400 hover:text-slate-600 font-bold px-1 text-sm">✕</button>
+            </div>
+          ) : (
+            <div className="mt-2 group flex items-center justify-between">
+              <p className={`text-sm ${dailyGoal ? 'text-slate-800 font-medium' : 'text-slate-400 italic'}`}>
+                {dailyGoal || 'No goals yet'}
+              </p>
+              <button
+                onClick={() => {
+                  setEditGoalValue(dailyGoal);
+                  setIsEditingGoal(true);
+                }}
+                className="text-xs text-slate-400 hover:text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                Edit
+              </button>
+            </div>
+          )}
         </div>
         <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
           <h3 className="text-sm text-slate-500 font-semibold uppercase">Habits</h3>
@@ -291,6 +378,22 @@ export default function Dashboard() {
                   Quick Log
                 </button>
              </div>
+             <div className="mb-4">
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-slate-500">Left this month</span>
+                  <span className={`font-semibold ${budgetSummary.monthlyBudget - budgetSummary.totalSpent < 0 ? 'text-red-500' : 'text-slate-700'}`}>
+                    ₪{(budgetSummary.monthlyBudget - budgetSummary.totalSpent).toFixed(2)}
+                  </span>
+                </div>
+                {budgetSummary.monthlyBudget > 0 && (
+                  <div className="w-full bg-slate-100 rounded-full h-1.5">
+                    <div 
+                      className={`h-1.5 rounded-full ${budgetSummary.monthlyBudget - budgetSummary.totalSpent < 0 ? 'bg-red-500' : 'bg-indigo-500'}`} 
+                      style={{ width: `${Math.min((budgetSummary.totalSpent / budgetSummary.monthlyBudget) * 100, 100)}%` }}
+                    />
+                  </div>
+                )}
+             </div>
              {recentTransactions.length === 0 ? (
                <p className="text-slate-400 text-sm italic">No spending logged yet.</p>
              ) : (
@@ -310,7 +413,7 @@ export default function Dashboard() {
                        </div>
                      </div>
                      <div className="text-sm font-semibold text-slate-700 flex-shrink-0">
-                       ${tx.amount.toFixed(2)}
+                       ₪{tx.amount.toFixed(2)}
                      </div>
                    </div>
                  ))}
@@ -349,7 +452,7 @@ export default function Dashboard() {
               <div>
                 <label className="block text-sm text-slate-600 mb-1 font-medium">Amount</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">₪</span>
                   <input
                     type="number"
                     step="0.01"

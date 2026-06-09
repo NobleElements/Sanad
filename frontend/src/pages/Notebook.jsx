@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import TipTapEditor from '../components/TipTapEditor';
 import { Plus, Search, FolderOpen, FileText, Trash2, Pencil, X, Check, BookOpen } from 'lucide-react';
 
@@ -19,6 +20,9 @@ function timeAgo(dateStr) {
 }
 
 export default function Notebook() {
+  const { noteId: urlNoteId } = useParams();
+  const navigate = useNavigate();
+
   // Data state
   const [notebooks, setNotebooks] = useState([]);
   const [notes, setNotes] = useState([]);
@@ -45,8 +49,9 @@ export default function Notebook() {
   const loadNotebooks = async () => {
     try {
       const res = await fetch(`${API_URL}/notebooks`);
-      if (res.ok) setNotebooks(await res.json());
+      if (res.ok) return await res.json();
     } catch (e) { console.error('Failed to load notebooks:', e); }
+    return [];
   };
 
   const loadNotes = async (notebookId) => {
@@ -64,20 +69,74 @@ export default function Notebook() {
         setSelectedNote(note);
         setNoteTitle(note.title);
         setNoteContent(note.content || '');
+        return note;
       }
     } catch (e) { console.error('Failed to load note:', e); }
+    return null;
   };
 
-  useEffect(() => { loadNotebooks(); }, []);
+  // --- Initialization: load notebooks, then open note from URL or latest ---
+
+  const initDone = useRef(false);
 
   useEffect(() => {
-    if (selectedNotebookId) {
-      loadNotes(selectedNotebookId);
-      setSelectedNote(null);
-      setNoteTitle('');
-      setNoteContent('');
+    const init = async () => {
+      const nbs = await loadNotebooks();
+      setNotebooks(nbs);
+
+      let targetNoteId = urlNoteId;
+
+      // If no note in URL, try to get the latest
+      if (!targetNoteId) {
+        try {
+          const res = await fetch(`${API_URL}/notes/latest`);
+          if (res.ok && res.status !== 204) {
+            const latest = await res.json();
+            targetNoteId = latest.id;
+            // Redirect to URL with note ID (replace so back button works)
+            navigate(`/notebook/${latest.id}`, { replace: true });
+          }
+        } catch (e) { console.error('Failed to load latest note:', e); }
+      }
+
+      // Load the target note and select its notebook
+      if (targetNoteId) {
+        const note = await loadNote(targetNoteId);
+        if (note) {
+          setSelectedNotebookId(note.notebookId);
+          loadNotes(note.notebookId);
+        }
+      }
+
+      initDone.current = true;
+    };
+    init();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // When URL noteId changes after init (e.g. browser back/forward)
+  useEffect(() => {
+    if (!initDone.current || !urlNoteId) return;
+    // Only reload if it's a different note
+    if (selectedNote?.id !== urlNoteId) {
+      loadNote(urlNoteId).then(note => {
+        if (note && note.notebookId !== selectedNotebookId) {
+          setSelectedNotebookId(note.notebookId);
+          loadNotes(note.notebookId);
+        }
+      });
     }
-  }, [selectedNotebookId]);
+  }, [urlNoteId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // When user clicks a different notebook in the sidebar
+  const switchNotebook = (notebookId) => {
+    if (notebookId === selectedNotebookId) return;
+    setSelectedNotebookId(notebookId);
+    setSelectedNote(null);
+    setNoteTitle('');
+    setNoteContent('');
+    navigate('/notebook');
+    loadNotes(notebookId);
+  };
 
   // --- Search ---
 
@@ -144,7 +203,7 @@ export default function Notebook() {
       if (res.ok) {
         const nb = await res.json();
         setNotebooks(prev => [...prev, nb]);
-        setSelectedNotebookId(nb.id);
+        switchNotebook(nb.id);
         setNewNotebookName('');
         setIsCreatingNotebook(false);
       }
@@ -177,6 +236,7 @@ export default function Notebook() {
           setSelectedNotebookId(null);
           setSelectedNote(null);
           setNotes([]);
+          navigate('/notebook');
         }
       }
     } catch (e) { console.error('Failed to delete notebook:', e); }
@@ -195,6 +255,7 @@ export default function Notebook() {
       if (res.ok) {
         const note = await res.json();
         setNotes(prev => [{ id: note.id, title: note.title, notebookId: note.notebookId, createdAt: note.createdAt, updatedAt: note.updatedAt }, ...prev]);
+        navigate(`/notebook/${note.id}`);
         loadNote(note.id);
       }
     } catch (e) { console.error('Failed to create note:', e); }
@@ -209,6 +270,7 @@ export default function Notebook() {
           setSelectedNote(null);
           setNoteTitle('');
           setNoteContent('');
+          navigate('/notebook');
         }
       }
     } catch (e) { console.error('Failed to delete note:', e); }
@@ -315,7 +377,7 @@ export default function Notebook() {
                       ? 'bg-indigo-50 text-indigo-700 font-medium'
                       : 'text-slate-700 hover:bg-slate-50'
                   }`}
-                  onClick={() => setSelectedNotebookId(nb.id)}
+                  onClick={() => switchNotebook(nb.id)}
                 >
                   <FolderOpen className="w-4 h-4 flex-shrink-0 opacity-60" />
                   {editingNotebookId === nb.id ? (
@@ -386,9 +448,11 @@ export default function Notebook() {
                     : 'text-slate-700 hover:bg-slate-50'
                 }`}
                 onClick={() => {
+                  navigate(`/notebook/${note.id}`);
                   loadNote(note.id);
                   if (searchResults !== null) {
                     setSelectedNotebookId(note.notebookId);
+                    loadNotes(note.notebookId);
                     setSearchQuery('');
                   }
                 }}

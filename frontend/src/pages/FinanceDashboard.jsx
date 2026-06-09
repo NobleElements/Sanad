@@ -1,11 +1,17 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import { useSearchParams } from 'react-router-dom';
+import { Trash2 } from 'lucide-react';
 
 export default function FinanceDashboard() {
-  const [summary, setSummary] = useState([]);
+  const [summary, setSummary] = useState({ categories: [], monthlyBudget: 0, totalSpent: 0 });
   const [transactions, setTransactions] = useState([]);
   const [categories, setCategories] = useState([]);
   const [error, setError] = useState(null);
+  
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currentMonth = searchParams.get('month') ? parseInt(searchParams.get('month'), 10) : new Date().getMonth() + 1;
+  const currentYear = searchParams.get('year') ? parseInt(searchParams.get('year'), 10) : new Date().getFullYear();
   
   // form state
   const [amount, setAmount] = useState('');
@@ -13,17 +19,94 @@ export default function FinanceDashboard() {
   const [desc, setDesc] = useState('');
 
   // category form state
-  const [newCatName, setNewCatName] = useState('');
-  const [newCatBudget, setNewCatBudget] = useState('');
-  const [newCatColor, setNewCatColor] = useState('#CBD5E1');
+  const [catSearch, setCatSearch] = useState('');
+  const [catDropdownOpen, setCatDropdownOpen] = useState(false);
+  const [isCreatingCat, setIsCreatingCat] = useState(false);
+  const catRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (catRef.current && !catRef.current.contains(e.target)) {
+        setCatDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const filteredCategories = categories.filter(c =>
+    c.name.toLowerCase().includes(catSearch.toLowerCase())
+  );
+
+  const exactMatch = categories.some(
+    c => c.name.toLowerCase() === catSearch.toLowerCase()
+  );
+
+  const hslToHex = (h, s, l) => {
+    s /= 100; l /= 100;
+    const a = s * Math.min(l, 1 - l);
+    const f = n => {
+      const k = (n + h / 30) % 12;
+      const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+      return Math.round(255 * color).toString(16).padStart(2, '0');
+    };
+    return `#${f(0)}${f(8)}${f(4)}`;
+  };
+
+  const createCategoryInline = async (name) => {
+    setIsCreatingCat(true);
+    try {
+      const hue = Math.floor(Math.random() * 360);
+      const colorHex = hslToHex(hue, 65, 55);
+      const res = await fetch('/api/finances/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          monthlyBudget: 0,
+          colorHex
+        })
+      });
+      if (!res.ok) throw new Error('Failed to create category');
+      
+      const newCat = await res.json();
+      setCategories(prev => [...prev, newCat]);
+      setCategoryId(newCat.id);
+      setCatSearch(newCat.name);
+      setCatDropdownOpen(false);
+      loadData();
+    } catch (e) {
+      console.error(e);
+      setError('Failed to create category.');
+    } finally {
+      setIsCreatingCat(false);
+    }
+  };
+
+  const selectCategory = (cat) => {
+    setCategoryId(cat.id);
+    setCatSearch(cat.name);
+    setCatDropdownOpen(false);
+  };
+
+
+  // category editing state
+  const [editingCatId, setEditingCatId] = useState(null);
+  const [editingCatName, setEditingCatName] = useState('');
+  const [editingCatColor, setEditingCatColor] = useState('#CBD5E1');
+  const [editingCatBudget, setEditingCatBudget] = useState('');
+
+  // total monthly budget editing
+  const [editingMonthlyBudget, setEditingMonthlyBudget] = useState(false);
+  const [monthlyBudgetValue, setMonthlyBudgetValue] = useState('');
 
   const loadData = useCallback(async () => {
     try {
       setError(null);
       const [sumRes, catRes, txRes] = await Promise.all([
-        fetch('/api/finances/summary'),
+        fetch(`/api/finances/summary?month=${currentMonth}&year=${currentYear}`),
         fetch('/api/finances/categories'),
-        fetch('/api/finances/transactions')
+        fetch(`/api/finances/transactions?month=${currentMonth}&year=${currentYear}`)
       ]);
 
       if (!sumRes.ok || !catRes.ok || !txRes.ok) {
@@ -43,7 +126,7 @@ export default function FinanceDashboard() {
       console.error(err);
       setError('Failed to load data. Please try again later.');
     }
-  }, []);
+  }, [currentMonth, currentYear]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -76,41 +159,152 @@ export default function FinanceDashboard() {
     }
   };
 
-  const handleCreateCategory = async (e) => {
-    e.preventDefault();
+  const deleteTransaction = async (id) => {
+    if (!confirm('Are you sure you want to delete this transaction?')) return;
     try {
       setError(null);
-      const res = await fetch('/api/finances/categories', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: newCatName,
-          monthlyBudget: parseFloat(newCatBudget),
-          colorHex: newCatColor
-        })
-      });
-      
-      if (!res.ok) {
-        throw new Error('Failed to create category');
-      }
-
-      setNewCatName(''); 
-      setNewCatBudget('');
-      setNewCatColor('#CBD5E1');
+      const res = await fetch(`/api/finances/transactions/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete transaction');
       loadData();
     } catch (err) {
       console.error(err);
-      setError('Failed to create category. Please try again.');
+      setError('Failed to delete transaction. Please try again.');
     }
   };
 
-  const totalBudget = summary.reduce((acc, curr) => acc + curr.category.monthlyBudget, 0);
-  const totalSpent = summary.reduce((acc, curr) => acc + curr.spent, 0);
+
+
+  const startEditCategory = (cat) => {
+    setEditingCatId(cat.id);
+    setEditingCatName(cat.name);
+    setEditingCatColor(cat.colorHex || '#CBD5E1');
+    setEditingCatBudget(String(cat.monthlyBudget));
+  };
+
+  const cancelEditCategory = () => {
+    setEditingCatId(null);
+    setEditingCatName('');
+    setEditingCatColor('#CBD5E1');
+    setEditingCatBudget('');
+  };
+
+  const saveEditCategory = async (cat) => {
+    const newBudget = parseFloat(editingCatBudget);
+    if (!editingCatName.trim()) return;
+    if (isNaN(newBudget) || newBudget < 0) return;
+
+    try {
+      setError(null);
+      const res = await fetch(`/api/finances/categories/${cat.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editingCatName.trim(),
+          colorHex: editingCatColor,
+          monthlyBudget: newBudget
+        })
+      });
+
+      if (!res.ok) throw new Error('Failed to update category');
+
+      cancelEditCategory();
+      loadData();
+    } catch (err) {
+      console.error(err);
+      setError('Failed to update category. Please try again.');
+    }
+  };
+
+  const handleEditCatKeyDown = (e, cat) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      saveEditCategory(cat);
+    } else if (e.key === 'Escape') {
+      cancelEditCategory();
+    }
+  };
+
+  // Total monthly budget editing
+  const startEditMonthlyBudget = () => {
+    setEditingMonthlyBudget(true);
+    setMonthlyBudgetValue(String(summary.monthlyBudget || 0));
+  };
+
+  const cancelEditMonthlyBudget = () => {
+    setEditingMonthlyBudget(false);
+    setMonthlyBudgetValue('');
+  };
+
+  const saveMonthlyBudget = async () => {
+    const newAmount = parseFloat(monthlyBudgetValue);
+    if (isNaN(newAmount) || newAmount < 0) return;
+
+    try {
+      setError(null);
+      const res = await fetch('/api/finances/budget', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: newAmount, month: currentMonth, year: currentYear })
+      });
+
+      if (!res.ok) throw new Error('Failed to update monthly budget');
+
+      setEditingMonthlyBudget(false);
+      setMonthlyBudgetValue('');
+      loadData();
+    } catch (err) {
+      console.error(err);
+      setError('Failed to update monthly budget. Please try again.');
+    }
+  };
+
+  const handleMonthlyBudgetKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      saveMonthlyBudget();
+    } else if (e.key === 'Escape') {
+      cancelEditMonthlyBudget();
+    }
+  };
+
+  const catSummary = summary.categories || [];
+  const totalBudget = summary.monthlyBudget || 0;
+  const totalSpent = summary.totalSpent || 0;
+  const remaining = totalBudget - totalSpent;
+  const spentPct = totalBudget > 0 ? Math.min((totalSpent / totalBudget) * 100, 100) : 0;
+
+  const prevMonth = () => {
+    const newMonth = currentMonth === 1 ? 12 : currentMonth - 1;
+    const newYear = currentMonth === 1 ? currentYear - 1 : currentYear;
+    setSearchParams({ month: newMonth, year: newYear }, { replace: true });
+  };
+
+  const nextMonth = () => {
+    const newMonth = currentMonth === 12 ? 1 : currentMonth + 1;
+    const newYear = currentMonth === 12 ? currentYear + 1 : currentYear;
+    setSearchParams({ month: newMonth, year: newYear }, { replace: true });
+  };
+
+  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
   return (
     <div className="flex-1 p-8 overflow-y-auto bg-slate-50 text-slate-900">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6 text-slate-800">Financial Tracking</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold text-slate-800">Financial Tracking</h1>
+          
+          <div className="flex items-center gap-4 bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm">
+            <button onClick={prevMonth} className="p-1 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer" title="Previous Month">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
+            </button>
+            <span className="font-semibold text-slate-700 min-w-[120px] text-center">
+              {monthNames[currentMonth - 1]} {currentYear}
+            </span>
+            <button onClick={nextMonth} className="p-1 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer" title="Next Month">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
+            </button>
+          </div>
+        </div>
         
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
@@ -122,33 +316,186 @@ export default function FinanceDashboard() {
         <div className="grid grid-cols-3 gap-6 mb-8">
           <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
             <p className="text-slate-500">Total Spent</p>
-            <p className="text-3xl font-semibold text-slate-800">${totalSpent.toFixed(2)}</p>
+            <p className="text-3xl font-semibold text-slate-800">₪{totalSpent.toFixed(2)}</p>
           </div>
           <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-            <p className="text-slate-500">Total Budget</p>
-            <p className="text-3xl font-semibold text-slate-800">${totalBudget.toFixed(2)}</p>
+            <p className="text-slate-500 mb-1">Monthly Budget</p>
+            {editingMonthlyBudget ? (
+              <div className="flex items-center gap-2">
+                <span className="text-xl text-slate-400">₪</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={monthlyBudgetValue}
+                  onChange={(e) => setMonthlyBudgetValue(e.target.value)}
+                  onKeyDown={handleMonthlyBudgetKeyDown}
+                  className="w-32 text-2xl font-semibold border border-indigo-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  autoFocus
+                />
+                <button
+                  onClick={saveMonthlyBudget}
+                  className="text-emerald-600 hover:text-emerald-700 font-bold text-lg px-1"
+                  title="Save"
+                >
+                  ✓
+                </button>
+                <button
+                  onClick={cancelEditMonthlyBudget}
+                  className="text-slate-400 hover:text-slate-600 font-bold text-lg px-1"
+                  title="Cancel"
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={startEditMonthlyBudget}
+                className="text-3xl font-semibold text-slate-800 hover:text-indigo-600 transition-colors cursor-pointer text-left"
+                title="Click to edit monthly budget"
+              >
+                ₪{totalBudget.toFixed(2)}
+              </button>
+            )}
           </div>
           <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
             <p className="text-slate-500">Remaining</p>
-            <p className={`text-3xl font-semibold ${totalBudget - totalSpent < 0 ? 'text-red-500' : 'text-slate-800'}`}>${(totalBudget - totalSpent).toFixed(2)}</p>
+            <p className={`text-3xl font-semibold ${remaining < 0 ? 'text-red-500' : 'text-slate-800'}`}>₪{remaining.toFixed(2)}</p>
+            {totalBudget > 0 && (
+              <div className="mt-3">
+                <div className="w-full bg-slate-100 rounded-full h-2">
+                  <div
+                    className="h-2 rounded-full transition-all duration-500"
+                    style={{
+                      width: `${spentPct}%`,
+                      backgroundColor: remaining < 0 ? '#EF4444' : '#6366F1'
+                    }}
+                  />
+                </div>
+                <p className="text-xs text-slate-400 mt-1">{spentPct.toFixed(0)}% used</p>
+              </div>
+            )}
           </div>
         </div>
 
         <div className="grid grid-cols-3 gap-8">
-          {/* Main Chart Area */}
+          {/* Main Chart + Budget Breakdown */}
           <div className="col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
             <h2 className="text-xl font-bold mb-4 text-slate-800">Budget vs Spend</h2>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={summary} dataKey="spent" nameKey="category.name" cx="50%" cy="50%" innerRadius={60} outerRadius={80}>
-                    {summary.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.category.colorHex || '#CBD5E1'} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value) => `$${value}`} />
-                </PieChart>
-              </ResponsiveContainer>
+            <div className="flex gap-6">
+              <div className="w-48 h-48 flex-shrink-0">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={catSummary} dataKey="spent" nameKey="category.name" cx="50%" cy="50%" innerRadius={50} outerRadius={70}>
+                      {catSummary.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.category.colorHex || '#CBD5E1'} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => `₪${value}`} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="flex-1 flex flex-col gap-3 overflow-y-auto max-h-64">
+                {catSummary.map((item) => {
+                  const pct = item.category.monthlyBudget > 0
+                    ? Math.min((item.spent / item.category.monthlyBudget) * 100, 100)
+                    : 0;
+                  const isOver = item.spent > item.category.monthlyBudget && item.category.monthlyBudget > 0;
+                  const isEditing = editingCatId === item.category.id;
+
+                  if (isEditing) {
+                    return (
+                      <div key={item.category.id} className="flex flex-col gap-2 p-3 bg-slate-50 rounded-lg border border-indigo-200">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={editingCatColor}
+                            onChange={(e) => setEditingCatColor(e.target.value)}
+                            className="w-7 h-7 p-0.5 bg-white border border-slate-300 rounded cursor-pointer flex-shrink-0"
+                            title="Category color"
+                          />
+                          <input
+                            type="text"
+                            value={editingCatName}
+                            onChange={(e) => setEditingCatName(e.target.value)}
+                            onKeyDown={(e) => handleEditCatKeyDown(e, item.category)}
+                            className="flex-1 border border-indigo-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            placeholder="Category name"
+                            autoFocus
+                          />
+                          <div className="flex items-center gap-1">
+                            <span className="text-slate-400 text-sm">₪</span>
+                            <input
+                              type="number"
+                              min="0"
+                              step="1"
+                              value={editingCatBudget}
+                              onChange={(e) => setEditingCatBudget(e.target.value)}
+                              onKeyDown={(e) => handleEditCatKeyDown(e, item.category)}
+                              className="w-20 border border-indigo-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                              placeholder="Budget"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex justify-end gap-1">
+                          <button
+                            onClick={() => saveEditCategory(item.category)}
+                            className="text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 px-3 py-1 rounded transition-colors"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={cancelEditCategory}
+                            className="text-xs font-semibold text-slate-500 hover:text-slate-700 px-3 py-1 rounded transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div key={item.category.id} className="flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between">
+                        <button
+                          onClick={() => startEditCategory(item.category)}
+                          className="flex items-center gap-2 hover:opacity-70 transition-opacity cursor-pointer"
+                          title="Click to edit category"
+                        >
+                          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: item.category.colorHex || '#CBD5E1' }} />
+                          <span className="text-sm font-medium text-slate-700">{item.category.name}</span>
+                        </button>
+                        <div className="flex items-center gap-1 text-sm">
+                          <span className={`font-semibold ${isOver ? 'text-red-500' : 'text-slate-700'}`}>
+                            ₪{item.spent.toFixed(0)}
+                          </span>
+                          <span className="text-slate-400">/</span>
+                          <button
+                            onClick={() => startEditCategory(item.category)}
+                            className="text-slate-500 hover:text-indigo-600 transition-colors cursor-pointer"
+                            title="Click to edit category"
+                          >
+                            ₪{item.category.monthlyBudget.toFixed(0)}
+                          </button>
+                        </div>
+                      </div>
+                      <div className="w-full bg-slate-100 rounded-full h-2">
+                        <div
+                          className="h-2 rounded-full transition-all duration-300"
+                          style={{
+                            width: `${pct}%`,
+                            backgroundColor: isOver ? '#EF4444' : (item.category.colorHex || '#CBD5E1')
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+                {catSummary.length === 0 && (
+                  <p className="text-slate-400 text-sm italic">No categories yet. Create one to get started.</p>
+                )}
+              </div>
             </div>
           </div>
 
@@ -158,25 +505,63 @@ export default function FinanceDashboard() {
               <h2 className="text-xl font-bold mb-4 text-slate-800">Quick Log</h2>
               <form onSubmit={handleLog} className="flex flex-col gap-4">
                 <input type="number" placeholder="Amount" value={amount} onChange={e=>setAmount(e.target.value)} className="bg-white border border-slate-300 rounded p-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
-                <select value={categoryId} onChange={e=>setCategoryId(e.target.value)} className="bg-white border border-slate-300 rounded p-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                  <option value="">Select Category...</option>
-                  {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-                <input type="text" placeholder="Description" value={desc} onChange={e=>setDesc(e.target.value)} className="bg-white border border-slate-300 rounded p-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded font-semibold transition-colors">Log Expense</button>
-              </form>
-            </div>
-            
-            <div className="border-t border-slate-200 pt-6">
-              <h2 className="text-xl font-bold mb-4 text-slate-800">Create Category</h2>
-              <form onSubmit={handleCreateCategory} className="flex flex-col gap-4">
-                <input type="text" placeholder="Category Name" value={newCatName} onChange={e=>setNewCatName(e.target.value)} className="bg-white border border-slate-300 rounded p-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
-                <input type="number" placeholder="Monthly Budget" value={newCatBudget} onChange={e=>setNewCatBudget(e.target.value)} className="bg-white border border-slate-300 rounded p-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
-                <div className="flex items-center gap-2">
-                  <label className="text-slate-700 text-sm">Color:</label>
-                  <input type="color" value={newCatColor} onChange={e=>setNewCatColor(e.target.value)} className="w-10 h-10 p-1 bg-white border border-slate-300 rounded cursor-pointer" />
+                <div className="relative" ref={catRef}>
+                  <div className="relative">
+                    {categoryId && (
+                      <span
+                        className="absolute left-2.5 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full"
+                        style={{ backgroundColor: categories.find(c => c.id === categoryId)?.colorHex || '#CBD5E1' }}
+                      />
+                    )}
+                    <input
+                      type="text"
+                      placeholder="Select Category..."
+                      value={catSearch}
+                      onChange={(e) => {
+                        setCatSearch(e.target.value);
+                        setCategoryId('');
+                        setCatDropdownOpen(true);
+                      }}
+                      onFocus={() => setCatDropdownOpen(true)}
+                      className={`w-full border border-slate-300 rounded p-2 text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white ${
+                        categoryId ? 'pl-8' : ''
+                      }`}
+                      disabled={isCreatingCat}
+                      required={!categoryId}
+                    />
+                  </div>
+                  {catDropdownOpen && (
+                    <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      {filteredCategories.length > 0 && filteredCategories.map(c => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => selectCategory(c)}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 flex items-center gap-2 transition-colors"
+                        >
+                          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: c.colorHex || '#CBD5E1' }} />
+                          {c.name}
+                        </button>
+                      ))}
+                      {catSearch.trim() && !exactMatch && (
+                        <button
+                          type="button"
+                          onClick={() => createCategoryInline(catSearch.trim())}
+                          disabled={isCreatingCat}
+                          className="w-full text-left px-3 py-2 text-sm text-indigo-600 hover:bg-indigo-50 font-medium border-t border-slate-100 flex items-center gap-2 transition-colors disabled:opacity-50"
+                        >
+                          <span className="text-indigo-400">+</span>
+                          {isCreatingCat ? 'Creating...' : `Create "${catSearch.trim()}"`}
+                        </button>
+                      )}
+                      {filteredCategories.length === 0 && (!catSearch.trim() || exactMatch) && (
+                        <div className="px-3 py-2 text-sm text-slate-400 italic">No categories found</div>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <button type="submit" className="bg-green-600 hover:bg-green-700 text-white p-2 rounded font-semibold transition-colors">Create Category</button>
+                <input type="text" placeholder="Description" value={desc} onChange={e=>setDesc(e.target.value)} className="bg-white border border-slate-300 rounded p-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <button type="submit" disabled={!categoryId || isCreatingCat} className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Log Expense</button>
               </form>
             </div>
           </div>
@@ -187,13 +572,22 @@ export default function FinanceDashboard() {
           <h2 className="text-xl font-bold mb-4 text-slate-800">Recent Transactions</h2>
           <div className="flex flex-col gap-2">
             {transactions.map(tx => (
-              <div key={tx.id} className="flex justify-between items-center p-3 bg-slate-50 rounded border border-slate-100">
+              <div key={tx.id} className="group flex justify-between items-center p-3 bg-slate-50 rounded border border-slate-100 transition-colors hover:bg-slate-100">
                 <div className="flex items-center gap-3">
                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: tx.category?.colorHex || '#CBD5E1' }}></div>
                   <span className="font-medium text-slate-800">{tx.description || 'No description'}</span>
                   <span className="text-sm text-slate-500">{tx.category?.name}</span>
                 </div>
-                <span className="font-semibold text-slate-800">${tx.amount.toFixed(2)}</span>
+                <div className="flex items-center gap-4">
+                  <span className="font-semibold text-slate-800">₪{tx.amount.toFixed(2)}</span>
+                  <button
+                    onClick={() => deleteTransaction(tx.id)}
+                    className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-all"
+                    title="Delete transaction"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             ))}
             {transactions.length === 0 && <p className="text-slate-500">No transactions yet.</p>}

@@ -4,9 +4,10 @@ import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import Image from '@tiptap/extension-image';
+import Link from '@tiptap/extension-link';
 import { common, createLowlight } from 'lowlight';
-import { useEffect, useRef } from 'react';
-import { Bold, Italic, Strikethrough, List, ListOrdered, CheckSquare, Code, ImagePlus } from 'lucide-react';
+import { useEffect, useRef, useCallback } from 'react';
+import { Bold, Italic, Strikethrough, List, ListOrdered, CheckSquare, Code, ImagePlus, Link as LinkIcon } from 'lucide-react';
 
 const lowlight = createLowlight(common);
 
@@ -24,6 +25,22 @@ const MenuBar = ({ editor, onImageUpload }) => {
   const toggleOrderedList = () => editor.chain().focus().toggleOrderedList().run();
   const toggleTaskList = () => editor.chain().focus().toggleTaskList().run();
   const toggleCodeBlock = () => editor.chain().focus().toggleCodeBlock().run();
+
+  const setLink = useCallback(() => {
+    const previousUrl = editor.getAttributes('link').href;
+    const url = window.prompt('URL', previousUrl);
+
+    if (url === null) {
+      return;
+    }
+
+    if (url === '') {
+      editor.chain().focus().extendMarkRange('link').unsetLink().run();
+      return;
+    }
+
+    editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+  }, [editor]);
 
   const handleImageClick = () => {
     if (onImageUpload) {
@@ -77,6 +94,9 @@ const MenuBar = ({ editor, onImageUpload }) => {
       <button onClick={toggleCodeBlock} className={btnClass(editor.isActive('codeBlock'))} aria-label="Code Block">
         <Code className="w-4 h-4" />
       </button>
+      <button onClick={setLink} className={btnClass(editor.isActive('link'))} aria-label="Add Link">
+        <LinkIcon className="w-4 h-4" />
+      </button>
       {onImageUpload && (
         <>
           <button onClick={handleImageClick} className={btnClass(false)} aria-label="Insert Image">
@@ -111,6 +131,16 @@ export default function TipTapEditor({ content, onChange, onImageUpload }) {
       Image.configure({
         inline: false,
         allowBase64: false,
+      }),
+      Link.configure({
+        openOnClick: true,
+        autolink: true,
+        linkOnPaste: true,
+        HTMLAttributes: {
+          target: '_blank',
+          rel: 'noopener noreferrer',
+          class: 'text-indigo-600 dark:text-indigo-400 underline hover:text-indigo-800 dark:hover:text-indigo-300 cursor-pointer',
+        },
       }),
     ],
     content: content || '',

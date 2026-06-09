@@ -6,7 +6,7 @@ namespace Sanad.Api.Endpoints;
 
 public static class NotebookEndpoints
 {
-    public static void MapNotebookEndpoints(this WebApplication app)
+    public static void MapNotebookEndpoints(this IEndpointRouteBuilder app)
     {
         // Notebooks CRUD
         app.MapGet("/api/notebooks", GetNotebooks);
@@ -21,7 +21,8 @@ public static class NotebookEndpoints
         app.MapPut("/api/notes/{id}", UpdateNote);
         app.MapDelete("/api/notes/{id}", DeleteNote);
 
-        // Search
+        // Search & latest
+        app.MapGet("/api/notes/latest", GetLatestNote);
         app.MapGet("/api/notes/search", SearchNotes);
 
         // Image upload
@@ -108,6 +109,16 @@ public static class NotebookEndpoints
         db.Notes.Remove(note);
         await db.SaveChangesAsync();
         return Results.NoContent();
+    }
+
+    static async Task<IResult> GetLatestNote(SanadDbContext db)
+    {
+        var note = await db.Notes
+            .OrderByDescending(n => n.UpdatedAt)
+            .Select(n => new { n.Id, n.Title, n.NotebookId, n.CreatedAt, n.UpdatedAt })
+            .FirstOrDefaultAsync();
+        if (note == null) return Results.NoContent();
+        return Results.Ok(note);
     }
 
     static async Task<IResult> SearchNotes(SanadDbContext db, string? q)

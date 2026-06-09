@@ -14,6 +14,9 @@ public class SanadDbContext : DbContext
     public DbSet<TaskAttachment> TaskAttachments => Set<TaskAttachment>();
     public DbSet<TransactionCategory> TransactionCategories => Set<TransactionCategory>();
     public DbSet<Transaction> Transactions => Set<Transaction>();
+    public DbSet<MonthlyBudget> MonthlyBudgets => Set<MonthlyBudget>();
     public DbSet<Notebook> Notebooks => Set<Notebook>();
     public DbSet<Note> Notes => Set<Note>();
+    public DbSet<User> Users => Set<User>();
+    public DbSet<DailyGoal> DailyGoals => Set<DailyGoal>();
 }

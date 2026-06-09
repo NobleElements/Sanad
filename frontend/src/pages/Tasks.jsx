@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, CheckCircle2, Circle, Clock, Tag, Loader2, GripVertical, Filter, FolderKanban, Timer } from 'lucide-react';
+import { Plus, CheckCircle2, Circle, Clock, Tag, Loader2, GripVertical, Filter, FolderKanban, Timer, Eye, EyeOff, Search } from 'lucide-react';
 import TaskModal from '../components/TaskModal';
 
 const TAG_COLORS = [
@@ -33,7 +33,29 @@ export default function Tasks() {
   const [selectedTask, setSelectedTask] = useState(null);
   const [draggingId, setDraggingId] = useState(null);
   const [dragOverColumn, setDragOverColumn] = useState(null);
-  const [projectFilter, setProjectFilter] = useState('');
+  const [projectFilter, setProjectFilter] = useState(() => {
+    return localStorage.getItem('sanad_project_filter') || '';
+  });
+  const [tagFilter, setTagFilter] = useState(() => {
+    return localStorage.getItem('sanad_tag_filter') || '';
+  });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showCompleted, setShowCompleted] = useState(() => {
+    const saved = localStorage.getItem('sanad_show_completed');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('sanad_show_completed', JSON.stringify(showCompleted));
+  }, [showCompleted]);
+
+  useEffect(() => {
+    localStorage.setItem('sanad_project_filter', projectFilter);
+  }, [projectFilter]);
+
+  useEffect(() => {
+    localStorage.setItem('sanad_tag_filter', tagFilter);
+  }, [tagFilter]);
 
   const fetchTasks = useCallback(async () => {
     try {
@@ -54,13 +76,28 @@ export default function Tasks() {
     fetchTasks();
   }, [fetchTasks]);
 
-  // Derive unique project values for filter dropdown
+  // Derive unique values for filter dropdowns
   const projects = [...new Set(tasks.map(t => t.project).filter(Boolean))].sort();
+  const tags = [...new Set(tasks.flatMap(t => t.tags ? t.tags.split(',').map(tag => tag.trim()).filter(Boolean) : []))].sort();
 
   // Filtered tasks
-  const filteredTasks = projectFilter
-    ? tasks.filter(t => t.project === projectFilter)
-    : tasks;
+  const filteredTasks = tasks.filter(t => {
+    if (projectFilter && t.project !== projectFilter) return false;
+    
+    if (tagFilter) {
+      const taskTags = t.tags ? t.tags.split(',').map(tag => tag.trim()).filter(Boolean) : [];
+      if (!taskTags.includes(tagFilter)) return false;
+    }
+    
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      const matchesTitle = t.title?.toLowerCase().includes(q);
+      const matchesContent = t.content?.toLowerCase().includes(q);
+      if (!matchesTitle && !matchesContent) return false;
+    }
+    
+    return true;
+  });
 
   // Group tasks by status
   const tasksByStatus = (status) => filteredTasks.filter(t => {
@@ -183,7 +220,36 @@ export default function Tasks() {
             Drag and drop tasks between columns to update their status.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+          {/* Search Input */}
+          <div className="relative flex-1 sm:flex-none sm:w-48">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search tasks..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-4 py-2.5 text-sm bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+            />
+          </div>
+          
+          {/* Tag Filter */}
+          {tags.length > 0 && (
+            <div className="relative">
+              <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              <select
+                value={tagFilter}
+                onChange={(e) => setTagFilter(e.target.value)}
+                className="pl-9 pr-4 py-2.5 text-sm bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-indigo-500 focus:border-indigo-500 transition-colors appearance-none cursor-pointer"
+              >
+                <option value="">All Tags</option>
+                {tags.map(t => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* Project Filter */}
           {projects.length > 0 && (
             <div className="relative">
@@ -200,6 +266,17 @@ export default function Tasks() {
               </select>
             </div>
           )}
+          
+          {/* Show/Hide Completed Toggle */}
+          <button
+            onClick={() => setShowCompleted(!showCompleted)}
+            className="inline-flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all shadow-sm"
+            title={showCompleted ? "Hide Done column" : "Show Done column"}
+          >
+            {showCompleted ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            <span className="hidden sm:inline">{showCompleted ? "Hide Done" : "Show Done"}</span>
+          </button>
+
           <button
             onClick={() => setSelectedTask({ isNew: true, title: '', status: 0, content: '', project: '', tags: '', estimatedMinutes: null })}
             className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all shadow-sm hover:shadow-md dark:focus:ring-offset-gray-900 active:scale-95"
@@ -232,7 +309,7 @@ export default function Tasks() {
         </div>
       ) : (
         <div className="kanban-board">
-          {COLUMNS.map(col => {
+          {(showCompleted ? COLUMNS : COLUMNS.filter(c => c.status !== 2)).map(col => {
             const colTasks = tasksByStatus(col.status);
             const ColIcon = col.icon;
             const isDragOver = dragOverColumn === col.status;

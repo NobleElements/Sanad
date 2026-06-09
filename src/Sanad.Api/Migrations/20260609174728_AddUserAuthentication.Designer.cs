@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Sanad.Api.Data;
 
@@ -10,26 +11,14 @@ using Sanad.Api.Data;
 namespace Sanad.Api.Migrations
 {
     [DbContext(typeof(SanadDbContext))]
-    partial class SanadDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260609174728_AddUserAuthentication")]
+    partial class AddUserAuthentication
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.8");
-
-            modelBuilder.Entity("Sanad.Api.Models.DailyGoal", b =>
-                {
-                    b.Property<string>("DateStr")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Goal")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("DateStr");
-
-                    b.ToTable("DailyGoals");
-                });
 
             modelBuilder.Entity("Sanad.Api.Models.MonthlyBudget", b =>
                 {

@@ -489,3 +489,4 @@ $RECYCLE.BIN/
 *.db-shm
 *.db-wal
 
+src/Sanad.Api/Data/attachments/
