@@ -59,7 +59,7 @@ app.MapGet("/api/timeline", async (SanadDbContext db) =>
         .Take(10)
         .ToListAsync();
         
-    // For thoughts, we also want the content
+    // For thoughts and tasks, we also want the content/title
     var timelineWithContent = new List<object>();
     foreach (var item in items)
     {
@@ -67,6 +67,14 @@ app.MapGet("/api/timeline", async (SanadDbContext db) =>
         {
             var thought = await db.Thoughts.FindAsync(item.ReferenceId);
             timelineWithContent.Add(new { item.Id, item.ItemType, item.CreatedAt, Content = thought?.Content });
+        }
+        else if (item.ItemType == "Task")
+        {
+            if (Guid.TryParse(item.ReferenceId, out var taskId))
+            {
+                var task = await db.TaskItems.FindAsync(taskId);
+                timelineWithContent.Add(new { item.Id, item.ItemType, item.CreatedAt, Title = task?.Title, Content = task?.Content });
+            }
         }
     }
     
