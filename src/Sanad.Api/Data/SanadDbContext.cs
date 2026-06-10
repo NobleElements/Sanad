@@ -21,4 +21,8 @@ public class SanadDbContext : DbContext
     public DbSet<DailyGoal> DailyGoals => Set<DailyGoal>();
     public DbSet<Asset> Assets => Set<Asset>();
     public DbSet<AssetSnapshot> AssetSnapshots => Set<AssetSnapshot>();
+    public DbSet<Book> Books => Set<Book>();
+    public DbSet<ReadingPeriod> ReadingPeriods => Set<ReadingPeriod>();
+    public DbSet<ReadingPlan> ReadingPlans => Set<ReadingPlan>();
+    public DbSet<ReadingLog> ReadingLogs => Set<ReadingLog>();
 }
