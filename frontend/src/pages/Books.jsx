@@ -119,7 +119,7 @@ export default function Books() {
                             <List className="w-4 h-4"/>
                         </button>
                     </div>
-                    <button onClick={openAddModal} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition">
+                    <button onClick={openNewBook} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition">
                         <Plus className="w-4 h-4"/> Add Book Manually
                     </button>
                 </div>
@@ -173,7 +173,6 @@ export default function Books() {
                                         <button onClick={() => handleStartReading(b)} className="w-full text-xs font-medium bg-indigo-600 hover:bg-indigo-700 text-white py-1.5 px-2 rounded text-center transition flex items-center justify-center gap-1">
                                             <Play className="w-3 h-3"/> Start Reading
                                         </button>
-                                        </div>
                                     )}
                                 </div>
                             </div>
