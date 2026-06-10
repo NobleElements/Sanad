@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import useAuthStore from '../store/useAuthStore';
 
 import { API_BASE } from '../config';
 
@@ -15,34 +16,21 @@ export default function AuthOverlay({ mode, onAuthenticated }) {
         : 'Please log in to continue.';
     const buttonText = isSetup ? 'Create Account' : 'Log In';
 
+    const login = useAuthStore((state) => state.login);
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         setLoading(true);
 
-        const endpoint = isSetup ? '/api/auth/setup' : '/api/auth/login';
-
-        try {
-            const response = await fetch(`${API_BASE}${endpoint}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ username, password })
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                onAuthenticated(data.username);
-            } else {
-                const errText = await response.text();
-                setError(errText || 'Authentication failed. Please try again.');
-            }
-        } catch (err) {
-            setError('Network error. Is the server running?');
-        } finally {
-            setLoading(false);
+        const result = await login(username, password, isSetup);
+        if (result.success) {
+            onAuthenticated(username);
+        } else {
+            setError(result.error);
         }
+        
+        setLoading(false);
     };
 
     return (

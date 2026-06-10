@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, CheckCircle2, Circle, Clock, Tag, Loader2, GripVertical, Filter, FolderKanban, Timer, Eye, EyeOff, Search } from 'lucide-react';
-import TaskModal from '../components/TaskModal';
+import useTaskStore from '../store/useTaskStore';
 
 const TAG_COLORS = [
   'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300',
@@ -27,10 +27,8 @@ const formatTime = (minutes) => {
 };
 
 export default function Tasks() {
-  const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [selectedTask, setSelectedTask] = useState(null);
+  const { tasks, isLoaded, fetchTasks, updateTaskStatus, openTaskModal } = useTaskStore();
+  
   const [draggingId, setDraggingId] = useState(null);
   const [dragOverColumn, setDragOverColumn] = useState(null);
   const [projectFilter, setProjectFilter] = useState(() => {
@@ -57,24 +55,11 @@ export default function Tasks() {
     localStorage.setItem('sanad_tag_filter', tagFilter);
   }, [tagFilter]);
 
-  const fetchTasks = useCallback(async () => {
-    try {
-      setError(null);
-      setLoading(true);
-      const res = await fetch('/api/tasks');
-      if (!res.ok) throw new Error('Failed to fetch tasks');
-      const data = await res.json();
-      setTasks(data);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
-    fetchTasks();
-  }, [fetchTasks]);
+    if (!isLoaded) {
+      fetchTasks();
+    }
+  }, [isLoaded, fetchTasks]);
 
   // Derive unique values for filter dropdowns
   const projects = [...new Set(tasks.map(t => t.project).filter(Boolean))].sort();
@@ -146,22 +131,7 @@ export default function Tasks() {
       : task.status;
 
     if (currentStatus === newStatus) return;
-
-    // Optimistic update
-    const prevTasks = [...tasks];
-    setTasks(tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
-
-    try {
-      const res = await fetch(`/api/tasks/${taskId}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
-      });
-      if (!res.ok) throw new Error('Failed to update status');
-    } catch {
-      // Revert on failure
-      setTasks(prevTasks);
-    }
+    await updateTaskStatus(taskId, { status: newStatus });
   };
 
   // Quick complete toggle
@@ -171,42 +141,10 @@ export default function Tasks() {
       ? (task.status === 'Done' ? 2 : task.status === 'InProgress' ? 1 : 0)
       : task.status;
     const newStatus = currentStatus === 2 ? 0 : 2;
-
-    // Optimistic update
-    const prevTasks = [...tasks];
-    setTasks(tasks.map(t => t.id === task.id ? { ...t, status: newStatus } : t));
-
-    try {
-      const res = await fetch(`/api/tasks/${task.id}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
-      });
-      if (!res.ok) throw new Error('Failed to update status');
-    } catch {
-      setTasks(prevTasks);
-    }
+    await updateTaskStatus(task.id, { status: newStatus });
   };
 
-  const handleSaveTask = async (taskData) => {
-    const isNew = taskData.isNew;
-    const method = isNew ? 'POST' : 'PUT';
-    const url = isNew ? '/api/tasks' : `/api/tasks/${taskData.id}`;
-    
-    const payload = { ...taskData };
-    delete payload.isNew;
-    
-    const res = await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    
-    if (!res.ok) throw new Error('Failed to save task');
-    
-    await fetchTasks();
-    setSelectedTask(null);
-  };
+
 
   return (
     <div className="max-w-full mx-auto space-y-6 p-4 md:p-6 lg:p-8">
@@ -278,7 +216,7 @@ export default function Tasks() {
           </button>
 
           <button
-            onClick={() => setSelectedTask({ isNew: true, title: '', status: 0, content: '', project: '', tags: '', estimatedMinutes: null })}
+            onClick={() => openTaskModal()}
             className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all shadow-sm hover:shadow-md dark:focus:ring-offset-gray-900 active:scale-95"
           >
             <Plus className="w-5 h-5" />
@@ -288,24 +226,10 @@ export default function Tasks() {
       </div>
 
       {/* Main Content */}
-      {loading ? (
+      {!isLoaded ? (
         <div className="flex flex-col items-center justify-center h-64 text-gray-500 dark:text-gray-400">
           <Loader2 className="w-8 h-8 animate-spin text-indigo-500 mb-4" />
           <p>Loading tasks...</p>
-        </div>
-      ) : error ? (
-        <div className="flex flex-col items-center justify-center h-64 text-center px-4">
-          <div className="w-12 h-12 bg-red-100 dark:bg-red-500/10 rounded-full flex items-center justify-center mb-3">
-            <span className="text-red-600 dark:text-red-400 font-bold text-xl">!</span>
-          </div>
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white">Failed to load tasks</h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{error}</p>
-          <button 
-            onClick={fetchTasks}
-            className="mt-4 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
-          >
-            Try again
-          </button>
         </div>
       ) : (
         <div className="kanban-board">
@@ -356,7 +280,7 @@ export default function Tasks() {
                           draggable
                           onDragStart={(e) => handleDragStart(e, task)}
                           onDragEnd={handleDragEnd}
-                          onClick={() => setSelectedTask(task)}
+                          onClick={() => openTaskModal(task)}
                           className={`kanban-card bg-white dark:bg-gray-800/80 border border-gray-100 dark:border-gray-700/60 p-3.5 ${draggingId === task.id ? 'dragging' : ''}`}
                         >
                           <div className="flex items-start gap-3">
@@ -428,12 +352,7 @@ export default function Tasks() {
         </div>
       )}
 
-      <TaskModal 
-        isOpen={!!selectedTask}
-        task={selectedTask} 
-        onClose={() => setSelectedTask(null)} 
-        onSave={handleSaveTask} 
-      />
+
     </div>
   );
 }

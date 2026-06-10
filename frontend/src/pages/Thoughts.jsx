@@ -1,38 +1,15 @@
 import { useState, useEffect, useRef, useCallback, Fragment } from 'react';
 import { Loader2, Search } from 'lucide-react';
+import useThoughtsStore from '../store/useThoughtsStore';
 
-import { API_URL } from '../config';
-
-function parseUTCDate(dateStr) {
-  if (!dateStr) return new Date();
-  if (!dateStr.endsWith('Z') && !dateStr.includes('+')) {
-    return new Date(dateStr + 'Z');
-  }
-  return new Date(dateStr);
-}
-
-function timeAgo(dateStr) {
-  const now = new Date();
-  const date = parseUTCDate(dateStr);
-  const seconds = Math.floor((now - date) / 1000);
-  if (seconds < 60) return 'just now';
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
-  return date.toLocaleDateString();
-}
+import { parseUTCDate, timeAgo } from '../utils/dateUtils';
 
 export default function Thoughts() {
-  const [thoughts, setThoughts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { thoughts, hasMore, isLoaded, fetchThoughts, addThought, updateThought, deleteThought: storeDeleteThought } = useThoughtsStore();
+  
   const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError] = useState(null);
 
   const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
 
   const [editingId, setEditingId] = useState(null);
   const [editContent, setEditContent] = useState('');
@@ -53,7 +30,7 @@ export default function Thoughts() {
 
   const observerRef = useRef();
   const lastElementRef = useCallback((node) => {
-    if (loading || loadingMore) return;
+    if (!isLoaded || loadingMore) return;
     if (observerRef.current) observerRef.current.disconnect();
     
     observerRef.current = new IntersectionObserver(entries => {
@@ -63,55 +40,22 @@ export default function Thoughts() {
     });
     
     if (node) observerRef.current.observe(node);
-  }, [loading, loadingMore, hasMore]);
+  }, [isLoaded, loadingMore, hasMore]);
 
-  const loadThoughts = async (pageNum, currentSearch, isInitial = false) => {
-    try {
-      if (isInitial) {
-        setLoading(true);
-      } else {
-        setLoadingMore(true);
-      }
-      
-      let url = `${API_URL}/thoughts?page=${pageNum}&pageSize=20`;
-      if (currentSearch) {
-        url += `&search=${encodeURIComponent(currentSearch)}`;
-      }
-
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('Failed to load thoughts');
-      const data = await res.json();
-      
-      if (data.length < 20) {
-        setHasMore(false);
-      } else {
-        setHasMore(true);
-      }
-      
-      setThoughts(prev => {
-        if (pageNum === 1) return data;
-        const existingIds = new Set(prev.map(t => t.id));
-        const newItems = data.filter(t => !existingIds.has(t.id));
-        return [...prev, ...newItems];
-      });
-    } catch (e) {
-      console.error(e);
-      setError('Failed to load thoughts. Please try again later.');
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
+  const loadThoughts = async (pageNum, currentSearch) => {
+    setLoadingMore(pageNum > 1);
+    await fetchThoughts(pageNum, currentSearch);
+    setLoadingMore(false);
   };
 
   useEffect(() => {
     setPage(1);
-    setHasMore(true);
-    loadThoughts(1, debouncedSearch, true);
+    loadThoughts(1, debouncedSearch);
   }, [debouncedSearch]);
 
   useEffect(() => {
     if (page > 1) {
-      loadThoughts(page, debouncedSearch, false);
+      loadThoughts(page, debouncedSearch);
     }
   }, [page]);
 
@@ -128,21 +72,11 @@ export default function Thoughts() {
   const saveEdit = async (id) => {
     if (!editContent.trim()) return;
     setIsSaving(true);
-    try {
-      const res = await fetch(`${API_URL}/thoughts/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: editContent })
-      });
-      if (!res.ok) throw new Error('Failed to update thought');
-      setThoughts(prev => prev.map(t => t.id === id ? { ...t, content: editContent } : t));
+    const success = await updateThought(id, editContent);
+    if (success) {
       setEditingId(null);
-    } catch (e) {
-      console.error(e);
-      setError('Failed to update thought. Please try again.');
-    } finally {
-      setIsSaving(false);
     }
+    setIsSaving(false);
   };
 
   const handleSubmit = async (e) => {
@@ -150,39 +84,18 @@ export default function Thoughts() {
     if (!newContent.trim()) return;
     
     setIsSubmitting(true);
-    setError(null);
-    try {
-      const res = await fetch(`${API_URL}/thoughts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: newContent })
-      });
-      if (!res.ok) throw new Error('Failed to save thought');
+    const success = await addThought(newContent);
+    if (success) {
       setNewContent('');
       setPage(1);
-      setHasMore(true);
       setSearchQuery('');
-      loadThoughts(1, '', true);
-    } catch (e) {
-      console.error(e);
-      setError('Failed to save thought. Please try again.');
-    } finally {
-      setIsSubmitting(false);
     }
+    setIsSubmitting(false);
   };
 
   const deleteThought = async (id) => {
     if (!confirm('Are you sure you want to delete this thought?')) return;
-    try {
-      const res = await fetch(`${API_URL}/thoughts/${id}`, {
-        method: 'DELETE'
-      });
-      if (!res.ok) throw new Error('Failed to delete thought');
-      setThoughts(prev => prev.filter(t => t.id !== id));
-    } catch (e) {
-      console.error(e);
-      setError('Failed to delete thought. Please try again.');
-    }
+    await storeDeleteThought(id);
   };
 
   return (
@@ -223,13 +136,7 @@ export default function Thoughts() {
           </form>
         </div>
 
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-lg border border-red-200">
-            {error}
-          </div>
-        )}
-
-        {loading ? (
+        {!isLoaded ? (
           <div className="text-slate-500 italic">Loading thoughts...</div>
         ) : thoughts.length === 0 ? (
           <div className="bg-white p-8 rounded-xl shadow-sm border border-slate-200 text-center">

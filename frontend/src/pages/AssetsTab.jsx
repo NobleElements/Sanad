@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Trash2 } from 'lucide-react';
+import { API_BASE } from '../config';
 
 export default function AssetsTab() {
   const [assets, setAssets] = useState([]);
@@ -20,8 +21,8 @@ export default function AssetsTab() {
   const loadData = useCallback(async () => {
     try {
       const [assetsRes, histRes] = await Promise.all([
-        fetch('/api/finances/assets'),
-        fetch('/api/finances/assets/history')
+        fetch(`${API_BASE}/api/finances/assets`),
+        fetch(`${API_BASE}/api/finances/assets/history`)
       ]);
       if (!assetsRes.ok || !histRes.ok) throw new Error('Failed to load assets');
       
@@ -67,7 +68,7 @@ export default function AssetsTab() {
   const handleAdd = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch('/api/finances/assets', {
+      const res = await fetch(`${API_BASE}/api/finances/assets`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, type, currentAmount: parseFloat(amount) })
@@ -86,7 +87,7 @@ export default function AssetsTab() {
     if (isNaN(newAmount) || newAmount < 0) return;
     
     try {
-      const res = await fetch(`/api/finances/assets/${asset.id}`, {
+      const res = await fetch(`${API_BASE}/api/finances/assets/${asset.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...asset, currentAmount: newAmount })
@@ -103,7 +104,7 @@ export default function AssetsTab() {
   const deleteAsset = async (id) => {
     if (!confirm('Are you sure you want to delete this asset?')) return;
     try {
-      const res = await fetch(`/api/finances/assets/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${API_BASE}/api/finances/assets/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete asset');
       loadData();
     } catch (err) {

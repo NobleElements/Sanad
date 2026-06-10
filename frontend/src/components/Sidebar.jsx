@@ -1,9 +1,10 @@
 import { Link, useLocation } from 'react-router-dom';
 
-import { API_BASE } from '../config';
+import useAuthStore from '../store/useAuthStore';
 
 export default function Sidebar() {
   const location = useLocation();
+  const logout = useAuthStore((state) => state.logout);
 
   const getLinkClass = (path) => {
     const isActive = location.pathname === path;
@@ -11,12 +12,8 @@ export default function Sidebar() {
   };
 
   const handleLogout = async () => {
-    try {
-      await fetch(`${API_BASE}/api/auth/logout`, { method: 'POST' });
-      window.location.reload();
-    } catch (err) {
-      console.error('Logout failed', err);
-    }
+    await logout();
+    window.location.reload();
   };
 
   return (

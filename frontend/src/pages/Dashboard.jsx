@@ -1,37 +1,32 @@
 import { useState, useEffect, useRef } from 'react';
+import { API_BASE } from '../config';
+import useFinanceStore from '../store/useFinanceStore';
+import useThoughtsStore from '../store/useThoughtsStore';
 
-import { API_URL } from '../config';
-
-function timeAgo(dateStr) {
-  const now = new Date();
-  const date = new Date(dateStr);
-  const seconds = Math.floor((now - date) / 1000);
-  if (seconds < 60) return 'just now';
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
-  return date.toLocaleDateString();
-}
+import { timeAgo } from '../utils/dateUtils';
+import { hslToHex } from '../utils/colorUtils';
 
 export default function Dashboard() {
   const [content, setContent] = useState('');
-  const [timeline, setTimeline] = useState([]);
-  const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Spending state
-  const [categories, setCategories] = useState([]);
-  const [recentTransactions, setRecentTransactions] = useState([]);
-  const [budgetSummary, setBudgetSummary] = useState({ monthlyBudget: 0, totalSpent: 0 });
+  // Thoughts store
+  const { timeline, fetchTimeline, addThought } = useThoughtsStore();
+
+  // Finance store
+  const { 
+    categories, 
+    transactions: recentTransactions, 
+    budgetSummary, 
+    fetchFinanceData, 
+    addTransaction,
+    createCategory
+  } = useFinanceStore();
+
   const [spendAmount, setSpendAmount] = useState('');
   const [spendCategoryId, setSpendCategoryId] = useState('');
   const [spendDesc, setSpendDesc] = useState('');
   const [isLoggingSpend, setIsLoggingSpend] = useState(false);
-  const [spendError, setSpendError] = useState(null);
-  const [spendSuccess, setSpendSuccess] = useState(false);
   const [showSpendModal, setShowSpendModal] = useState(false);
 
   // Category combobox state
@@ -65,45 +60,19 @@ export default function Dashboard() {
     c => c.name.toLowerCase() === catSearch.toLowerCase()
   );
 
-  const randomColor = () => {
-    const hue = Math.floor(Math.random() * 360);
-    return `hsl(${hue}, 65%, 55%)`;
-  };
 
-  const hslToHex = (h, s, l) => {
-    s /= 100; l /= 100;
-    const a = s * Math.min(l, 1 - l);
-    const f = n => {
-      const k = (n + h / 30) % 12;
-      const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
-      return Math.round(255 * color).toString(16).padStart(2, '0');
-    };
-    return `#${f(0)}${f(8)}${f(4)}`;
-  };
 
   const createCategoryInline = async (name) => {
     setIsCreatingCat(true);
     try {
       const hue = Math.floor(Math.random() * 360);
       const colorHex = hslToHex(hue, 65, 55);
-      const res = await fetch(`${API_URL}/finances/categories`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name,
-          monthlyBudget: 0,
-          colorHex
-        })
-      });
-      if (!res.ok) throw new Error('Failed to create category');
-      const newCat = await res.json();
-      setCategories(prev => [...prev, newCat]);
-      setSpendCategoryId(newCat.id);
-      setCatSearch(newCat.name);
-      setCatDropdownOpen(false);
-    } catch (e) {
-      console.error(e);
-      setSpendError('Failed to create category.');
+      const newCat = await createCategory(name, colorHex);
+      if (newCat) {
+        setSpendCategoryId(newCat.id);
+        setCatSearch(newCat.name);
+        setCatDropdownOpen(false);
+      }
     } finally {
       setIsCreatingCat(false);
     }
@@ -115,45 +84,12 @@ export default function Dashboard() {
     setCatDropdownOpen(false);
   };
 
-  const loadTimeline = async () => {
-    try {
-      const res = await fetch(`${API_URL}/timeline`);
-      if (!res.ok) throw new Error('Failed to load timeline');
-      const data = await res.json();
-      setTimeline(data);
-    } catch (e) {
-      console.error(e);
-      setError('Failed to load timeline. Please try again later.');
-    }
-  };
 
-  const loadFinanceData = async () => {
-    try {
-      const [catRes, txRes, sumRes] = await Promise.all([
-        fetch(`${API_URL}/finances/categories`),
-        fetch(`${API_URL}/finances/transactions`),
-        fetch(`${API_URL}/finances/summary`)
-      ]);
-      if (catRes.ok) {
-        setCategories(await catRes.json());
-      }
-      if (txRes.ok) {
-        const txData = await txRes.json();
-        setRecentTransactions(txData.slice(0, 5));
-      }
-      if (sumRes.ok) {
-        const sumData = await sumRes.json();
-        setBudgetSummary({ monthlyBudget: sumData.monthlyBudget, totalSpent: sumData.totalSpent });
-      }
-    } catch (e) {
-      console.error('Failed to load finance data:', e);
-    }
-  };
 
   const loadDailyGoal = async () => {
     try {
       const today = new Date().toISOString().split('T')[0];
-      const res = await fetch(`${API_URL}/goals/${today}`);
+      const res = await fetch(`${API_BASE}/api/goals/${today}`);
       if (res.status === 204 || !res.ok) {
         setDailyGoal('');
         return;
@@ -169,7 +105,7 @@ export default function Dashboard() {
     try {
       setIsSavingGoal(true);
       const today = new Date().toISOString().split('T')[0];
-      const res = await fetch(`${API_URL}/goals/${today}`, {
+      const res = await fetch(`${API_BASE}/api/goals/${today}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ goal: editGoalValue })
@@ -195,32 +131,21 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    loadTimeline();
-    loadFinanceData();
+    fetchTimeline();
+    fetchFinanceData();
     loadDailyGoal();
-  }, []);
+  }, [fetchTimeline, fetchFinanceData]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!content.trim()) return;
     
     setIsSubmitting(true);
-    setError(null);
-    try {
-      const res = await fetch(`${API_URL}/thoughts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content })
-      });
-      if (!res.ok) throw new Error('Failed to save thought');
+    const success = await addThought(content);
+    if (success) {
       setContent('');
-      loadTimeline();
-    } catch (e) {
-      console.error(e);
-      setError('Failed to save thought. Please try again.');
-    } finally {
-      setIsSubmitting(false);
     }
+    setIsSubmitting(false);
   };
 
   const handleLogSpend = async (e) => {
@@ -228,37 +153,16 @@ export default function Dashboard() {
     if (!spendAmount || !spendCategoryId) return;
 
     setIsLoggingSpend(true);
-    setSpendError(null);
-    setSpendSuccess(false);
-    try {
-      const res = await fetch(`${API_URL}/finances/transactions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount: parseFloat(spendAmount),
-          categoryId: spendCategoryId,
-          description: spendDesc,
-          type: 'Expense',
-          date: new Date().toISOString()
-        })
-      });
-
-      if (!res.ok) throw new Error('Failed to log expense');
-
+    const success = await addTransaction(parseFloat(spendAmount), spendCategoryId, spendDesc);
+    if (success) {
       setSpendAmount('');
       setSpendDesc('');
       setSpendCategoryId('');
       setCatSearch('');
-      setSpendSuccess(true);
-      setTimeout(() => setSpendSuccess(false), 2000);
-      loadFinanceData();
-      loadTimeline();
-    } catch (e) {
-      console.error(e);
-      setSpendError('Failed to log expense. Please try again.');
-    } finally {
-      setIsLoggingSpend(false);
+      setShowSpendModal(false);
+      fetchTimeline();
     }
+    setIsLoggingSpend(false);
   };
 
   const totalSpentToday = recentTransactions
@@ -323,11 +227,6 @@ export default function Dashboard() {
           {/* Thoughts Input */}
           <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
             <h3 className="text-lg font-semibold mb-4 text-slate-700">What's on your mind?</h3>
-            {error && (
-              <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm border border-red-200">
-                {error}
-              </div>
-            )}
             <form onSubmit={handleSubmit} className="flex flex-col gap-3">
               <textarea 
                 value={content}
@@ -438,16 +337,6 @@ export default function Dashboard() {
                 ×
               </button>
             </div>
-            {spendSuccess && (
-              <div className="mb-4 p-3 bg-emerald-50 text-emerald-700 rounded-lg text-sm border border-emerald-200 font-medium">
-                ✓ Expense logged successfully!
-              </div>
-            )}
-            {spendError && (
-              <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm border border-red-200">
-                {spendError}
-              </div>
-            )}
             <form onSubmit={handleLogSpend} className="flex flex-col gap-4">
               <div>
                 <label className="block text-sm text-slate-600 mb-1 font-medium">Amount</label>

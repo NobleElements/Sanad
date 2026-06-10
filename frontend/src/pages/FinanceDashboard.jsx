@@ -1,19 +1,31 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { useSearchParams } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
 import AssetsTab from './AssetsTab';
+import useFinanceStore from '../store/useFinanceStore';
+import { hslToHex } from '../utils/colorUtils';
 
 export default function FinanceDashboard() {
   const [activeTab, setActiveTab] = useState('spending'); // 'spending' | 'assets'
-  const [summary, setSummary] = useState({ categories: [], monthlyBudget: 0, totalSpent: 0 });
-  const [transactions, setTransactions] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [error, setError] = useState(null);
   
   const [searchParams, setSearchParams] = useSearchParams();
-  const currentMonth = searchParams.get('month') ? parseInt(searchParams.get('month'), 10) : new Date().getMonth() + 1;
-  const currentYear = searchParams.get('year') ? parseInt(searchParams.get('year'), 10) : new Date().getFullYear();
+  const urlMonth = searchParams.get('month') ? parseInt(searchParams.get('month'), 10) : new Date().getMonth() + 1;
+  const urlYear = searchParams.get('year') ? parseInt(searchParams.get('year'), 10) : new Date().getFullYear();
+
+  const { 
+    categories, transactions, budgetSummary: summary, 
+    currentMonth, currentYear, setDate, fetchFinanceData,
+    addTransaction, deleteTransaction, createCategory, updateCategory, updateBudget 
+  } = useFinanceStore();
+
+  useEffect(() => {
+    if (urlMonth !== currentMonth || urlYear !== currentYear) {
+      setDate(urlMonth, urlYear);
+    } else {
+      fetchFinanceData();
+    }
+  }, [urlMonth, urlYear, currentMonth, currentYear, setDate, fetchFinanceData]);
   
   // form state
   const [amount, setAmount] = useState('');
@@ -44,42 +56,19 @@ export default function FinanceDashboard() {
     c => c.name.toLowerCase() === catSearch.toLowerCase()
   );
 
-  const hslToHex = (h, s, l) => {
-    s /= 100; l /= 100;
-    const a = s * Math.min(l, 1 - l);
-    const f = n => {
-      const k = (n + h / 30) % 12;
-      const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
-      return Math.round(255 * color).toString(16).padStart(2, '0');
-    };
-    return `#${f(0)}${f(8)}${f(4)}`;
-  };
+
 
   const createCategoryInline = async (name) => {
     setIsCreatingCat(true);
     try {
       const hue = Math.floor(Math.random() * 360);
       const colorHex = hslToHex(hue, 65, 55);
-      const res = await fetch('/api/finances/categories', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name,
-          monthlyBudget: 0,
-          colorHex
-        })
-      });
-      if (!res.ok) throw new Error('Failed to create category');
-      
-      const newCat = await res.json();
-      setCategories(prev => [...prev, newCat]);
-      setCategoryId(newCat.id);
-      setCatSearch(newCat.name);
-      setCatDropdownOpen(false);
-      loadData();
-    } catch (e) {
-      console.error(e);
-      setError('Failed to create category.');
+      const newCat = await createCategory(name, colorHex);
+      if (newCat) {
+        setCategoryId(newCat.id);
+        setCatSearch(newCat.name);
+        setCatDropdownOpen(false);
+      }
     } finally {
       setIsCreatingCat(false);
     }
@@ -102,76 +91,18 @@ export default function FinanceDashboard() {
   const [editingMonthlyBudget, setEditingMonthlyBudget] = useState(false);
   const [monthlyBudgetValue, setMonthlyBudgetValue] = useState('');
 
-  const loadData = useCallback(async () => {
-    try {
-      setError(null);
-      const [sumRes, catRes, txRes] = await Promise.all([
-        fetch(`/api/finances/summary?month=${currentMonth}&year=${currentYear}`),
-        fetch('/api/finances/categories'),
-        fetch(`/api/finances/transactions?month=${currentMonth}&year=${currentYear}`)
-      ]);
-
-      if (!sumRes.ok || !catRes.ok || !txRes.ok) {
-        throw new Error('Failed to load financial data');
-      }
-
-      const [sumData, catData, txData] = await Promise.all([
-        sumRes.json(),
-        catRes.json(),
-        txRes.json()
-      ]);
-
-      setSummary(sumData);
-      setCategories(catData);
-      setTransactions(txData);
-    } catch (err) {
-      console.error(err);
-      setError('Failed to load data. Please try again later.');
-    }
-  }, [currentMonth, currentYear]);
-
-  useEffect(() => { loadData(); }, [loadData]);
-
   const handleLog = async (e) => {
     e.preventDefault();
-    try {
-      setError(null);
-      const res = await fetch('/api/finances/transactions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount: parseFloat(amount),
-          categoryId,
-          description: desc,
-          type: 'Expense',
-          date: new Date().toISOString()
-        })
-      });
-      
-      if (!res.ok) {
-        throw new Error('Failed to log expense');
-      }
-
+    const success = await addTransaction(parseFloat(amount), categoryId, desc);
+    if (success) {
       setAmount(''); 
       setDesc('');
-      loadData();
-    } catch (err) {
-      console.error(err);
-      setError('Failed to log expense. Please try again.');
     }
   };
 
-  const deleteTransaction = async (id) => {
+  const handleDeleteTransaction = async (id) => {
     if (!confirm('Are you sure you want to delete this transaction?')) return;
-    try {
-      setError(null);
-      const res = await fetch(`/api/finances/transactions/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Failed to delete transaction');
-      loadData();
-    } catch (err) {
-      console.error(err);
-      setError('Failed to delete transaction. Please try again.');
-    }
+    await deleteTransaction(id);
   };
 
 
@@ -195,25 +126,9 @@ export default function FinanceDashboard() {
     if (!editingCatName.trim()) return;
     if (isNaN(newBudget) || newBudget < 0) return;
 
-    try {
-      setError(null);
-      const res = await fetch(`/api/finances/categories/${cat.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: editingCatName.trim(),
-          colorHex: editingCatColor,
-          monthlyBudget: newBudget
-        })
-      });
-
-      if (!res.ok) throw new Error('Failed to update category');
-
+    const success = await updateCategory(cat.id, editingCatName.trim(), editingCatColor, newBudget);
+    if (success) {
       cancelEditCategory();
-      loadData();
-    } catch (err) {
-      console.error(err);
-      setError('Failed to update category. Please try again.');
     }
   };
 
@@ -241,22 +156,10 @@ export default function FinanceDashboard() {
     const newAmount = parseFloat(monthlyBudgetValue);
     if (isNaN(newAmount) || newAmount < 0) return;
 
-    try {
-      setError(null);
-      const res = await fetch('/api/finances/budget', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: newAmount, month: currentMonth, year: currentYear })
-      });
-
-      if (!res.ok) throw new Error('Failed to update monthly budget');
-
+    const success = await updateBudget(newAmount);
+    if (success) {
       setEditingMonthlyBudget(false);
       setMonthlyBudgetValue('');
-      loadData();
-    } catch (err) {
-      console.error(err);
-      setError('Failed to update monthly budget. Please try again.');
     }
   };
 
@@ -326,11 +229,7 @@ export default function FinanceDashboard() {
           )}
         </div>
         
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
-            {error}
-          </div>
-        )}
+        
         
         {activeTab === 'spending' ? (
           <>
@@ -603,7 +502,7 @@ export default function FinanceDashboard() {
                     <div className="flex items-center gap-4">
                       <span className="font-semibold text-slate-800">₪{tx.amount.toFixed(2)}</span>
                       <button
-                        onClick={() => deleteTransaction(tx.id)}
+                        onClick={() => handleDeleteTransaction(tx.id)}
                         className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-all"
                         title="Delete transaction"
                       >
