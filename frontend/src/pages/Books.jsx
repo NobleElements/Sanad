@@ -10,7 +10,9 @@ export default function Books() {
   const { books, periods, fetchBooks, fetchPeriods, searchBooks, searchResults, addBook, deleteBook, startReadingPeriod, currentRead, fetchCurrentRead, setPeriodStatus, deletePeriod } = useBookStore();
   
   const [activeTab, setActiveTab] = useState('shelf');
-  const [viewMode, setViewMode] = useState('grid');
+  const [viewMode, setViewMode] = useState(() => {
+    return localStorage.getItem('sanad_books_viewMode') || 'grid';
+  });
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   
@@ -24,6 +26,10 @@ export default function Books() {
   const [logPeriod, setLogPeriod] = useState(null);
 
   const [expandedHistory, setExpandedHistory] = useState({});
+
+  useEffect(() => {
+    localStorage.setItem('sanad_books_viewMode', viewMode);
+  }, [viewMode]);
 
   useEffect(() => {
     fetchCurrentRead();
