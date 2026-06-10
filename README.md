@@ -27,5 +27,22 @@ Sanad is a comprehensive personal management application designed to help you or
 - BCrypt (Authentication)
 - Model Context Protocol (MCP) for .NET
 
+## Getting Started
+
+### Frontend
+To run the frontend development server:
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### Backend
+To run the backend API server:
+```bash
+cd src/Sanad.Api
+dotnet run
+```
+
 ## License
 This project is licensed under the MIT License.
