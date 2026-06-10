@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import useBookStore from '../store/useBookStore';
-import { MagnifyingGlassIcon, BookOpenIcon } from '@heroicons/react/24/outline';
+import { Search as MagnifyingGlassIcon, BookOpen as BookOpenIcon } from 'lucide-react';
 
 export default function Books() {
   const { searchBooks, searchResults, addBook, startReadingPeriod, currentRead, fetchCurrentRead } = useBookStore();
