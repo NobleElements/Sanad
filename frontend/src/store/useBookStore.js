@@ -120,6 +120,14 @@ const useBookStore = create((set, get) => ({
         });
         await get().fetchPeriods();
         await get().fetchCurrentRead();
+    },
+
+    deletePeriod: async (periodId) => {
+        await fetch(`${API_BASE}/reading/periods/${periodId}`, {
+            method: 'DELETE'
+        });
+        await get().fetchPeriods();
+        await get().fetchCurrentRead();
     }
 }));
 

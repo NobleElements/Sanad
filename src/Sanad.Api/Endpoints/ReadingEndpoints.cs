@@ -129,6 +129,16 @@ public static class ReadingEndpoints
                 PagesLeftInChapter = currentPlan != null ? (currentPlan.EndPage - highestPage) : 0
             });
         });
+
+        group.MapDelete("/periods/{id}", async (int id, SanadDbContext db) =>
+        {
+            var period = await db.ReadingPeriods.FindAsync(id);
+            if (period == null) return Results.NotFound();
+
+            db.ReadingPeriods.Remove(period);
+            await db.SaveChangesAsync();
+            return Results.NoContent();
+        });
     }
 
     public record StartPeriodDto(int BookId, List<PlanDto> Plans);

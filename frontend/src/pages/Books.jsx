@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import useBookStore from '../store/useBookStore';
-import { Search as SearchIcon, BookOpen as BookOpenIcon, Plus, History, Library, Edit, Trash2, CheckCircle, List, Play } from 'lucide-react';
+import { Search as SearchIcon, BookOpen as BookOpenIcon, Plus, History, Library, Edit, Trash2, CheckCircle, List, Play, XCircle } from 'lucide-react';
 import BookModal from '../components/BookModal';
 import PlanModal from '../components/PlanModal';
 
 export default function Books() {
-  const { books, periods, fetchBooks, fetchPeriods, searchBooks, searchResults, addBook, deleteBook, startReadingPeriod, currentRead, fetchCurrentRead, setPeriodStatus } = useBookStore();
+  const { books, periods, fetchBooks, fetchPeriods, searchBooks, searchResults, addBook, deleteBook, startReadingPeriod, currentRead, fetchCurrentRead, setPeriodStatus, deletePeriod } = useBookStore();
   
   const [activeTab, setActiveTab] = useState('shelf');
   const [query, setQuery] = useState('');
@@ -50,6 +50,12 @@ export default function Books() {
   const handleStartReading = async (book) => {
     const plans = [{ title: "Chapter 1", startPage: 1, endPage: Math.min(book.totalPages, 50) }];
     await startReadingPeriod(book.id, plans);
+  };
+
+  const handleStopReading = async (periodId) => {
+    if (window.confirm("Are you sure you want to stop reading this book? Your current session progress will be lost.")) {
+      await deletePeriod(periodId);
+    }
   };
 
   const handleDeleteBook = async (bookId) => {
@@ -142,9 +148,14 @@ export default function Books() {
                                             ) : (
                                                 <button onClick={() => handleSetReading(activePeriod.id)} className="text-xs font-medium bg-indigo-50 hover:bg-indigo-100 text-indigo-700 py-1 px-2 rounded text-center transition">Resume Reading</button>
                                             )}
-                                            <button onClick={() => openPlanModal(activePeriod)} className="text-xs font-medium border border-slate-200 hover:bg-slate-50 text-slate-600 py-1 px-2 rounded text-center transition flex items-center justify-center gap-1">
-                                                <List className="w-3 h-3"/> Edit Plan
-                                            </button>
+                                            <div className="flex gap-2">
+                                                <button onClick={() => openPlanModal(activePeriod)} className="flex-1 text-xs font-medium border border-slate-200 hover:bg-slate-50 text-slate-600 py-1 px-2 rounded text-center transition flex items-center justify-center gap-1">
+                                                    <List className="w-3 h-3"/> Edit Plan
+                                                </button>
+                                                <button onClick={() => handleStopReading(activePeriod.id)} className="text-xs font-medium border border-red-200 hover:bg-red-50 text-red-600 py-1 px-2 rounded text-center transition flex items-center justify-center" title="Stop Reading">
+                                                    <XCircle className="w-4 h-4"/>
+                                                </button>
+                                            </div>
                                         </div>
                                     ) : (
                                         <button onClick={() => handleStartReading(b)} className="w-full text-xs font-medium bg-indigo-600 hover:bg-indigo-700 text-white py-1.5 px-2 rounded text-center transition flex items-center justify-center gap-1">
