@@ -13,16 +13,16 @@ public static class BookEndpoints
         group.MapGet("/search", async (string query) =>
         {
             var httpClient = new HttpClient();
-            var url = $"https://openlibrary.org/search.json?q={Uri.EscapeDataString(query)}&limit=10";
-            var response = await httpClient.GetFromJsonAsync<OpenLibraryResponse>(url);
+            var url = $"https://www.googleapis.com/books/v1/volumes?q={Uri.EscapeDataString(query)}&maxResults=10";
+            var response = await httpClient.GetFromJsonAsync<GoogleBooksResponse>(url);
             
-            var results = response?.Docs?.Select(d => new 
+            var results = response?.Items?.Select(i => new 
             {
-                Title = d.Title,
-                Author = d.Author_name?.FirstOrDefault() ?? "Unknown",
-                ExternalApiId = d.Key,
-                CoverUrl = d.Cover_i != null ? $"https://covers.openlibrary.org/b/id/{d.Cover_i}-L.jpg" : null,
-                TotalPages = d.Number_of_pages_median ?? 0
+                Title = i.VolumeInfo?.Title ?? "Unknown",
+                Author = i.VolumeInfo?.Authors?.FirstOrDefault() ?? "Unknown",
+                ExternalApiId = i.Id,
+                CoverUrl = i.VolumeInfo?.ImageLinks?.Thumbnail?.Replace("http:", "https:"),
+                TotalPages = i.VolumeInfo?.PageCount ?? 0
             }).ToList();
 
             return Results.Ok(results ?? new object());
@@ -42,17 +42,27 @@ public static class BookEndpoints
         });
     }
 
-    private class OpenLibraryResponse
+    private class GoogleBooksResponse
     {
-        public List<OpenLibraryDoc>? Docs { get; set; }
+        public List<GoogleBooksItem>? Items { get; set; }
     }
 
-    private class OpenLibraryDoc
+    private class GoogleBooksItem
+    {
+        public string? Id { get; set; }
+        public GoogleBooksVolumeInfo? VolumeInfo { get; set; }
+    }
+
+    private class GoogleBooksVolumeInfo
     {
         public string? Title { get; set; }
-        public List<string>? Author_name { get; set; }
-        public string? Key { get; set; }
-        public int? Cover_i { get; set; }
-        public int? Number_of_pages_median { get; set; }
+        public List<string>? Authors { get; set; }
+        public int? PageCount { get; set; }
+        public GoogleBooksImageLinks? ImageLinks { get; set; }
+    }
+
+    private class GoogleBooksImageLinks
+    {
+        public string? Thumbnail { get; set; }
     }
 }
