@@ -211,7 +211,7 @@ export default function Dashboard() {
                 onChange={(e) => setContent(e.target.value)}
                 className="w-full border border-slate-300 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                 placeholder="Write a thought..."
-                rows="3"
+                rows="2"
                 disabled={isSubmitting}
               />
               <button 
@@ -244,7 +244,41 @@ export default function Dashboard() {
           </div>
         </div>
         <div className="w-1/3">
-           <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+           {/* Current Read Widget */}
+           {currentRead && (
+             <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+               <div className="flex justify-between items-center mb-4">
+                 <h3 className="text-lg font-semibold text-slate-700">Current Read</h3>
+                 <a href="/books" className="text-xs text-indigo-600 hover:text-indigo-800 font-medium">Shelf →</a>
+               </div>
+               <div className="flex gap-4">
+                 {currentRead.period.book.coverUrl ? (
+                    <CachedImage src={currentRead.period.book.coverUrl} className="w-16 h-24 object-cover rounded shadow-sm" alt="cover"/>
+                 ) : (
+                    <div className="w-16 h-24 bg-slate-200 rounded flex items-center justify-center shadow-sm">
+                      <span className="text-slate-400 text-xs">No Cover</span>
+                    </div>
+                 )}
+                 <div className="flex-1 min-w-0">
+                   <p className="font-medium text-slate-800 truncate" title={currentRead.period.book.title}>{currentRead.period.book.title}</p>
+                   <p className="text-sm text-slate-600 truncate mb-1">Ch: {currentRead.currentChapter || 'Not Started'}</p>
+                   <p className="text-xs text-amber-600 font-medium bg-amber-50 inline-block px-2 py-0.5 rounded mb-2">{currentRead.pagesLeftInChapter} pages left</p>
+                   <div className="flex gap-2">
+                      <input type="number" id="logPageInput" className="w-16 border border-slate-300 rounded p-1.5 text-sm focus:outline-none focus:border-indigo-500" placeholder="Pg" />
+                      <button onClick={() => {
+                         const val = document.getElementById('logPageInput').value;
+                         if(val) {
+                            logProgress(currentRead.period.id, currentRead.currentPage, parseInt(val));
+                            document.getElementById('logPageInput').value = '';
+                         }
+                      }} className="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded hover:bg-indigo-700 transition font-medium">Log</button>
+                   </div>
+                 </div>
+               </div>
+             </div>
+           )}
+
+           <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200 mt-6">
               <div className="flex items-center justify-between mb-4">
                 <a href="/finance" className="text-lg font-semibold text-slate-700 hover:text-indigo-600 transition-colors cursor-pointer">Recent Spending →</a>
                 <button
@@ -297,40 +331,6 @@ export default function Dashboard() {
                </div>
              )}
            </div>
-
-           {/* Current Read Widget */}
-           {currentRead && (
-             <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200 mt-6">
-               <div className="flex justify-between items-center mb-4">
-                 <h3 className="text-lg font-semibold text-slate-700">Current Read</h3>
-                 <a href="/books" className="text-xs text-indigo-600 hover:text-indigo-800 font-medium">Shelf →</a>
-               </div>
-               <div className="flex gap-4">
-                 {currentRead.period.book.coverUrl ? (
-                    <CachedImage src={currentRead.period.book.coverUrl} className="w-16 h-24 object-cover rounded shadow-sm" alt="cover"/>
-                 ) : (
-                    <div className="w-16 h-24 bg-slate-200 rounded flex items-center justify-center shadow-sm">
-                      <span className="text-slate-400 text-xs">No Cover</span>
-                    </div>
-                 )}
-                 <div className="flex-1 min-w-0">
-                   <p className="font-medium text-slate-800 truncate" title={currentRead.period.book.title}>{currentRead.period.book.title}</p>
-                   <p className="text-sm text-slate-600 truncate mb-1">Ch: {currentRead.currentChapter || 'Not Started'}</p>
-                   <p className="text-xs text-amber-600 font-medium bg-amber-50 inline-block px-2 py-0.5 rounded mb-2">{currentRead.pagesLeftInChapter} pages left</p>
-                   <div className="flex gap-2">
-                      <input type="number" id="logPageInput" className="w-16 border border-slate-300 rounded p-1.5 text-sm focus:outline-none focus:border-indigo-500" placeholder="Pg" />
-                      <button onClick={() => {
-                         const val = document.getElementById('logPageInput').value;
-                         if(val) {
-                            logProgress(currentRead.period.id, currentRead.currentPage, parseInt(val));
-                            document.getElementById('logPageInput').value = '';
-                         }
-                      }} className="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded hover:bg-indigo-700 transition font-medium">Log</button>
-                   </div>
-                 </div>
-               </div>
-             </div>
-           )}
         </div>
       </div>
 

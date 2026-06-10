@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Lightbulb, CheckSquare, Book, DollarSign, BookOpen, Menu, X, LogOut } from 'lucide-react';
+import { LayoutDashboard, Lightbulb, CheckSquare, Book, DollarSign, BookOpen, Menu, LogOut } from 'lucide-react';
 import useAuthStore from '../store/useAuthStore';
 
 export default function Sidebar() {
@@ -41,7 +41,7 @@ export default function Sidebar() {
           onClick={() => setIsCollapsed(!isCollapsed)} 
           className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-100 transition-colors"
         >
-          {isCollapsed ? <Menu className="w-6 h-6" /> : <X className="w-5 h-5" />}
+          {isCollapsed ? <Menu className="w-6 h-6" /> : <Menu className="w-5 h-5" />}
         </button>
       </div>
       

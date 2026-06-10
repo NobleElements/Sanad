@@ -20,6 +20,9 @@ export default function Books() {
   const [viewMode, setViewMode] = useState(() => {
     return localStorage.getItem('sanad_books_viewMode') || 'grid';
   });
+  const [shelfSearch, setShelfSearch] = useState('');
+  const [shelfSort, setShelfSort] = useState('addedDesc');
+
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   
@@ -69,7 +72,21 @@ export default function Books() {
   };
   
   const handleStartReading = async (book) => {
-    const plans = [{ title: "Chapter 1", startPage: 1, endPage: Math.min(book.totalPages, 50) }];
+    const previousPeriods = periods.filter(p => p.bookId === book.id && p.plans && p.plans.length > 0);
+    
+    let plans = [];
+    if (previousPeriods.length > 0) {
+      const mostRecent = previousPeriods.sort((a,b) => new Date(b.startDate) - new Date(a.startDate))[0];
+      plans = mostRecent.plans.map(p => ({
+        title: p.title,
+        startPage: p.startPage,
+        endPage: p.endPage,
+        orderIndex: p.orderIndex
+      }));
+    } else {
+      plans = [{ title: "Chapter 1", startPage: 1, endPage: Math.min(book.totalPages, 50) }];
+    }
+
     await startReadingPeriod(book.id, plans);
   };
 
@@ -79,11 +96,7 @@ export default function Books() {
     }
   };
 
-  const handleDeleteBook = async (bookId) => {
-    if (window.confirm("Are you sure you want to delete this book? This will remove reading history too.")) {
-      await deleteBook(bookId);
-    }
-  };
+
 
   const openEditBook = (book) => {
     setSelectedBook(book);
@@ -119,7 +132,7 @@ export default function Books() {
   });
 
   return (
-    <div className="p-8 w-full overflow-y-auto bg-slate-50 relative">
+    <div className="flex-1 p-8 overflow-y-auto bg-slate-50 relative">
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-8">
             <h1 className="text-3xl font-bold text-slate-800 tracking-tight flex items-center gap-3">
@@ -139,7 +152,30 @@ export default function Books() {
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-semibold text-slate-800">My Library</h2>
                 <div className="flex items-center gap-3">
-                    <div className="bg-slate-100 p-1 rounded-lg flex gap-1">
+                    <div className="relative">
+                        <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <input
+                            type="text"
+                            placeholder="Search library..."
+                            value={shelfSearch}
+                            onChange={(e) => setShelfSearch(e.target.value)}
+                            className="pl-9 pr-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none w-48"
+                        />
+                    </div>
+                    <select
+                        value={shelfSort}
+                        onChange={(e) => setShelfSort(e.target.value)}
+                        className="py-1.5 pl-3 pr-8 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    >
+                        <option value="addedDesc">Latest</option>
+                        <option value="addedAsc">Oldest</option>
+                        <option value="titleAsc">Title A-Z</option>
+                        <option value="titleDesc">Title Z-A</option>
+                        <option value="pagesDesc">Most Pages</option>
+                        <option value="pagesAsc">Least Pages</option>
+                    </select>
+
+                    <div className="bg-slate-100 p-1 rounded-lg flex gap-1 ml-2">
                         <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-md transition ${viewMode === 'grid' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`} title="Grid View">
                             <LayoutGrid className="w-4 h-4"/>
                         </button>
@@ -147,8 +183,8 @@ export default function Books() {
                             <List className="w-4 h-4"/>
                         </button>
                     </div>
-                    <button onClick={openNewBook} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition">
-                        <Plus className="w-4 h-4"/> Add Book Manually
+                    <button onClick={openNewBook} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition ml-2">
+                        <Plus className="w-4 h-4"/> Add Book
                     </button>
                 </div>
             </div>
@@ -161,7 +197,16 @@ export default function Books() {
                 </div>
             ) : (
                 <div className={viewMode === 'grid' ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6" : "flex flex-col gap-4"}>
-                    {books.map(b => {
+                    {(() => {
+                        let displayedBooks = books.filter(b => b.title.toLowerCase().includes(shelfSearch.toLowerCase()) || (b.author && b.author.toLowerCase().includes(shelfSearch.toLowerCase())));
+                        if (shelfSort === 'titleAsc') displayedBooks.sort((a,b) => a.title.localeCompare(b.title));
+                        else if (shelfSort === 'titleDesc') displayedBooks.sort((a,b) => b.title.localeCompare(a.title));
+                        else if (shelfSort === 'pagesDesc') displayedBooks.sort((a,b) => b.totalPages - a.totalPages);
+                        else if (shelfSort === 'pagesAsc') displayedBooks.sort((a,b) => a.totalPages - b.totalPages);
+                        else if (shelfSort === 'addedAsc') displayedBooks.sort((a,b) => (a.id > b.id ? 1 : -1));
+                        else displayedBooks.sort((a,b) => (a.id < b.id ? 1 : -1));
+                        
+                        return displayedBooks.map(b => {
                         const p = latestPeriodByBook[b.id];
                         const activePeriod = (p && p.status !== 'Completed') ? p : null;
 
@@ -173,13 +218,9 @@ export default function Books() {
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center text-slate-400">No Cover</div>
                                 )}
-                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-4">
-                                    <button onClick={() => openEditBook(b)} className="p-2 bg-white/20 hover:bg-white/40 rounded-full text-white backdrop-blur-sm" title="Edit Book"><Edit className="w-5 h-5"/></button>
-                                    <button onClick={() => handleDeleteBook(b.id)} className="p-2 bg-red-500/80 hover:bg-red-500 rounded-full text-white backdrop-blur-sm" title="Remove"><Trash2 className="w-5 h-5"/></button>
-                                </div>
                             </div>
                             <div className="p-4 flex flex-col flex-1">
-                                <h3 className="font-semibold text-sm text-slate-800 mb-1 line-clamp-2" title={b.title}>{b.title}</h3>
+                                <button onClick={() => openEditBook(b)} className="font-semibold text-sm text-slate-800 mb-1 line-clamp-2 text-left hover:text-indigo-600 hover:underline transition" title={b.title}>{b.title}</button>
                                 <p className="text-xs text-slate-500 mb-4">{b.author}</p>
                                 
                                 <div className="mt-auto">
@@ -219,7 +260,7 @@ export default function Books() {
                                 )}
                             </div>
                             <div className="flex-1 min-w-0">
-                                <h3 className="font-semibold text-slate-800 truncate">{b.title}</h3>
+                                <button onClick={() => openEditBook(b)} className="font-semibold text-slate-800 truncate hover:text-indigo-600 hover:underline transition block text-left w-full">{b.title}</button>
                                 <p className="text-sm text-slate-500 truncate mb-1">{b.author}</p>
                                 <p className="text-xs text-slate-400">{b.totalPages} pages</p>
                             </div>
@@ -249,18 +290,10 @@ export default function Books() {
                                         </button>
                                     )}
                                 </div>
-                                <div className="flex gap-2 border-l pl-4 border-slate-100">
-                                    <button onClick={() => openEditBook(b)} className="p-2 text-slate-400 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50 rounded transition" title="Edit Metadata">
-                                        <Edit className="w-4 h-4"/>
-                                    </button>
-                                    <button onClick={() => handleDeleteBook(b.id)} className="p-2 text-slate-400 hover:text-red-600 bg-slate-50 hover:bg-red-50 rounded transition" title="Delete Book">
-                                        <Trash2 className="w-4 h-4"/>
-                                    </button>
-                                </div>
                             </div>
                         </div>
                         );
-                    })}
+                    })})()}
                 </div>
             )}
           </div>
