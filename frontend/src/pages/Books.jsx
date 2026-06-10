@@ -102,7 +102,7 @@ export default function Books() {
       setExpandedHistory(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const completedPeriods = periods.filter(p => p.status === 'Completed');
+  const historyPeriods = periods.filter(p => p.status === 'Completed' || (p.logs && p.logs.length > 0));
   
   const activePeriodsByBook = {};
   periods.forEach(p => {
@@ -307,21 +307,21 @@ export default function Books() {
         {activeTab === 'history' && (
             <div>
                 <h2 className="text-xl font-semibold mb-6 text-slate-800">Reading History</h2>
-                {completedPeriods.length === 0 ? (
+                {historyPeriods.length === 0 ? (
                     <div className="bg-white p-12 rounded-2xl border border-slate-200 text-center flex flex-col items-center">
-                        <CheckCircle className="w-12 h-12 text-slate-300 mb-4"/>
-                        <h3 className="text-lg font-semibold text-slate-700 mb-2">No completed books yet</h3>
-                        <p className="text-slate-500">Your finished books will appear here.</p>
+                        <History className="w-12 h-12 text-slate-300 mb-4"/>
+                        <h3 className="text-lg font-semibold text-slate-700 mb-2">No reading history yet</h3>
+                        <p className="text-slate-500">Your logged reading progress and finished books will appear here.</p>
                     </div>
                 ) : (
                     <div className="flex flex-col gap-6">
-                        {completedPeriods.map(p => {
+                        {historyPeriods.map(p => {
                             const totalDays = p.endDate ? Math.ceil((new Date(p.endDate) - new Date(p.startDate)) / (1000 * 60 * 60 * 24)) : 0;
                             const isExpanded = expandedHistory[p.id];
                             
                             return (
-                            <div key={p.id} className="bg-white border-2 border-emerald-100 p-1 rounded-2xl shadow-sm hover:shadow-md transition overflow-hidden">
-                                <div className="bg-gradient-to-r from-emerald-50 to-white p-5 rounded-xl flex flex-col md:flex-row items-center gap-6">
+                            <div key={p.id} className={`bg-white border-2 p-1 rounded-2xl shadow-sm hover:shadow-md transition overflow-hidden ${p.status === 'Completed' ? 'border-emerald-100' : 'border-indigo-100'}`}>
+                                <div className={`p-5 rounded-xl flex flex-col md:flex-row items-center gap-6 ${p.status === 'Completed' ? 'bg-gradient-to-r from-emerald-50 to-white' : 'bg-gradient-to-r from-indigo-50 to-white'}`}>
                                     <div className="w-20 h-32 bg-slate-100 shrink-0 rounded-lg overflow-hidden shadow-md">
                                         {p.book.coverUrl ? (
                                             <CachedImage src={p.book.coverUrl} className="w-full h-full object-cover" alt="cover"/>
@@ -330,9 +330,15 @@ export default function Books() {
                                         )}
                                     </div>
                                     <div className="flex-1 text-center md:text-left">
-                                        <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-emerald-600 mb-2 bg-emerald-100/50 px-3 py-1 rounded-full">
-                                            <CheckCircle className="w-3.5 h-3.5"/> Completed
-                                        </div>
+                                        {p.status === 'Completed' ? (
+                                            <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-emerald-600 mb-2 bg-emerald-100/50 px-3 py-1 rounded-full">
+                                                <CheckCircle className="w-3.5 h-3.5"/> Completed
+                                            </div>
+                                        ) : (
+                                            <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-indigo-600 mb-2 bg-indigo-100/50 px-3 py-1 rounded-full">
+                                                <BookOpenIcon className="w-3.5 h-3.5"/> Reading
+                                            </div>
+                                        )}
                                         <h3 className="font-bold text-2xl text-slate-800 mb-1">{p.book.title}</h3>
                                         <p className="text-slate-500 mb-4">{p.book.author} • {p.book.totalPages} pages</p>
                                         
@@ -364,7 +370,7 @@ export default function Books() {
                                 </div>
                                 
                                 {isExpanded && (
-                                    <div className="p-6 bg-slate-50 border-t border-emerald-100 rounded-b-xl">
+                                    <div className={`p-6 bg-slate-50 border-t ${p.status === 'Completed' ? 'border-emerald-100' : 'border-indigo-100'} rounded-b-xl`}>
                                         <h4 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
                                             <History className="w-4 h-4 text-indigo-500"/> Reading Logs
                                         </h4>

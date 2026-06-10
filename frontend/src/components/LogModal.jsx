@@ -63,7 +63,7 @@ export default function LogModal({ period, onClose }) {
                                     autoFocus
                                 />
                                 {period.book.totalPages > 0 && (
-                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-medium">
+                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-medium mr-5">
                                         / {period.book.totalPages}
                                     </div>
                                 )}
