@@ -14,6 +14,7 @@ public static class ReadingEndpoints
         {
             var periods = await db.ReadingPeriods
                 .Include(p => p.Book)
+                .Include(p => p.Plans)
                 .OrderByDescending(p => p.StartDate)
                 .ToListAsync();
             return Results.Ok(periods);

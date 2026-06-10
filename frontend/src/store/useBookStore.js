@@ -111,6 +111,11 @@ const useBookStore = create((set, get) => ({
     },
 
     updatePlans: async (periodId, plans) => {
+        // Optimistic UI Update
+        set(state => ({
+            periods: state.periods.map(p => p.id === periodId ? { ...p, plans } : p)
+        }));
+
         await fetch(`${API_BASE}/reading/periods/${periodId}/plans`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
