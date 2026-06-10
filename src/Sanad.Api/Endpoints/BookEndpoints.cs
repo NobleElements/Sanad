@@ -54,6 +54,26 @@ public static class BookEndpoints
             return Results.Ok(openLibResults ?? new object());
         });
 
+        group.MapGet("/cover", async (string url) =>
+        {
+            try 
+            {
+                var httpClient = new HttpClient();
+                httpClient.DefaultRequestHeaders.Add("User-Agent", "SanadApp/1.0");
+                var response = await httpClient.GetAsync(url);
+                if (!response.IsSuccessStatusCode) return Results.NotFound();
+
+                var contentType = response.Content.Headers.ContentType?.ToString() ?? "image/jpeg";
+                var stream = await response.Content.ReadAsByteArrayAsync();
+                
+                return Results.File(stream, contentType);
+            }
+            catch (Exception)
+            {
+                return Results.NotFound();
+            }
+        });
+
         group.MapPost("/", async (SanadDbContext db, Book book) =>
         {
             db.Books.Add(book);

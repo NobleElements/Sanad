@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE } from '../config';
 
 export default function CachedImage({ src, alt, className }) {
     const [imgSrc, setImgSrc] = useState(null);
@@ -7,19 +8,20 @@ export default function CachedImage({ src, alt, className }) {
         if (!src) return;
 
         let isMounted = true;
+        const proxyUrl = `${API_BASE}/books/cover?url=${encodeURIComponent(src)}`;
 
         const loadImage = async () => {
             try {
                 const cache = await caches.open('sanad-image-cache');
-                const cachedResponse = await cache.match(src);
+                const cachedResponse = await cache.match(proxyUrl);
                 
                 if (cachedResponse) {
                     const blob = await cachedResponse.blob();
                     if (isMounted) setImgSrc(URL.createObjectURL(blob));
                 } else {
-                    const response = await fetch(src, { mode: 'cors', credentials: 'omit' });
+                    const response = await fetch(proxyUrl);
                     if (response.ok) {
-                        cache.put(src, response.clone());
+                        cache.put(proxyUrl, response.clone());
                         const blob = await response.blob();
                         if (isMounted) setImgSrc(URL.createObjectURL(blob));
                     } else {
