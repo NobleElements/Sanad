@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import useBookStore from '../store/useBookStore';
-import { Search as SearchIcon, BookOpen as BookOpenIcon, Plus, History, Library, Edit, Trash2, CheckCircle, List, Play, XCircle, LayoutGrid } from 'lucide-react';
+import { Search as SearchIcon, BookOpen as BookOpenIcon, Plus, History, Library, Edit, Trash2, CheckCircle, List, Play, XCircle, LayoutGrid, Circle } from 'lucide-react';
 import BookModal from '../components/BookModal';
 import PlanModal from '../components/PlanModal';
 import LogModal from '../components/LogModal';
@@ -67,8 +67,8 @@ export default function Books() {
   };
 
   const handleStopReading = async (periodId) => {
-    if (window.confirm("Are you sure you want to stop reading this book? Your current session progress will be lost.")) {
-      await deletePeriod(periodId);
+    if (window.confirm("Are you sure you want to stop reading this book? Your progress and logs will be saved.")) {
+      await setPeriodStatus(periodId, 'Stopped');
     }
   };
 
@@ -102,12 +102,12 @@ export default function Books() {
       setExpandedHistory(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const historyPeriods = periods.filter(p => p.status === 'Completed' || (p.logs && p.logs.length > 0));
+  const historyPeriods = periods.filter(p => p.status === 'Completed' || p.status === 'Stopped' || (p.logs && p.logs.length > 0));
   
-  const activePeriodsByBook = {};
+  const latestPeriodByBook = {};
   periods.forEach(p => {
-    if (p.status === 'Reading' || p.status === 'Paused') {
-      activePeriodsByBook[p.bookId] = p;
+    if (!latestPeriodByBook[p.bookId]) {
+      latestPeriodByBook[p.bookId] = p;
     }
   });
 
@@ -155,7 +155,9 @@ export default function Books() {
             ) : (
                 <div className={viewMode === 'grid' ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6" : "flex flex-col gap-4"}>
                     {books.map(b => {
-                        const activePeriod = activePeriodsByBook[b.id];
+                        const p = latestPeriodByBook[b.id];
+                        const activePeriod = (p && p.status !== 'Completed') ? p : null;
+
                         return viewMode === 'grid' ? (
                         <div key={b.id} className="bg-white border border-slate-200 rounded-2xl overflow-hidden flex flex-col hover:shadow-lg transition group">
                             <div className="h-48 bg-slate-100 relative">
@@ -181,14 +183,16 @@ export default function Books() {
                                             ) : (
                                                 <button onClick={() => handleSetReading(activePeriod.id)} className="text-xs font-medium bg-indigo-50 hover:bg-indigo-100 text-indigo-700 py-1 px-2 rounded text-center transition">Resume Reading</button>
                                             )}
-                                            <div className="flex gap-2">
-                                                <button onClick={() => openPlanModal(activePeriod)} className="flex-1 text-xs font-medium border border-slate-200 hover:bg-slate-50 text-slate-600 py-1 px-2 rounded text-center transition flex items-center justify-center gap-1">
-                                                    <List className="w-3 h-3"/> Edit Plan
-                                                </button>
-                                                <button onClick={() => handleStopReading(activePeriod.id)} className="text-xs font-medium border border-red-200 hover:bg-red-50 text-red-600 py-1 px-2 rounded text-center transition flex items-center justify-center" title="Stop Reading">
-                                                    <XCircle className="w-4 h-4"/>
-                                                </button>
-                                            </div>
+                                            {activePeriod.status !== 'Stopped' && (
+                                                <div className="flex gap-2">
+                                                    <button onClick={() => openPlanModal(activePeriod)} className="flex-1 text-xs font-medium border border-slate-200 hover:bg-slate-50 text-slate-600 py-1 px-2 rounded text-center transition flex items-center justify-center gap-1">
+                                                        <List className="w-3 h-3"/> Edit Plan
+                                                    </button>
+                                                    <button onClick={() => handleStopReading(activePeriod.id)} className="text-xs font-medium border border-red-200 hover:bg-red-50 text-red-600 py-1 px-2 rounded text-center transition flex items-center justify-center" title="Stop Reading">
+                                                        <XCircle className="w-4 h-4"/>
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
                                     ) : (
                                         <button onClick={() => handleStartReading(b)} className="w-full text-xs font-medium bg-indigo-600 hover:bg-indigo-700 text-white py-1.5 px-2 rounded text-center transition flex items-center justify-center gap-1">
@@ -221,12 +225,16 @@ export default function Books() {
                                             ) : (
                                                 <button onClick={() => handleSetReading(activePeriod.id)} className="flex-1 text-[10px] sm:text-xs font-medium bg-indigo-50 hover:bg-indigo-100 text-indigo-700 py-2 px-2 rounded text-center transition flex items-center justify-center">Resume</button>
                                             )}
-                                            <button onClick={() => openPlanModal(activePeriod)} className="flex-1 text-[10px] sm:text-xs font-medium border border-slate-200 hover:bg-slate-50 text-slate-600 py-2 px-2 rounded text-center transition flex items-center justify-center gap-1">
-                                                <List className="w-3 h-3"/> Plan
-                                            </button>
-                                            <button onClick={() => handleStopReading(activePeriod.id)} className="text-xs font-medium border border-red-200 hover:bg-red-50 text-red-600 py-2 px-3 rounded transition flex items-center justify-center" title="Stop Reading">
-                                                <XCircle className="w-4 h-4"/>
-                                            </button>
+                                            {activePeriod.status !== 'Stopped' && (
+                                                <>
+                                                    <button onClick={() => openPlanModal(activePeriod)} className="flex-1 text-[10px] sm:text-xs font-medium border border-slate-200 hover:bg-slate-50 text-slate-600 py-2 px-2 rounded text-center transition flex items-center justify-center gap-1">
+                                                        <List className="w-3 h-3"/> Plan
+                                                    </button>
+                                                    <button onClick={() => handleStopReading(activePeriod.id)} className="text-xs font-medium border border-red-200 hover:bg-red-50 text-red-600 py-2 px-3 rounded transition flex items-center justify-center" title="Stop Reading">
+                                                        <XCircle className="w-4 h-4"/>
+                                                    </button>
+                                                </>
+                                            )}
                                         </div>
                                     ) : (
                                         <button onClick={() => handleStartReading(b)} className="w-full text-[10px] sm:text-xs font-medium bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded transition flex items-center justify-center gap-1">
@@ -359,43 +367,81 @@ export default function Books() {
                                             )}
                                         </div>
                                     </div>
-                                    <div className="md:border-l md:border-slate-200 md:pl-6 flex flex-col justify-center w-full md:w-auto">
+                                    <div className="md:border-l md:border-slate-200 md:pl-6 flex flex-col gap-3 justify-center w-full md:w-auto">
                                         <button 
                                             onClick={() => toggleHistory(p.id)} 
-                                            className="w-full md:w-auto px-6 py-3 bg-white border border-slate-200 hover:border-indigo-300 hover:text-indigo-600 text-slate-700 rounded-xl font-medium transition text-sm flex justify-center items-center gap-2"
+                                            className="w-full md:w-auto px-6 py-2.5 bg-white border border-slate-200 hover:border-indigo-300 hover:text-indigo-600 text-slate-700 rounded-xl font-medium transition text-sm flex justify-center items-center gap-2"
                                         >
                                             {isExpanded ? 'Hide Journey' : 'View Journey'}
+                                        </button>
+                                        <button 
+                                            onClick={() => {
+                                                if (window.confirm("Are you sure you want to permanently delete this entire journey and all its logs?")) {
+                                                    deletePeriod(p.id);
+                                                }
+                                            }}
+                                            className="w-full md:w-auto px-6 py-2.5 bg-white border border-red-100 hover:border-red-300 hover:text-red-600 text-slate-500 rounded-xl font-medium transition text-sm flex justify-center items-center gap-2"
+                                        >
+                                            <Trash2 className="w-4 h-4"/> Delete
                                         </button>
                                     </div>
                                 </div>
                                 
                                 {isExpanded && (
-                                    <div className={`p-6 bg-slate-50 border-t ${p.status === 'Completed' ? 'border-emerald-100' : 'border-indigo-100'} rounded-b-xl`}>
-                                        <h4 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
-                                            <History className="w-4 h-4 text-indigo-500"/> Reading Logs
-                                        </h4>
-                                        {(!p.logs || p.logs.length === 0) ? (
-                                            <p className="text-slate-500 text-sm italic">No logs recorded for this book.</p>
-                                        ) : (
-                                            <div className="relative border-l-2 border-indigo-200 ml-3 pl-6 space-y-6">
-                                                {p.logs.sort((a,b) => new Date(b.date) - new Date(a.date)).map(log => (
-                                                    <div key={log.id} className="relative">
-                                                        <div className="absolute -left-[31px] bg-white border-2 border-indigo-400 w-4 h-4 rounded-full mt-0.5"></div>
-                                                        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between sm:items-center gap-2">
-                                                            <div>
-                                                                <p className="text-sm font-medium text-slate-800">
-                                                                    Read pages <span className="text-indigo-600 font-bold">{log.startPage}</span> to <span className="text-indigo-600 font-bold">{log.endPage}</span>
-                                                                </p>
-                                                                <p className="text-xs text-slate-400 mt-0.5">{new Date(log.date).toLocaleString()}</p>
+                                    <div className={`p-6 bg-slate-50 border-t ${p.status === 'Completed' ? 'border-emerald-100' : 'border-indigo-100'} rounded-b-xl flex flex-col md:flex-row gap-8`}>
+                                        
+                                        <div className="flex-1">
+                                            <h4 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                                                <List className="w-4 h-4 text-indigo-500"/> Reading Plan Checklist
+                                            </h4>
+                                            {(!p.plans || p.plans.length === 0) ? (
+                                                <p className="text-slate-500 text-sm italic">No plan was created for this book.</p>
+                                            ) : (
+                                                <div className="flex flex-col gap-3">
+                                                    {p.plans.sort((a,b) => a.orderIndex - b.orderIndex).map(plan => {
+                                                        const highestPage = p.logs?.length > 0 ? Math.max(...p.logs.map(l => l.endPage)) : 0;
+                                                        const isCompleted = highestPage >= plan.endPage;
+                                                        return (
+                                                            <div key={plan.id} className={`flex items-center gap-3 p-3 rounded-lg border ${isCompleted ? 'bg-emerald-50 border-emerald-100 text-emerald-800' : 'bg-white border-slate-200 text-slate-700'}`}>
+                                                                {isCompleted ? <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0"/> : <Circle className="w-5 h-5 text-slate-300 shrink-0"/>}
+                                                                <div className="flex-1">
+                                                                    <p className="font-medium text-sm">{plan.title}</p>
+                                                                    <p className={`text-xs ${isCompleted ? 'text-emerald-600' : 'text-slate-400'}`}>Pages {plan.startPage} - {plan.endPage}</p>
+                                                                </div>
                                                             </div>
-                                                            <div className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-lg text-xs font-bold">
-                                                                +{log.endPage - log.startPage} pages
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="flex-1">
+                                            <h4 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                                                <History className="w-4 h-4 text-indigo-500"/> Reading Logs
+                                            </h4>
+                                            {(!p.logs || p.logs.length === 0) ? (
+                                                <p className="text-slate-500 text-sm italic">No logs recorded for this book.</p>
+                                            ) : (
+                                                <div className="relative border-l-2 border-indigo-200 ml-3 pl-6 space-y-6">
+                                                    {p.logs.sort((a,b) => new Date(b.date) - new Date(a.date)).map(log => (
+                                                        <div key={log.id} className="relative">
+                                                            <div className="absolute -left-[31px] bg-white border-2 border-indigo-400 w-4 h-4 rounded-full mt-0.5"></div>
+                                                            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between sm:items-center gap-2">
+                                                                <div>
+                                                                    <p className="text-sm font-medium text-slate-800">
+                                                                        Read pages <span className="text-indigo-600 font-bold">{log.startPage}</span> to <span className="text-indigo-600 font-bold">{log.endPage}</span>
+                                                                    </p>
+                                                                    <p className="text-xs text-slate-400 mt-0.5">{new Date(log.date).toLocaleString()}</p>
+                                                                </div>
+                                                                <div className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-lg text-xs font-bold">
+                                                                    +{log.endPage - log.startPage} pages
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 )}
                             </div>
