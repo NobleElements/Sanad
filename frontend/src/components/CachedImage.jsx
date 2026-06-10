@@ -17,7 +17,7 @@ export default function CachedImage({ src, alt, className }) {
                     const blob = await cachedResponse.blob();
                     if (isMounted) setImgSrc(URL.createObjectURL(blob));
                 } else {
-                    const response = await fetch(src, { mode: 'cors' });
+                    const response = await fetch(src, { mode: 'cors', credentials: 'omit' });
                     if (response.ok) {
                         cache.put(src, response.clone());
                         const blob = await response.blob();
