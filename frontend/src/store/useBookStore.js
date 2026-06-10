@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { API_BASE_URL } from '../config';
+import { API_BASE } from '../config';
 
 const useBookStore = create((set, get) => ({
     books: [],
@@ -9,7 +9,7 @@ const useBookStore = create((set, get) => ({
     
     searchBooks: async (query) => {
         try {
-            const res = await fetch(`${API_BASE_URL}/books/search?query=${encodeURIComponent(query)}`);
+            const res = await fetch(`${API_BASE}/books/search?query=${encodeURIComponent(query)}`);
             const data = await res.json();
             set({ searchResults: data });
         } catch (error) {
@@ -18,7 +18,7 @@ const useBookStore = create((set, get) => ({
     },
     
     addBook: async (book) => {
-        const res = await fetch(`${API_BASE_URL}/books`, {
+        const res = await fetch(`${API_BASE}/books`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(book)
@@ -30,7 +30,7 @@ const useBookStore = create((set, get) => ({
     
     fetchCurrentRead: async () => {
         try {
-            const res = await fetch(`${API_BASE_URL}/reading/current`);
+            const res = await fetch(`${API_BASE}/reading/current`);
             if (res.ok) {
                 const data = await res.json();
                 set({ currentRead: data });
@@ -44,7 +44,7 @@ const useBookStore = create((set, get) => ({
     },
     
     startReadingPeriod: async (bookId, plans) => {
-        await fetch(`${API_BASE_URL}/reading/periods`, {
+        await fetch(`${API_BASE}/reading/periods`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ bookId, plans })
@@ -53,7 +53,7 @@ const useBookStore = create((set, get) => ({
     },
     
     logProgress: async (periodId, startPage, endPage) => {
-        await fetch(`${API_BASE_URL}/reading/logs`, {
+        await fetch(`${API_BASE}/reading/logs`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ readingPeriodId: periodId, startPage, endPage })
