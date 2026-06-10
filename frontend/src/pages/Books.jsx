@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import useBookStore from '../store/useBookStore';
 import { Search as SearchIcon, BookOpen as BookOpenIcon, Plus, History, Library, Edit, Trash2, CheckCircle, List, Play, XCircle, LayoutGrid, Circle } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import BookModal from '../components/BookModal';
 import PlanModal from '../components/PlanModal';
 import LogModal from '../components/LogModal';
@@ -9,7 +10,13 @@ import CachedImage from '../components/CachedImage';
 export default function Books() {
   const { books, periods, fetchBooks, fetchPeriods, searchBooks, searchResults, addBook, deleteBook, startReadingPeriod, currentRead, fetchCurrentRead, setPeriodStatus, deletePeriod } = useBookStore();
   
-  const [activeTab, setActiveTab] = useState('shelf');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'shelf';
+  
+  const handleTabChange = (tab) => {
+      setSearchParams({ tab }, { replace: true });
+  };
+
   const [viewMode, setViewMode] = useState(() => {
     return localStorage.getItem('sanad_books_viewMode') || 'grid';
   });
@@ -54,7 +61,7 @@ export default function Books() {
       externalApiId: bookResult.externalApiId
     };
     await addBook(book);
-    setActiveTab('shelf');
+    handleTabChange('shelf');
   };
 
   const handleSetReading = async (periodId) => {
@@ -122,9 +129,9 @@ export default function Books() {
         </div>
         
         <div className="flex gap-6 mb-8 border-b border-slate-200">
-          <button onClick={() => setActiveTab('shelf')} className={`pb-3 font-medium flex items-center gap-2 ${activeTab==='shelf' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}><Library className="w-4 h-4"/> My Shelf</button>
-          <button onClick={() => setActiveTab('search')} className={`pb-3 font-medium flex items-center gap-2 ${activeTab==='search' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}><SearchIcon className="w-4 h-4"/> Find Books</button>
-          <button onClick={() => setActiveTab('history')} className={`pb-3 font-medium flex items-center gap-2 ${activeTab==='history' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}><History className="w-4 h-4"/> History</button>
+          <button onClick={() => handleTabChange('shelf')} className={`pb-3 font-medium flex items-center gap-2 ${activeTab==='shelf' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}><Library className="w-4 h-4"/> My Shelf</button>
+          <button onClick={() => handleTabChange('search')} className={`pb-3 font-medium flex items-center gap-2 ${activeTab==='search' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}><SearchIcon className="w-4 h-4"/> Find Books</button>
+          <button onClick={() => handleTabChange('history')} className={`pb-3 font-medium flex items-center gap-2 ${activeTab==='history' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}><History className="w-4 h-4"/> History</button>
         </div>
         
         {activeTab === 'shelf' && (
@@ -150,7 +157,7 @@ export default function Books() {
                     <Library className="w-12 h-12 text-slate-300 mb-4"/>
                     <h3 className="text-lg font-semibold text-slate-700 mb-2">Your shelf is empty</h3>
                     <p className="text-slate-500 mb-6">Find books or add them manually to start tracking.</p>
-                    <button onClick={() => setActiveTab('search')} className="text-indigo-600 font-medium hover:underline">Go to Find Books →</button>
+                    <button onClick={() => handleTabChange('search')} className="text-indigo-600 font-medium hover:underline">Go to Find Books →</button>
                 </div>
             ) : (
                 <div className={viewMode === 'grid' ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6" : "flex flex-col gap-4"}>
