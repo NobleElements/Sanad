@@ -44,11 +44,19 @@ const useBookStore = create((set, get) => ({
     },
     
     startReadingPeriod: async (bookId, plans) => {
+        // Optimistic UI Update
+        const tempPeriod = { id: Date.now(), bookId, plans, status: 'Reading', startDate: new Date().toISOString() };
+        set(state => {
+            const updatedPeriods = state.periods.map(p => p.status === 'Reading' ? { ...p, status: 'Paused' } : p);
+            return { periods: [tempPeriod, ...updatedPeriods] };
+        });
+
         await fetch(`${API_BASE}/reading/periods`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ bookId, plans })
         });
+        await get().fetchPeriods();
         await get().fetchCurrentRead();
     },
     
@@ -113,6 +121,16 @@ const useBookStore = create((set, get) => ({
     },
 
     setPeriodStatus: async (periodId, status) => {
+        // Optimistic UI Update
+        set(state => {
+            const updatedPeriods = state.periods.map(p => {
+                if (p.id === periodId) return { ...p, status };
+                if (status === 'Reading' && p.status === 'Reading') return { ...p, status: 'Paused' };
+                return p;
+            });
+            return { periods: updatedPeriods };
+        });
+
         await fetch(`${API_BASE}/reading/periods/${periodId}/status`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
@@ -123,6 +141,9 @@ const useBookStore = create((set, get) => ({
     },
 
     deletePeriod: async (periodId) => {
+        // Optimistic UI Update
+        set(state => ({ periods: state.periods.filter(p => p.id !== periodId) }));
+
         await fetch(`${API_BASE}/reading/periods/${periodId}`, {
             method: 'DELETE'
         });
