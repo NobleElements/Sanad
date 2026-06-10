@@ -3,6 +3,7 @@ import { API_BASE } from '../config';
 import useFinanceStore from '../store/useFinanceStore';
 import useThoughtsStore from '../store/useThoughtsStore';
 import useBookStore from '../store/useBookStore';
+import CachedImage from '../components/CachedImage';
 
 import { timeAgo } from '../utils/dateUtils';
 import useCategorySelect from '../hooks/useCategorySelect';
@@ -39,6 +40,7 @@ export default function Dashboard() {
     isCreatingCat,
     catRef,
     filteredCategories,
+    categories,
     exactMatch,
     createCategoryInline,
     selectCategory,
@@ -305,7 +307,7 @@ export default function Dashboard() {
                </div>
                <div className="flex gap-4">
                  {currentRead.period.book.coverUrl ? (
-                    <img src={currentRead.period.book.coverUrl} className="w-16 h-24 object-cover rounded shadow-sm" alt="cover"/>
+                    <CachedImage src={currentRead.period.book.coverUrl} className="w-16 h-24 object-cover rounded shadow-sm" alt="cover"/>
                  ) : (
                     <div className="w-16 h-24 bg-slate-200 rounded flex items-center justify-center shadow-sm">
                       <span className="text-slate-400 text-xs">No Cover</span>

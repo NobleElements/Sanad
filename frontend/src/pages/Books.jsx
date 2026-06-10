@@ -3,6 +3,7 @@ import useBookStore from '../store/useBookStore';
 import { Search as SearchIcon, BookOpen as BookOpenIcon, Plus, History, Library, Edit, Trash2, CheckCircle, List, Play, XCircle } from 'lucide-react';
 import BookModal from '../components/BookModal';
 import PlanModal from '../components/PlanModal';
+import CachedImage from '../components/CachedImage';
 
 export default function Books() {
   const { books, periods, fetchBooks, fetchPeriods, searchBooks, searchResults, addBook, deleteBook, startReadingPeriod, currentRead, fetchCurrentRead, setPeriodStatus, deletePeriod } = useBookStore();
@@ -127,7 +128,7 @@ export default function Books() {
                         <div key={b.id} className="bg-white border border-slate-200 rounded-2xl overflow-hidden flex flex-col hover:shadow-lg transition group">
                             <div className="h-48 bg-slate-100 relative">
                                 {b.coverUrl ? (
-                                    <img src={b.coverUrl} className="w-full h-full object-cover" alt="cover"/>
+                                    <CachedImage src={b.coverUrl} className="w-full h-full object-cover" alt="cover"/>
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center text-slate-400">No Cover</div>
                                 )}
@@ -200,7 +201,7 @@ export default function Books() {
                             {searchResults.map((b, i) => (
                             <div key={i} className="bg-white border border-slate-200 p-4 rounded-2xl flex flex-col items-center hover:shadow-md transition">
                                 {b.coverUrl ? (
-                                    <img src={b.coverUrl} className="w-full h-48 object-cover mb-4 rounded-lg shadow-sm" alt="cover"/>
+                                    <CachedImage src={b.coverUrl} className="w-full h-48 object-cover mb-4 rounded-lg shadow-sm" alt="cover"/>
                                 ) : (
                                     <div className="w-full h-48 bg-slate-100 mb-4 rounded-lg flex items-center justify-center text-slate-400 border border-slate-200 text-sm">
                                         No Cover
@@ -233,7 +234,7 @@ export default function Books() {
                         {completedPeriods.map(p => (
                             <div key={p.id} className="bg-white border border-slate-200 p-4 rounded-xl flex items-center gap-4 shadow-sm">
                                 {p.book.coverUrl ? (
-                                    <img src={p.book.coverUrl} className="w-16 h-24 object-cover rounded shadow-sm" alt="cover"/>
+                                    <CachedImage src={p.book.coverUrl} className="w-16 h-24 object-cover rounded shadow-sm" alt="cover"/>
                                 ) : (
                                     <div className="w-16 h-24 bg-slate-100 rounded flex items-center justify-center text-slate-400 text-xs">No Cover</div>
                                 )}
