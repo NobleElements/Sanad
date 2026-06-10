@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import useBookStore from '../store/useBookStore';
-import { Search as SearchIcon, BookOpen as BookOpenIcon, Plus, History, Library, Edit, Trash2, CheckCircle, List, Play, XCircle } from 'lucide-react';
+import { Search as SearchIcon, BookOpen as BookOpenIcon, Plus, History, Library, Edit, Trash2, CheckCircle, List, Play, XCircle, LayoutGrid } from 'lucide-react';
 import BookModal from '../components/BookModal';
 import PlanModal from '../components/PlanModal';
 import CachedImage from '../components/CachedImage';
@@ -9,6 +9,7 @@ export default function Books() {
   const { books, periods, fetchBooks, fetchPeriods, searchBooks, searchResults, addBook, deleteBook, startReadingPeriod, currentRead, fetchCurrentRead, setPeriodStatus, deletePeriod } = useBookStore();
   
   const [activeTab, setActiveTab] = useState('shelf');
+  const [viewMode, setViewMode] = useState('grid');
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   
@@ -108,10 +109,20 @@ export default function Books() {
         {activeTab === 'shelf' && (
           <div>
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-semibold text-slate-800">Your Bookshelf</h2>
-                <button onClick={openNewBook} className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition flex items-center gap-2">
-                    <Plus className="w-4 h-4" /> Add Book Manually
-                </button>
+                <h2 className="text-xl font-semibold text-slate-800">My Library</h2>
+                <div className="flex items-center gap-3">
+                    <div className="bg-slate-100 p-1 rounded-lg flex gap-1">
+                        <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-md transition ${viewMode === 'grid' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`} title="Grid View">
+                            <LayoutGrid className="w-4 h-4"/>
+                        </button>
+                        <button onClick={() => setViewMode('list')} className={`p-1.5 rounded-md transition ${viewMode === 'list' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`} title="List View">
+                            <List className="w-4 h-4"/>
+                        </button>
+                    </div>
+                    <button onClick={openAddModal} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition">
+                        <Plus className="w-4 h-4"/> Add Book Manually
+                    </button>
+                </div>
             </div>
             {books.length === 0 ? (
                 <div className="bg-white p-12 rounded-2xl border border-slate-200 text-center flex flex-col items-center">
@@ -121,10 +132,10 @@ export default function Books() {
                     <button onClick={() => setActiveTab('search')} className="text-indigo-600 font-medium hover:underline">Go to Find Books →</button>
                 </div>
             ) : (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                <div className={viewMode === 'grid' ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6" : "flex flex-col gap-4"}>
                     {books.map(b => {
                         const activePeriod = activePeriodsByBook[b.id];
-                        return (
+                        return viewMode === 'grid' ? (
                         <div key={b.id} className="bg-white border border-slate-200 rounded-2xl overflow-hidden flex flex-col hover:shadow-lg transition group">
                             <div className="h-48 bg-slate-100 relative">
                                 {b.coverUrl ? (
@@ -162,11 +173,59 @@ export default function Books() {
                                         <button onClick={() => handleStartReading(b)} className="w-full text-xs font-medium bg-indigo-600 hover:bg-indigo-700 text-white py-1.5 px-2 rounded text-center transition flex items-center justify-center gap-1">
                                             <Play className="w-3 h-3"/> Start Reading
                                         </button>
+                                        </div>
                                     )}
                                 </div>
                             </div>
                         </div>
-                    )})}
+                        ) : (
+                        <div key={b.id} className="bg-white border border-slate-200 rounded-xl overflow-hidden flex items-center p-4 gap-4 hover:shadow-sm transition group">
+                            <div className="w-16 h-24 bg-slate-100 shrink-0 rounded overflow-hidden">
+                                {b.coverUrl ? (
+                                    <CachedImage src={b.coverUrl} className="w-full h-full object-cover" alt="cover"/>
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-slate-400 text-[10px]">No Cover</div>
+                                )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h3 className="font-semibold text-slate-800 truncate">{b.title}</h3>
+                                <p className="text-sm text-slate-500 truncate mb-1">{b.author}</p>
+                                <p className="text-xs text-slate-400">{b.totalPages} pages</p>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <div className="w-64 hidden sm:block">
+                                    {activePeriod ? (
+                                        <div className="flex gap-2">
+                                            {activePeriod.status === 'Reading' ? (
+                                                <span className="flex-1 text-[10px] sm:text-xs font-medium bg-emerald-100 text-emerald-700 py-2 px-2 rounded text-center flex items-center justify-center">Reading</span>
+                                            ) : (
+                                                <button onClick={() => handleSetReading(activePeriod.id)} className="flex-1 text-[10px] sm:text-xs font-medium bg-indigo-50 hover:bg-indigo-100 text-indigo-700 py-2 px-2 rounded text-center transition flex items-center justify-center">Resume</button>
+                                            )}
+                                            <button onClick={() => openPlanModal(activePeriod)} className="flex-1 text-[10px] sm:text-xs font-medium border border-slate-200 hover:bg-slate-50 text-slate-600 py-2 px-2 rounded text-center transition flex items-center justify-center gap-1">
+                                                <List className="w-3 h-3"/> Plan
+                                            </button>
+                                            <button onClick={() => handleStopReading(activePeriod.id)} className="text-xs font-medium border border-red-200 hover:bg-red-50 text-red-600 py-2 px-3 rounded transition flex items-center justify-center" title="Stop Reading">
+                                                <XCircle className="w-4 h-4"/>
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <button onClick={() => handleStartReading(b)} className="w-full text-[10px] sm:text-xs font-medium bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded transition flex items-center justify-center gap-1">
+                                            <Play className="w-3 h-3"/> Start Reading
+                                        </button>
+                                    )}
+                                </div>
+                                <div className="flex gap-2 border-l pl-4 border-slate-100">
+                                    <button onClick={() => openEditBook(b)} className="p-2 text-slate-400 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50 rounded transition" title="Edit Metadata">
+                                        <Edit className="w-4 h-4"/>
+                                    </button>
+                                    <button onClick={() => handleDeleteBook(b.id)} className="p-2 text-slate-400 hover:text-red-600 bg-slate-50 hover:bg-red-50 rounded transition" title="Delete Book">
+                                        <Trash2 className="w-4 h-4"/>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        );
+                    })}
                 </div>
             )}
           </div>
