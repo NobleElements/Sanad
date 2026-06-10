@@ -75,6 +75,7 @@ api.MapFinanceEndpoints();
 api.MapNotebookEndpoints();
 api.MapAssetEndpoints();
 api.MapBookEndpoints();
+api.MapReadingEndpoints();
 
 app.MapMcp("/mcp");
 
