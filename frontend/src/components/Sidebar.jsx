@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import { API_BASE } from '../config';
 
 export default function Sidebar() {
   const location = useLocation();

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import TipTapEditor from '../components/TipTapEditor';
 import { Plus, Search, FolderOpen, FileText, Trash2, Pencil, X, Check, BookOpen } from 'lucide-react';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import { API_URL, API_BASE } from '../config';
 
 function timeAgo(dateStr) {
   const now = new Date();
@@ -289,7 +289,7 @@ export default function Notebook() {
       });
       if (res.ok) {
         const data = await res.json();
-        return `http://localhost:5000${data.url}`;
+        return `${API_BASE}${data.url}`;
       }
     } catch (e) { console.error('Failed to upload image:', e); }
     return null;

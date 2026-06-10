@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Save, Paperclip, MessageSquare, AlertCircle, Tag, FolderKanban, Timer } from 'lucide-react';
 import TipTapEditor from './TipTapEditor';
+import { API_BASE } from '../config';
 
 const TAG_COLORS = [
   'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300',
@@ -119,7 +120,7 @@ export default function TaskModal({ isOpen, task, onClose, onSave }) {
       });
       if (res.ok) {
         const data = await res.json();
-        return `http://localhost:5000${data.url}`;
+        return `${API_BASE}${data.url}`;
       }
     } catch (e) {
       console.error('Failed to upload image:', e);

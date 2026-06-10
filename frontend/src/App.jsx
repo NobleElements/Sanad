@@ -8,7 +8,7 @@ import Notebook from './pages/Notebook';
 import Thoughts from './pages/Thoughts';
 import AuthOverlay from './components/AuthOverlay';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import { API_BASE } from './config';
 
 function App() {
   const [authStatus, setAuthStatus] = useState({ loaded: false, setupRequired: false, authenticated: false, username: null });
