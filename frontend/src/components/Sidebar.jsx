@@ -25,6 +25,7 @@ export default function Sidebar() {
         <Link to="/tasks" className={getLinkClass('/tasks')}>Tasks</Link>
         <Link to="/notebook" className={getLinkClass('/notebook')}>Notebook</Link>
         <Link to="/finance" className={getLinkClass('/finance')}>Finance</Link>
+        <Link to="/books" className={getLinkClass('/books')}>Reading</Link>
       </nav>
       
       <button 
