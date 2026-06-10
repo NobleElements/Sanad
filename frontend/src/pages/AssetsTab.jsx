@@ -1,13 +1,14 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Trash2 } from 'lucide-react';
-import { API_BASE } from '../config';
+import useFinanceStore from '../store/useFinanceStore';
 
 export default function AssetsTab() {
-  const [assets, setAssets] = useState([]);
-  const [history, setHistory] = useState([]);
-  const [chartLines, setChartLines] = useState([]);
-  const [error, setError] = useState(null);
+  const { assets, assetHistory: history, assetChartLines: chartLines, fetchAssets, addAsset, updateAsset, deleteAsset: storeDeleteAsset, isLoaded } = useFinanceStore();
+  
+  useEffect(() => {
+    fetchAssets();
+  }, [fetchAssets]);
   
   // New asset form
   const [name, setName] = useState('');
@@ -18,67 +19,13 @@ export default function AssetsTab() {
   const [editingId, setEditingId] = useState(null);
   const [editingAmount, setEditingAmount] = useState('');
 
-  const loadData = useCallback(async () => {
-    try {
-      const [assetsRes, histRes] = await Promise.all([
-        fetch(`${API_BASE}/api/finances/assets`),
-        fetch(`${API_BASE}/api/finances/assets/history`)
-      ]);
-      if (!assetsRes.ok || !histRes.ok) throw new Error('Failed to load assets');
-      
-      const [assetsData, histData] = await Promise.all([
-        assetsRes.json(),
-        histRes.json()
-      ]);
-      setAssets(assetsData);
-      
-      // Process history data for the chart
-      const pointsMap = new Map();
-      const assetLatestValue = {};
-      const allAssetNames = new Set();
-      
-      histData.forEach(snapshot => {
-        const dateStr = new Date(snapshot.recordedAt).toLocaleDateString();
-        const name = snapshot.assetName || snapshot.assetId;
-        
-        assetLatestValue[name] = snapshot.amount;
-        allAssetNames.add(name);
-        
-        const totalNetWorth = Object.values(assetLatestValue).reduce((a, b) => a + b, 0);
-        const point = { date: dateStr, netWorth: totalNetWorth };
-        
-        Object.entries(assetLatestValue).forEach(([k, v]) => {
-          point[k] = v;
-        });
-        
-        // Overwrite so we keep the latest values for that specific date
-        pointsMap.set(dateStr, point);
-      });
 
-      setChartLines(Array.from(allAssetNames));
-      setHistory(Array.from(pointsMap.values()));
-    } catch (err) {
-      console.error(err);
-      setError('Failed to load data.');
-    }
-  }, []);
-
-  useEffect(() => { loadData(); }, [loadData]);
 
   const handleAdd = async (e) => {
     e.preventDefault();
-    try {
-      const res = await fetch(`${API_BASE}/api/finances/assets`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, type, currentAmount: parseFloat(amount) })
-      });
-      if (!res.ok) throw new Error('Failed to create asset');
+    const success = await addAsset(name, type, parseFloat(amount));
+    if (success) {
       setName(''); setType('Cash'); setAmount('');
-      loadData();
-    } catch (err) {
-      console.error(err);
-      setError('Failed to add asset.');
     }
   };
 
@@ -86,42 +33,21 @@ export default function AssetsTab() {
     const newAmount = parseFloat(editingAmount);
     if (isNaN(newAmount) || newAmount < 0) return;
     
-    try {
-      const res = await fetch(`${API_BASE}/api/finances/assets/${asset.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...asset, currentAmount: newAmount })
-      });
-      if (!res.ok) throw new Error('Failed to update asset');
+    const success = await updateAsset(asset, newAmount);
+    if (success) {
       setEditingId(null);
-      loadData();
-    } catch (err) {
-      console.error(err);
-      setError('Failed to update asset.');
     }
   };
 
   const deleteAsset = async (id) => {
     if (!confirm('Are you sure you want to delete this asset?')) return;
-    try {
-      const res = await fetch(`${API_BASE}/api/finances/assets/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Failed to delete asset');
-      loadData();
-    } catch (err) {
-      console.error(err);
-      setError('Failed to delete asset.');
-    }
+    await storeDeleteAsset(id);
   };
 
   const totalAssetsValue = assets.reduce((sum, a) => sum + a.currentAmount, 0);
 
   return (
     <div className="flex flex-col gap-8">
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-          {error}
-        </div>
-      )}
 
       {/* Top Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

@@ -39,15 +39,101 @@ const useFinanceStore = create((set, get) => ({
     }
   },
 
+  assetHistory: [],
+  assetChartLines: [],
+
   fetchAssets: async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/assets`);
-      if (res.ok) {
-        const data = await res.json();
-        set({ assets: data });
+      const [assetsRes, histRes] = await Promise.all([
+        fetch(`${API_BASE}/api/finances/assets`),
+        fetch(`${API_BASE}/api/finances/assets/history`)
+      ]);
+      if (assetsRes.ok && histRes.ok) {
+        const assetsData = await assetsRes.json();
+        const histData = await histRes.json();
+        
+        const pointsMap = new Map();
+        const assetLatestValue = {};
+        const allAssetNames = new Set();
+        
+        histData.forEach(snapshot => {
+          const dateStr = new Date(snapshot.recordedAt).toLocaleDateString();
+          const name = snapshot.assetName || snapshot.assetId;
+          
+          assetLatestValue[name] = snapshot.amount;
+          allAssetNames.add(name);
+          
+          const totalNetWorth = Object.values(assetLatestValue).reduce((a, b) => a + b, 0);
+          const point = { date: dateStr, netWorth: totalNetWorth };
+          
+          Object.entries(assetLatestValue).forEach(([k, v]) => {
+            point[k] = v;
+          });
+          
+          pointsMap.set(dateStr, point);
+        });
+
+        set({ 
+          assets: assetsData, 
+          assetHistory: Array.from(pointsMap.values()),
+          assetChartLines: Array.from(allAssetNames)
+        });
       }
     } catch (err) {
       useUIStore.getState().showError('Network error loading assets');
+    }
+  },
+
+  addAsset: async (name, type, amount) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/finances/assets`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, type, currentAmount: amount })
+      });
+      if (res.ok) {
+        useUIStore.getState().showSuccess('Asset created');
+        await get().fetchAssets();
+        return true;
+      }
+      throw new Error('Failed to create');
+    } catch (err) {
+      useUIStore.getState().showError('Failed to add asset');
+      return false;
+    }
+  },
+
+  updateAsset: async (asset, newAmount) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/finances/assets/${asset.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...asset, currentAmount: newAmount })
+      });
+      if (res.ok) {
+        useUIStore.getState().showSuccess('Asset updated');
+        await get().fetchAssets();
+        return true;
+      }
+      throw new Error('Failed to update');
+    } catch (err) {
+      useUIStore.getState().showError('Failed to update asset');
+      return false;
+    }
+  },
+
+  deleteAsset: async (id) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/finances/assets/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        useUIStore.getState().showSuccess('Asset deleted');
+        await get().fetchAssets();
+        return true;
+      }
+      throw new Error('Failed to delete');
+    } catch (err) {
+      useUIStore.getState().showError('Failed to delete asset');
+      return false;
     }
   },
 
