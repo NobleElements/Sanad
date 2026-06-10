@@ -3,6 +3,7 @@ import useBookStore from '../store/useBookStore';
 import { Search as SearchIcon, BookOpen as BookOpenIcon, Plus, History, Library, Edit, Trash2, CheckCircle, List, Play, XCircle, LayoutGrid } from 'lucide-react';
 import BookModal from '../components/BookModal';
 import PlanModal from '../components/PlanModal';
+import LogModal from '../components/LogModal';
 import CachedImage from '../components/CachedImage';
 
 export default function Books() {
@@ -18,6 +19,11 @@ export default function Books() {
   
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState(null);
+
+  const [showLogModal, setShowLogModal] = useState(false);
+  const [logPeriod, setLogPeriod] = useState(null);
+
+  const [expandedHistory, setExpandedHistory] = useState({});
 
   useEffect(() => {
     fetchCurrentRead();
@@ -79,6 +85,15 @@ export default function Books() {
   const openPlanModal = (period) => {
     setSelectedPeriod(period);
     setShowPlanModal(true);
+  };
+
+  const openLogModal = (period) => {
+    setLogPeriod(period);
+    setShowLogModal(true);
+  };
+
+  const toggleHistory = (id) => {
+      setExpandedHistory(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
   const completedPeriods = periods.filter(p => p.status === 'Completed');
@@ -156,7 +171,7 @@ export default function Books() {
                                     {activePeriod ? (
                                         <div className="flex flex-col gap-2">
                                             {activePeriod.status === 'Reading' ? (
-                                                <span className="text-xs font-medium bg-emerald-100 text-emerald-700 py-1 px-2 rounded text-center">Currently Reading</span>
+                                                <button onClick={() => openLogModal(activePeriod)} className="text-xs font-bold bg-emerald-500 hover:bg-emerald-600 text-white py-1 px-2 rounded text-center shadow-sm transition">Log Progress</button>
                                             ) : (
                                                 <button onClick={() => handleSetReading(activePeriod.id)} className="text-xs font-medium bg-indigo-50 hover:bg-indigo-100 text-indigo-700 py-1 px-2 rounded text-center transition">Resume Reading</button>
                                             )}
@@ -196,7 +211,7 @@ export default function Books() {
                                     {activePeriod ? (
                                         <div className="flex gap-2">
                                             {activePeriod.status === 'Reading' ? (
-                                                <span className="flex-1 text-[10px] sm:text-xs font-medium bg-emerald-100 text-emerald-700 py-2 px-2 rounded text-center flex items-center justify-center">Reading</span>
+                                                <button onClick={() => openLogModal(activePeriod)} className="flex-1 text-[10px] sm:text-xs font-bold bg-emerald-500 hover:bg-emerald-600 text-white py-2 px-2 rounded text-center flex items-center justify-center transition shadow-sm">Log Progress</button>
                                             ) : (
                                                 <button onClick={() => handleSetReading(activePeriod.id)} className="flex-1 text-[10px] sm:text-xs font-medium bg-indigo-50 hover:bg-indigo-100 text-indigo-700 py-2 px-2 rounded text-center transition flex items-center justify-center">Resume</button>
                                             )}
@@ -293,26 +308,87 @@ export default function Books() {
                         <p className="text-slate-500">Your finished books will appear here.</p>
                     </div>
                 ) : (
-                    <div className="flex flex-col gap-4">
-                        {completedPeriods.map(p => (
-                            <div key={p.id} className="bg-white border border-slate-200 p-4 rounded-xl flex items-center gap-4 shadow-sm">
-                                {p.book.coverUrl ? (
-                                    <CachedImage src={p.book.coverUrl} className="w-16 h-24 object-cover rounded shadow-sm" alt="cover"/>
-                                ) : (
-                                    <div className="w-16 h-24 bg-slate-100 rounded flex items-center justify-center text-slate-400 text-xs">No Cover</div>
+                    <div className="flex flex-col gap-6">
+                        {completedPeriods.map(p => {
+                            const totalDays = p.endDate ? Math.ceil((new Date(p.endDate) - new Date(p.startDate)) / (1000 * 60 * 60 * 24)) : 0;
+                            const isExpanded = expandedHistory[p.id];
+                            
+                            return (
+                            <div key={p.id} className="bg-white border-2 border-emerald-100 p-1 rounded-2xl shadow-sm hover:shadow-md transition overflow-hidden">
+                                <div className="bg-gradient-to-r from-emerald-50 to-white p-5 rounded-xl flex flex-col md:flex-row items-center gap-6">
+                                    <div className="w-20 h-32 bg-slate-100 shrink-0 rounded-lg overflow-hidden shadow-md">
+                                        {p.book.coverUrl ? (
+                                            <CachedImage src={p.book.coverUrl} className="w-full h-full object-cover" alt="cover"/>
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs">No Cover</div>
+                                        )}
+                                    </div>
+                                    <div className="flex-1 text-center md:text-left">
+                                        <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-emerald-600 mb-2 bg-emerald-100/50 px-3 py-1 rounded-full">
+                                            <CheckCircle className="w-3.5 h-3.5"/> Completed
+                                        </div>
+                                        <h3 className="font-bold text-2xl text-slate-800 mb-1">{p.book.title}</h3>
+                                        <p className="text-slate-500 mb-4">{p.book.author} • {p.book.totalPages} pages</p>
+                                        
+                                        <div className="flex flex-wrap justify-center md:justify-start gap-4 text-sm text-slate-600">
+                                            <div className="bg-white px-3 py-1.5 rounded-lg border border-slate-200">
+                                                <span className="text-slate-400 block text-xs uppercase tracking-wider mb-0.5">Started</span>
+                                                <span className="font-medium">{new Date(p.startDate).toLocaleDateString()}</span>
+                                            </div>
+                                            <div className="bg-white px-3 py-1.5 rounded-lg border border-slate-200">
+                                                <span className="text-slate-400 block text-xs uppercase tracking-wider mb-0.5">Finished</span>
+                                                <span className="font-medium">{p.endDate ? new Date(p.endDate).toLocaleDateString() : 'N/A'}</span>
+                                            </div>
+                                            {totalDays > 0 && (
+                                                <div className="bg-white px-3 py-1.5 rounded-lg border border-slate-200">
+                                                    <span className="text-slate-400 block text-xs uppercase tracking-wider mb-0.5">Duration</span>
+                                                    <span className="font-medium">{totalDays} {totalDays === 1 ? 'day' : 'days'}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="md:border-l md:border-slate-200 md:pl-6 flex flex-col justify-center w-full md:w-auto">
+                                        <button 
+                                            onClick={() => toggleHistory(p.id)} 
+                                            className="w-full md:w-auto px-6 py-3 bg-white border border-slate-200 hover:border-indigo-300 hover:text-indigo-600 text-slate-700 rounded-xl font-medium transition text-sm flex justify-center items-center gap-2"
+                                        >
+                                            {isExpanded ? 'Hide Journey' : 'View Journey'}
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                {isExpanded && (
+                                    <div className="p-6 bg-slate-50 border-t border-emerald-100 rounded-b-xl">
+                                        <h4 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                                            <History className="w-4 h-4 text-indigo-500"/> Reading Logs
+                                        </h4>
+                                        {(!p.logs || p.logs.length === 0) ? (
+                                            <p className="text-slate-500 text-sm italic">No logs recorded for this book.</p>
+                                        ) : (
+                                            <div className="relative border-l-2 border-indigo-200 ml-3 pl-6 space-y-6">
+                                                {p.logs.sort((a,b) => new Date(b.date) - new Date(a.date)).map(log => (
+                                                    <div key={log.id} className="relative">
+                                                        <div className="absolute -left-[31px] bg-white border-2 border-indigo-400 w-4 h-4 rounded-full mt-0.5"></div>
+                                                        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between sm:items-center gap-2">
+                                                            <div>
+                                                                <p className="text-sm font-medium text-slate-800">
+                                                                    Read pages <span className="text-indigo-600 font-bold">{log.startPage}</span> to <span className="text-indigo-600 font-bold">{log.endPage}</span>
+                                                                </p>
+                                                                <p className="text-xs text-slate-400 mt-0.5">{new Date(log.date).toLocaleString()}</p>
+                                                            </div>
+                                                            <div className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-lg text-xs font-bold">
+                                                                +{log.endPage - log.startPage} pages
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
                                 )}
-                                <div className="flex-1">
-                                    <h3 className="font-semibold text-lg text-slate-800">{p.book.title}</h3>
-                                    <p className="text-sm text-slate-500 mb-2">{p.book.author} • {p.book.totalPages} pages</p>
-                                    <p className="text-xs text-slate-400">
-                                        Started: {new Date(p.startDate).toLocaleDateString()} — Finished: {p.endDate ? new Date(p.endDate).toLocaleDateString() : 'N/A'}
-                                    </p>
-                                </div>
-                                <div className="px-4 py-2 bg-emerald-50 text-emerald-700 rounded-lg font-medium flex items-center gap-2">
-                                    <CheckCircle className="w-5 h-5"/> Completed
-                                </div>
                             </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </div>
@@ -321,6 +397,7 @@ export default function Books() {
 
       {showBookModal && <BookModal book={selectedBook} onClose={() => setShowBookModal(false)} />}
       {showPlanModal && <PlanModal period={selectedPeriod} onClose={() => setShowPlanModal(false)} />}
+      {showLogModal && <LogModal period={logPeriod} onClose={() => setShowLogModal(false)} />}
     </div>
   );
 }
