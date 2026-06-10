@@ -66,6 +66,43 @@ public static class ReadingEndpoints
             return Results.Ok(log);
         });
 
+        group.MapPut("/periods/{id}/plans", async (int id, SanadDbContext db, List<PlanDto> plans) =>
+        {
+            var period = await db.ReadingPeriods.Include(p => p.Plans).FirstOrDefaultAsync(p => p.Id == id);
+            if (period == null) return Results.NotFound();
+
+            db.ReadingPlans.RemoveRange(period.Plans);
+            period.Plans = plans.Select((p, i) => new ReadingPlan
+            {
+                Title = p.Title,
+                StartPage = p.StartPage,
+                EndPage = p.EndPage,
+                OrderIndex = i
+            }).ToList();
+
+            await db.SaveChangesAsync();
+            return Results.Ok(period.Plans);
+        });
+
+        group.MapPut("/periods/{id}/status", async (int id, SanadDbContext db, StatusDto dto) =>
+        {
+            var period = await db.ReadingPeriods.FindAsync(id);
+            if (period == null) return Results.NotFound();
+
+            if (dto.Status == "Reading")
+            {
+                var otherActive = await db.ReadingPeriods.Where(p => p.Status == "Reading" && p.Id != id).ToListAsync();
+                foreach (var other in otherActive)
+                {
+                    other.Status = "Paused";
+                }
+            }
+
+            period.Status = dto.Status;
+            await db.SaveChangesAsync();
+            return Results.Ok(period);
+        });
+
         group.MapGet("/current", async (SanadDbContext db) =>
         {
             var current = await db.ReadingPeriods
@@ -97,4 +134,5 @@ public static class ReadingEndpoints
     public record StartPeriodDto(int BookId, List<PlanDto> Plans);
     public record PlanDto(string Title, int StartPage, int EndPage);
     public record LogDto(int ReadingPeriodId, int StartPage, int EndPage);
+    public record StatusDto(string Status);
 }

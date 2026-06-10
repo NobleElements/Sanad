@@ -66,6 +66,30 @@ public static class BookEndpoints
             var books = await db.Books.OrderByDescending(b => b.CreatedAt).ToListAsync();
             return Results.Ok(books);
         });
+
+        group.MapPut("/{id}", async (int id, SanadDbContext db, Book updatedBook) =>
+        {
+            var book = await db.Books.FindAsync(id);
+            if (book == null) return Results.NotFound();
+
+            book.Title = updatedBook.Title;
+            book.Author = updatedBook.Author;
+            book.CoverUrl = updatedBook.CoverUrl;
+            book.TotalPages = updatedBook.TotalPages;
+
+            await db.SaveChangesAsync();
+            return Results.Ok(book);
+        });
+
+        group.MapDelete("/{id}", async (int id, SanadDbContext db) =>
+        {
+            var book = await db.Books.FindAsync(id);
+            if (book == null) return Results.NotFound();
+
+            db.Books.Remove(book);
+            await db.SaveChangesAsync();
+            return Results.NoContent();
+        });
     }
 
     private class GoogleBooksResponse
