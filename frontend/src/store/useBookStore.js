@@ -59,6 +59,67 @@ const useBookStore = create((set, get) => ({
             body: JSON.stringify({ readingPeriodId: periodId, startPage, endPage })
         });
         await get().fetchCurrentRead();
+        await get().fetchPeriods();
+    },
+
+    fetchBooks: async () => {
+        try {
+            const res = await fetch(`${API_BASE}/books`);
+            const data = await res.json();
+            set({ books: data });
+        } catch (error) {
+            console.error("Failed to fetch books:", error);
+        }
+    },
+
+    fetchPeriods: async () => {
+        try {
+            const res = await fetch(`${API_BASE}/reading/periods`);
+            const data = await res.json();
+            set({ periods: data });
+        } catch (error) {
+            console.error("Failed to fetch periods:", error);
+        }
+    },
+
+    updateBook: async (id, book) => {
+        await fetch(`${API_BASE}/books/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(book)
+        });
+        await get().fetchBooks();
+        await get().fetchPeriods();
+        await get().fetchCurrentRead();
+    },
+
+    deleteBook: async (id) => {
+        await fetch(`${API_BASE}/books/${id}`, {
+            method: 'DELETE'
+        });
+        await get().fetchBooks();
+        await get().fetchPeriods();
+        await get().fetchCurrentRead();
+    },
+
+    updatePlans: async (periodId, plans) => {
+        await fetch(`${API_BASE}/reading/periods/${periodId}/plans`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(plans)
+        });
+        await get().fetchPeriods();
+        await get().fetchCurrentRead();
+    },
+
+    setPeriodStatus: async (periodId, status) => {
+        await fetch(`${API_BASE}/reading/periods/${periodId}/status`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status })
+        });
+        await get().fetchPeriods();
+        await get().fetchCurrentRead();
     }
 }));
 
