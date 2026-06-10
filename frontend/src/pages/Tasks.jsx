@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Plus, CheckCircle2, Circle, Clock, Tag, Loader2, GripVertical, Filter, FolderKanban, Timer, Eye, EyeOff, Search } from 'lucide-react';
 import useTaskStore from '../store/useTaskStore';
 import { formatTime } from '../utils/dateUtils';
@@ -21,7 +22,9 @@ const COLUMNS = [
 
 
 export default function Tasks() {
-  const { tasks, isLoaded, fetchTasks, updateTaskStatus, openTaskModal } = useTaskStore();
+  const { tasks, isLoaded, fetchTasks, updateTaskStatus, openTaskModal, isTaskModalOpen, activeTask, closeTaskModal } = useTaskStore();
+  const { taskId } = useParams();
+  const navigate = useNavigate();
   
   const [draggingId, setDraggingId] = useState(null);
   const [dragOverColumn, setDragOverColumn] = useState(null);
@@ -54,6 +57,32 @@ export default function Tasks() {
       fetchTasks();
     }
   }, [isLoaded, fetchTasks]);
+
+  useEffect(() => {
+    if (isLoaded && taskId) {
+      const currentState = useTaskStore.getState();
+      if (!currentState.isTaskModalOpen || currentState.activeTask?.id?.toString() !== taskId) {
+        const t = tasks.find(x => x.id.toString() === taskId);
+        if (t) {
+          openTaskModal(t);
+        }
+      }
+    }
+  }, [taskId, isLoaded, tasks, openTaskModal]);
+
+  useEffect(() => {
+    if (isTaskModalOpen && activeTask && activeTask.id) {
+      navigate(`/tasks/${activeTask.id}`, { replace: true });
+    } else if (!isTaskModalOpen && taskId) {
+      navigate(`/tasks`, { replace: true });
+    }
+  }, [isTaskModalOpen, activeTask, navigate, taskId]);
+
+  useEffect(() => {
+    return () => {
+      closeTaskModal();
+    };
+  }, [closeTaskModal]);
 
   // Derive unique values for filter dropdowns
   const projects = [...new Set(tasks.map(t => t.project).filter(Boolean))].sort();

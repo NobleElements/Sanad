@@ -1,6 +1,5 @@
 # Sanad
 
-## About
 Sanad is a comprehensive personal management application designed to help you organize various aspects of your life. It provides a centralized hub to track your tasks, notes, finances, reading progress, and daily thoughts, giving you a holistic view of your productivity and personal growth.
 
 ## Features

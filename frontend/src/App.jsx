@@ -54,6 +54,7 @@ function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/thoughts" element={<Thoughts />} />
             <Route path="/tasks" element={<Tasks />} />
+            <Route path="/tasks/:taskId" element={<Tasks />} />
             <Route path="/finance" element={<FinanceDashboard />} />
             <Route path="/notebook" element={<Notebook />} />
             <Route path="/notebook/:noteId" element={<Notebook />} />
