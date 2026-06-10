@@ -1,0 +1,71 @@
+import React, { useState, useEffect } from 'react';
+import useBookStore from '../store/useBookStore';
+
+export default function BookModal({ book, onClose }) {
+  const { addBook, updateBook } = useBookStore();
+  const [formData, setFormData] = useState({
+    title: '',
+    author: '',
+    coverUrl: '',
+    totalPages: 0
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (book) {
+      setFormData({
+        title: book.title || '',
+        author: book.author || '',
+        coverUrl: book.coverUrl || '',
+        totalPages: book.totalPages || 0
+      });
+    }
+  }, [book]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    if (book) {
+      await updateBook(book.id, formData);
+    } else {
+      await addBook(formData);
+    }
+    setIsSubmitting(false);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-md mx-4 p-6">
+        <h3 className="text-xl font-bold text-slate-800 mb-6">{book ? 'Edit Book' : 'Add Book Manually'}</h3>
+        
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Title</label>
+            <input required type="text" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full p-2 border rounded focus:ring focus:ring-indigo-200 focus:border-indigo-500" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Author</label>
+            <input required type="text" value={formData.author} onChange={e => setFormData({...formData, author: e.target.value})} className="w-full p-2 border rounded focus:ring focus:ring-indigo-200 focus:border-indigo-500" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Total Pages</label>
+            <input required type="number" min="1" value={formData.totalPages} onChange={e => setFormData({...formData, totalPages: parseInt(e.target.value) || 0})} className="w-full p-2 border rounded focus:ring focus:ring-indigo-200 focus:border-indigo-500" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Cover Image URL (Optional)</label>
+            <input type="text" value={formData.coverUrl} onChange={e => setFormData({...formData, coverUrl: e.target.value})} className="w-full p-2 border rounded focus:ring focus:ring-indigo-200 focus:border-indigo-500" />
+          </div>
+          
+          <div className="flex gap-3 justify-end mt-4">
+            <button type="button" onClick={onClose} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded transition font-medium">Cancel</button>
+            <button type="submit" disabled={isSubmitting} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded transition font-medium">
+              {isSubmitting ? 'Saving...' : 'Save Book'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
