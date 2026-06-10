@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, CheckCircle2, Circle, Clock, Tag, Loader2, GripVertical, Filter, FolderKanban, Timer, Eye, EyeOff, Search } from 'lucide-react';
 import useTaskStore from '../store/useTaskStore';
+import { formatTime } from '../utils/dateUtils';
 
 const TAG_COLORS = [
   'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300',
@@ -17,14 +18,7 @@ const COLUMNS = [
   { status: 2, label: 'Done', icon: CheckCircle2, color: 'text-emerald-500 dark:text-emerald-400', bgBadge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300', headerBorder: 'border-emerald-300 dark:border-emerald-600' },
 ];
 
-const formatTime = (minutes) => {
-  if (!minutes) return null;
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  if (h && m) return `${h}h ${m}m`;
-  if (h) return `${h}h`;
-  return `${m}m`;
-};
+
 
 export default function Tasks() {
   const { tasks, isLoaded, fetchTasks, updateTaskStatus, openTaskModal } = useTaskStore();
@@ -154,9 +148,6 @@ export default function Tasks() {
           <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
             Tasks
           </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">
-            Drag and drop tasks between columns to update their status.
-          </p>
         </div>
         <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
           {/* Search Input */}
@@ -351,8 +342,6 @@ export default function Tasks() {
           })}
         </div>
       )}
-
-
     </div>
   );
 }

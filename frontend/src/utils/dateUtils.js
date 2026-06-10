@@ -19,3 +19,12 @@ export function timeAgo(dateStr) {
   if (days < 7) return `${days}d ago`;
   return date.toLocaleDateString();
 }
+
+export function formatTime(minutes) {
+  if (!minutes) return null;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h && m) return `${h}h ${m}m`;
+  if (h) return `${h}h`;
+  return `${m}m`;
+}

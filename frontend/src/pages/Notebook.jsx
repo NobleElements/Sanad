@@ -2,21 +2,24 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import TipTapEditor from '../components/TipTapEditor';
 import { Plus, Search, FolderOpen, FileText, Trash2, Pencil, X, Check, BookOpen } from 'lucide-react';
-
-import { API_URL, API_BASE } from '../config';
+import useNotebookStore from '../store/useNotebookStore';
 import { timeAgo } from '../utils/dateUtils';
 
 export default function Notebook() {
   const { noteId: urlNoteId } = useParams();
   const navigate = useNavigate();
 
-  // Data state
-  const [notebooks, setNotebooks] = useState([]);
-  const [notes, setNotes] = useState([]);
-  const [selectedNotebookId, setSelectedNotebookId] = useState(null);
-  const [selectedNote, setSelectedNote] = useState(null);
+  // Store state and actions
+  const {
+    notebooks, notes, selectedNotebookId, selectedNote, searchResults,
+    fetchNotebooks, fetchNotes, fetchNote, fetchLatestNote,
+    setSelectedNotebookId, setSelectedNote, setSearchResults,
+    searchNotes, createNotebook: storeCreateNotebook,
+    renameNotebook: storeRenameNotebook, deleteNotebook: storeDeleteNotebook,
+    createNote: storeCreateNote, updateNote, deleteNote: storeDeleteNote, uploadImage
+  } = useNotebookStore();
+
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState(null);
 
   // UI state
   const [isCreatingNotebook, setIsCreatingNotebook] = useState(false);
@@ -31,36 +34,7 @@ export default function Notebook() {
   const saveTimerRef = useRef(null);
   const newNotebookInputRef = useRef(null);
 
-  // --- Data fetching ---
 
-  const loadNotebooks = async () => {
-    try {
-      const res = await fetch(`${API_URL}/notebooks`);
-      if (res.ok) return await res.json();
-    } catch (e) { console.error('Failed to load notebooks:', e); }
-    return [];
-  };
-
-  const loadNotes = async (notebookId) => {
-    try {
-      const res = await fetch(`${API_URL}/notebooks/${notebookId}/notes`);
-      if (res.ok) setNotes(await res.json());
-    } catch (e) { console.error('Failed to load notes:', e); }
-  };
-
-  const loadNote = async (noteId) => {
-    try {
-      const res = await fetch(`${API_URL}/notes/${noteId}`);
-      if (res.ok) {
-        const note = await res.json();
-        setSelectedNote(note);
-        setNoteTitle(note.title);
-        setNoteContent(note.content || '');
-        return note;
-      }
-    } catch (e) { console.error('Failed to load note:', e); }
-    return null;
-  };
 
   // --- Initialization: load notebooks, then open note from URL or latest ---
 
@@ -68,30 +42,27 @@ export default function Notebook() {
 
   useEffect(() => {
     const init = async () => {
-      const nbs = await loadNotebooks();
-      setNotebooks(nbs);
+      await fetchNotebooks();
 
       let targetNoteId = urlNoteId;
 
       // If no note in URL, try to get the latest
       if (!targetNoteId) {
-        try {
-          const res = await fetch(`${API_URL}/notes/latest`);
-          if (res.ok && res.status !== 204) {
-            const latest = await res.json();
-            targetNoteId = latest.id;
-            // Redirect to URL with note ID (replace so back button works)
-            navigate(`/notebook/${latest.id}`, { replace: true });
-          }
-        } catch (e) { console.error('Failed to load latest note:', e); }
+        const latest = await fetchLatestNote();
+        if (latest) {
+          targetNoteId = latest.id;
+          navigate(`/notebook/${latest.id}`, { replace: true });
+        }
       }
 
       // Load the target note and select its notebook
       if (targetNoteId) {
-        const note = await loadNote(targetNoteId);
+        const note = await fetchNote(targetNoteId);
         if (note) {
           setSelectedNotebookId(note.notebookId);
-          loadNotes(note.notebookId);
+          fetchNotes(note.notebookId);
+          setNoteTitle(note.title);
+          setNoteContent(note.content || '');
         }
       }
 
@@ -105,10 +76,14 @@ export default function Notebook() {
     if (!initDone.current || !urlNoteId) return;
     // Only reload if it's a different note
     if (selectedNote?.id !== urlNoteId) {
-      loadNote(urlNoteId).then(note => {
-        if (note && note.notebookId !== selectedNotebookId) {
-          setSelectedNotebookId(note.notebookId);
-          loadNotes(note.notebookId);
+      fetchNote(urlNoteId).then(note => {
+        if (note) {
+          setNoteTitle(note.title);
+          setNoteContent(note.content || '');
+          if (note.notebookId !== selectedNotebookId) {
+            setSelectedNotebookId(note.notebookId);
+            fetchNotes(note.notebookId);
+          }
         }
       });
     }
@@ -122,7 +97,7 @@ export default function Notebook() {
     setNoteTitle('');
     setNoteContent('');
     navigate('/notebook');
-    loadNotes(notebookId);
+    fetchNotes(notebookId);
   };
 
   // --- Search ---
@@ -133,10 +108,7 @@ export default function Notebook() {
       return;
     }
     const timer = setTimeout(async () => {
-      try {
-        const res = await fetch(`${API_URL}/notes/search?q=${encodeURIComponent(searchQuery)}`);
-        if (res.ok) setSearchResults(await res.json());
-      } catch (e) { console.error('Search failed:', e); }
+      await searchNotes(searchQuery);
     }, 300);
     return () => clearTimeout(timer);
   }, [searchQuery]);
@@ -146,21 +118,12 @@ export default function Notebook() {
   const saveNote = useCallback(async (title, content) => {
     if (!selectedNote) return;
     setIsSaving(true);
-    try {
-      const res = await fetch(`${API_URL}/notes/${selectedNote.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, content }),
-      });
-      if (res.ok) {
-        setLastSaved(new Date());
-        setNotes(prev => prev.map(n =>
-          n.id === selectedNote.id ? { ...n, title, updatedAt: new Date().toISOString() } : n
-        ));
-      }
-    } catch (e) { console.error('Failed to save note:', e); }
-    finally { setIsSaving(false); }
-  }, [selectedNote]);
+    const success = await updateNote(selectedNote.id, title, content);
+    if (success) {
+      setLastSaved(new Date());
+    }
+    setIsSaving(false);
+  }, [selectedNote, updateNote]);
 
   const debouncedSave = useCallback((title, content) => {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
@@ -181,105 +144,63 @@ export default function Notebook() {
 
   const createNotebook = async () => {
     if (!newNotebookName.trim()) return;
-    try {
-      const res = await fetch(`${API_URL}/notebooks`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newNotebookName.trim() }),
-      });
-      if (res.ok) {
-        const nb = await res.json();
-        setNotebooks(prev => [...prev, nb]);
-        switchNotebook(nb.id);
-        setNewNotebookName('');
-        setIsCreatingNotebook(false);
-      }
-    } catch (e) { console.error('Failed to create notebook:', e); }
+    const nb = await storeCreateNotebook(newNotebookName);
+    if (nb) {
+      switchNotebook(nb.id);
+      setNewNotebookName('');
+      setIsCreatingNotebook(false);
+    }
   };
 
   const renameNotebook = async (id) => {
     if (!editingNotebookName.trim()) return;
-    try {
-      const res = await fetch(`${API_URL}/notebooks/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: editingNotebookName.trim() }),
-      });
-      if (res.ok) {
-        const updated = await res.json();
-        setNotebooks(prev => prev.map(nb => nb.id === id ? updated : nb));
-        setEditingNotebookId(null);
-      }
-    } catch (e) { console.error('Failed to rename notebook:', e); }
+    const success = await storeRenameNotebook(id, editingNotebookName);
+    if (success) {
+      setEditingNotebookId(null);
+    }
   };
 
   const deleteNotebook = async (id) => {
     if (!confirm('Delete this notebook and all its notes?')) return;
-    try {
-      const res = await fetch(`${API_URL}/notebooks/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        setNotebooks(prev => prev.filter(nb => nb.id !== id));
-        if (selectedNotebookId === id) {
-          setSelectedNotebookId(null);
-          setSelectedNote(null);
-          setNotes([]);
-          navigate('/notebook');
-        }
-      }
-    } catch (e) { console.error('Failed to delete notebook:', e); }
+    const success = await storeDeleteNotebook(id);
+    if (success && selectedNotebookId === id) {
+      setSelectedNotebookId(null);
+      setSelectedNote(null);
+      navigate('/notebook');
+    }
   };
 
   // --- Note CRUD ---
 
   const createNote = async () => {
     if (!selectedNotebookId) return;
-    try {
-      const res = await fetch(`${API_URL}/notebooks/${selectedNotebookId}/notes`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: 'Untitled Note' }),
+    const note = await storeCreateNote(selectedNotebookId);
+    if (note) {
+      navigate(`/notebook/${note.id}`);
+      fetchNote(note.id).then(fetchedNote => {
+        if (fetchedNote) {
+          setNoteTitle(fetchedNote.title);
+          setNoteContent(fetchedNote.content || '');
+        }
       });
-      if (res.ok) {
-        const note = await res.json();
-        setNotes(prev => [{ id: note.id, title: note.title, notebookId: note.notebookId, createdAt: note.createdAt, updatedAt: note.updatedAt }, ...prev]);
-        navigate(`/notebook/${note.id}`);
-        loadNote(note.id);
-      }
-    } catch (e) { console.error('Failed to create note:', e); }
+    }
   };
 
   const deleteNote = async (id) => {
-    try {
-      const res = await fetch(`${API_URL}/notes/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        setNotes(prev => prev.filter(n => n.id !== id));
-        if (selectedNote?.id === id) {
-          setSelectedNote(null);
-          setNoteTitle('');
-          setNoteContent('');
-          navigate('/notebook');
-        }
-      }
-    } catch (e) { console.error('Failed to delete note:', e); }
+    const success = await storeDeleteNote(id);
+    if (success && selectedNote?.id === id) {
+      setSelectedNote(null);
+      setNoteTitle('');
+      setNoteContent('');
+      navigate('/notebook');
+    }
   };
 
   // --- Image upload ---
 
   const handleImageUpload = async (file) => {
     if (!selectedNote) return null;
-    const formData = new FormData();
-    formData.append('file', file);
-    try {
-      const res = await fetch(`${API_URL}/notes/${selectedNote.id}/images`, {
-        method: 'POST',
-        body: formData,
-      });
-      if (res.ok) {
-        const data = await res.json();
-        return `${API_BASE}${data.url}`;
-      }
-    } catch (e) { console.error('Failed to upload image:', e); }
-    return null;
+    return await uploadImage(selectedNote.id, file);
   };
 
   // Focus input when creating notebook
@@ -436,10 +357,15 @@ export default function Notebook() {
                 }`}
                 onClick={() => {
                   navigate(`/notebook/${note.id}`);
-                  loadNote(note.id);
+                  fetchNote(note.id).then(fetchedNote => {
+                    if (fetchedNote) {
+                      setNoteTitle(fetchedNote.title);
+                      setNoteContent(fetchedNote.content || '');
+                    }
+                  });
                   if (searchResults !== null) {
                     setSelectedNotebookId(note.notebookId);
-                    loadNotes(note.notebookId);
+                    fetchNotes(note.notebookId);
                     setSearchQuery('');
                   }
                 }}
