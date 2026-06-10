@@ -28,8 +28,7 @@ export default function AuthOverlay({ mode, onAuthenticated }) {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ username, password }),
-                credentials: 'include'
+                body: JSON.stringify({ username, password })
             });
 
             if (response.ok) {

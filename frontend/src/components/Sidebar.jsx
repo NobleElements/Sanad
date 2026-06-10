@@ -12,7 +12,7 @@ export default function Sidebar() {
 
   const handleLogout = async () => {
     try {
-      await fetch(`${API_BASE}/api/auth/logout`, { method: 'POST', credentials: 'include' });
+      await fetch(`${API_BASE}/api/auth/logout`, { method: 'POST' });
       window.location.reload();
     } catch (err) {
       console.error('Logout failed', err);

@@ -78,7 +78,7 @@ export default function Thoughts() {
         url += `&search=${encodeURIComponent(currentSearch)}`;
       }
 
-      const res = await fetch(url, { credentials: 'include' });
+      const res = await fetch(url);
       if (!res.ok) throw new Error('Failed to load thoughts');
       const data = await res.json();
       
@@ -132,8 +132,7 @@ export default function Thoughts() {
       const res = await fetch(`${API_URL}/thoughts/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: editContent }),
-        credentials: 'include'
+        body: JSON.stringify({ content: editContent })
       });
       if (!res.ok) throw new Error('Failed to update thought');
       setThoughts(prev => prev.map(t => t.id === id ? { ...t, content: editContent } : t));
@@ -156,8 +155,7 @@ export default function Thoughts() {
       const res = await fetch(`${API_URL}/thoughts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: newContent }),
-        credentials: 'include'
+        body: JSON.stringify({ content: newContent })
       });
       if (!res.ok) throw new Error('Failed to save thought');
       setNewContent('');
@@ -177,8 +175,7 @@ export default function Thoughts() {
     if (!confirm('Are you sure you want to delete this thought?')) return;
     try {
       const res = await fetch(`${API_URL}/thoughts/${id}`, {
-        method: 'DELETE',
-        credentials: 'include'
+        method: 'DELETE'
       });
       if (!res.ok) throw new Error('Failed to delete thought');
       setThoughts(prev => prev.filter(t => t.id !== id));
