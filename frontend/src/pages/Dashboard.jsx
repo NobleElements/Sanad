@@ -4,7 +4,7 @@ import useFinanceStore from '../store/useFinanceStore';
 import useThoughtsStore from '../store/useThoughtsStore';
 
 import { timeAgo } from '../utils/dateUtils';
-import { hslToHex } from '../utils/colorUtils';
+import useCategorySelect from '../hooks/useCategorySelect';
 
 export default function Dashboard() {
   const [content, setContent] = useState('');
@@ -15,25 +15,31 @@ export default function Dashboard() {
 
   // Finance store
   const { 
-    categories, 
     transactions: recentTransactions, 
     budgetSummary, 
     fetchFinanceData, 
-    addTransaction,
-    createCategory
+    addTransaction
   } = useFinanceStore();
 
   const [spendAmount, setSpendAmount] = useState('');
-  const [spendCategoryId, setSpendCategoryId] = useState('');
   const [spendDesc, setSpendDesc] = useState('');
   const [isLoggingSpend, setIsLoggingSpend] = useState(false);
   const [showSpendModal, setShowSpendModal] = useState(false);
-
-  // Category combobox state
-  const [catSearch, setCatSearch] = useState('');
-  const [catDropdownOpen, setCatDropdownOpen] = useState(false);
-  const [isCreatingCat, setIsCreatingCat] = useState(false);
-  const catRef = useRef(null);
+  // Category combobox state via custom hook
+  const {
+    spendCategoryId,
+    catSearch,
+    setCatSearch,
+    catDropdownOpen,
+    setCatDropdownOpen,
+    isCreatingCat,
+    catRef,
+    filteredCategories,
+    exactMatch,
+    createCategoryInline,
+    selectCategory,
+    resetCategorySelect
+  } = useCategorySelect();
 
   // Daily Goal state
   const [dailyGoal, setDailyGoal] = useState('');
@@ -51,40 +57,6 @@ export default function Dashboard() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  const filteredCategories = categories.filter(c =>
-    c.name.toLowerCase().includes(catSearch.toLowerCase())
-  );
-
-  const exactMatch = categories.some(
-    c => c.name.toLowerCase() === catSearch.toLowerCase()
-  );
-
-
-
-  const createCategoryInline = async (name) => {
-    setIsCreatingCat(true);
-    try {
-      const hue = Math.floor(Math.random() * 360);
-      const colorHex = hslToHex(hue, 65, 55);
-      const newCat = await createCategory(name, colorHex);
-      if (newCat) {
-        setSpendCategoryId(newCat.id);
-        setCatSearch(newCat.name);
-        setCatDropdownOpen(false);
-      }
-    } finally {
-      setIsCreatingCat(false);
-    }
-  };
-
-  const selectCategory = (cat) => {
-    setSpendCategoryId(cat.id);
-    setCatSearch(cat.name);
-    setCatDropdownOpen(false);
-  };
-
-
 
   const loadDailyGoal = async () => {
     try {
@@ -157,8 +129,7 @@ export default function Dashboard() {
     if (success) {
       setSpendAmount('');
       setSpendDesc('');
-      setSpendCategoryId('');
-      setCatSearch('');
+      resetCategorySelect();
       setShowSpendModal(false);
       fetchTimeline();
     }

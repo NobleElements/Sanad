@@ -4,7 +4,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
 import AssetsTab from './AssetsTab';
 import useFinanceStore from '../store/useFinanceStore';
-import { hslToHex } from '../utils/colorUtils';
+import useCategorySelect from '../hooks/useCategorySelect';
 
 export default function FinanceDashboard() {
   const [activeTab, setActiveTab] = useState('spending'); // 'spending' | 'assets'
@@ -29,56 +29,24 @@ export default function FinanceDashboard() {
   
   // form state
   const [amount, setAmount] = useState('');
-  const [categoryId, setCategoryId] = useState('');
   const [desc, setDesc] = useState('');
 
-  // category form state
-  const [catSearch, setCatSearch] = useState('');
-  const [catDropdownOpen, setCatDropdownOpen] = useState(false);
-  const [isCreatingCat, setIsCreatingCat] = useState(false);
-  const catRef = useRef(null);
-
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (catRef.current && !catRef.current.contains(e.target)) {
-        setCatDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const filteredCategories = categories.filter(c =>
-    c.name.toLowerCase().includes(catSearch.toLowerCase())
-  );
-
-  const exactMatch = categories.some(
-    c => c.name.toLowerCase() === catSearch.toLowerCase()
-  );
-
-
-
-  const createCategoryInline = async (name) => {
-    setIsCreatingCat(true);
-    try {
-      const hue = Math.floor(Math.random() * 360);
-      const colorHex = hslToHex(hue, 65, 55);
-      const newCat = await createCategory(name, colorHex);
-      if (newCat) {
-        setCategoryId(newCat.id);
-        setCatSearch(newCat.name);
-        setCatDropdownOpen(false);
-      }
-    } finally {
-      setIsCreatingCat(false);
-    }
-  };
-
-  const selectCategory = (cat) => {
-    setCategoryId(cat.id);
-    setCatSearch(cat.name);
-    setCatDropdownOpen(false);
-  };
+  // category form state via custom hook
+  const {
+    spendCategoryId: categoryId,
+    setSpendCategoryId: setCategoryId,
+    catSearch,
+    setCatSearch,
+    catDropdownOpen,
+    setCatDropdownOpen,
+    isCreatingCat,
+    catRef,
+    filteredCategories,
+    exactMatch,
+    createCategoryInline,
+    selectCategory,
+    resetCategorySelect
+  } = useCategorySelect();
 
 
   // category editing state
@@ -95,6 +63,7 @@ export default function FinanceDashboard() {
     e.preventDefault();
     const success = await addTransaction(parseFloat(amount), categoryId, desc);
     if (success) {
+      resetCategorySelect();
       setAmount(''); 
       setDesc('');
     }
