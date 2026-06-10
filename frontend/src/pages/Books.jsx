@@ -199,7 +199,12 @@ export default function Books() {
                         <h2 className="text-xl font-semibold mb-6 text-slate-800">Search Results</h2>
                         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
                             {searchResults.map((b, i) => (
-                            <div key={i} className="bg-white border border-slate-200 p-4 rounded-2xl flex flex-col items-center hover:shadow-md transition">
+                            <div key={i} className="bg-white border border-slate-200 p-4 rounded-2xl flex flex-col items-center hover:shadow-md transition relative">
+                                {b.source && (
+                                    <span className="absolute top-2 right-2 text-[10px] uppercase tracking-wider font-bold bg-slate-100 text-slate-500 px-2 py-1 rounded">
+                                        {b.source}
+                                    </span>
+                                )}
                                 {b.coverUrl ? (
                                     <CachedImage src={b.coverUrl} className="w-full h-48 object-cover mb-4 rounded-lg shadow-sm" alt="cover"/>
                                 ) : (
