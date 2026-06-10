@@ -55,7 +55,15 @@ export default function BookModal({ book, onClose }) {
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Cover Image URL (Optional)</label>
-            <input type="text" value={formData.coverUrl} onChange={e => setFormData({...formData, coverUrl: e.target.value})} className="w-full p-2 border rounded focus:ring focus:ring-indigo-200 focus:border-indigo-500" />
+            <div className="flex gap-2">
+                <input type="text" value={formData.coverUrl} onChange={e => setFormData({...formData, coverUrl: e.target.value})} className="flex-1 p-2 border rounded focus:ring focus:ring-indigo-200 focus:border-indigo-500" placeholder="https://..." />
+                <button type="button" onClick={() => {
+                    if (!formData.title) return alert('Please enter a book title first!');
+                    window.open(`https://www.google.com/search?tbm=isch&q=${encodeURIComponent(formData.title + ' ' + (formData.author || '') + ' book cover')}`, '_blank');
+                }} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded transition text-sm font-medium whitespace-nowrap">
+                    Search Google Images
+                </button>
+            </div>
           </div>
           
           <div className="flex gap-3 justify-end mt-4">
