@@ -13,19 +13,45 @@ public static class BookEndpoints
         group.MapGet("/search", async (string query) =>
         {
             var httpClient = new HttpClient();
-            var url = $"https://www.googleapis.com/books/v1/volumes?q={Uri.EscapeDataString(query)}&maxResults=10";
-            var response = await httpClient.GetFromJsonAsync<GoogleBooksResponse>(url);
+            httpClient.DefaultRequestHeaders.Add("User-Agent", "SanadApp/1.0");
             
-            var results = response?.Items?.Select(i => new 
+            try 
             {
-                Title = i.VolumeInfo?.Title ?? "Unknown",
-                Author = i.VolumeInfo?.Authors?.FirstOrDefault() ?? "Unknown",
-                ExternalApiId = i.Id,
-                CoverUrl = i.VolumeInfo?.ImageLinks?.Thumbnail?.Replace("http:", "https:"),
-                TotalPages = i.VolumeInfo?.PageCount ?? 0
+                var url = $"https://www.googleapis.com/books/v1/volumes?q={Uri.EscapeDataString(query)}&maxResults=10";
+                var response = await httpClient.GetFromJsonAsync<GoogleBooksResponse>(url);
+                
+                if (response?.Items != null)
+                {
+                    var results = response.Items.Select(i => new 
+                    {
+                        Title = i.VolumeInfo?.Title ?? "Unknown",
+                        Author = i.VolumeInfo?.Authors?.FirstOrDefault() ?? "Unknown",
+                        ExternalApiId = i.Id,
+                        CoverUrl = i.VolumeInfo?.ImageLinks?.Thumbnail?.Replace("http:", "https:"),
+                        TotalPages = i.VolumeInfo?.PageCount ?? 0
+                    }).ToList();
+
+                    return Results.Ok(results);
+                }
+            }
+            catch (Exception)
+            {
+                // Fallback to OpenLibrary if Google Books is rate limited or errors
+            }
+
+            var openLibUrl = $"https://openlibrary.org/search.json?q={Uri.EscapeDataString(query)}&limit=10";
+            var openLibResponse = await httpClient.GetFromJsonAsync<OpenLibraryResponse>(openLibUrl);
+            
+            var openLibResults = openLibResponse?.Docs?.Select(d => new 
+            {
+                Title = d.Title,
+                Author = d.Author_name?.FirstOrDefault() ?? "Unknown",
+                ExternalApiId = d.Key,
+                CoverUrl = d.Cover_i != null ? $"https://covers.openlibrary.org/b/id/{d.Cover_i}-L.jpg" : null,
+                TotalPages = d.Number_of_pages_median ?? 0
             }).ToList();
 
-            return Results.Ok(results ?? new object());
+            return Results.Ok(openLibResults ?? new object());
         });
 
         group.MapPost("/", async (SanadDbContext db, Book book) =>
@@ -64,5 +90,19 @@ public static class BookEndpoints
     private class GoogleBooksImageLinks
     {
         public string? Thumbnail { get; set; }
+    }
+
+    private class OpenLibraryResponse
+    {
+        public List<OpenLibraryDoc>? Docs { get; set; }
+    }
+
+    private class OpenLibraryDoc
+    {
+        public string? Title { get; set; }
+        public List<string>? Author_name { get; set; }
+        public string? Key { get; set; }
+        public int? Cover_i { get; set; }
+        public int? Number_of_pages_median { get; set; }
     }
 }
