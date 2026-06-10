@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { X, Save, Paperclip, MessageSquare, AlertCircle, Tag, FolderKanban, Timer } from 'lucide-react';
 import TipTapEditor from './TipTapEditor';
 import { API_BASE } from '../config';
-import useTaskStore from '../store/useTaskStore';
+import ProjectSelector from './ProjectSelector';
 
 const TAG_COLORS = [
   'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300',
@@ -14,8 +14,6 @@ const TAG_COLORS = [
 ];
 
 export default function TaskModal({ isOpen, task, onClose, onSave }) {
-  const { tasks } = useTaskStore();
-  const projects = [...new Set(tasks.map(t => t.project).filter(Boolean))].sort();
   const titleInputRef = useRef(null);
   const [internalTask, setInternalTask] = useState(null);
   const [title, setTitle] = useState('');
@@ -202,19 +200,10 @@ export default function TaskModal({ isOpen, task, onClose, onSave }) {
               <FolderKanban className="w-3.5 h-3.5" />
               Project
             </label>
-            <input
-              type="text"
-              list="project-list"
+            <ProjectSelector 
               value={project}
-              onChange={(e) => setProject(e.target.value)}
-              placeholder="Optional project name"
-              className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-48 p-2.5 transition-colors placeholder-gray-400"
+              onChange={setProject}
             />
-            <datalist id="project-list">
-              {projects.map(p => (
-                <option key={p} value={p} />
-              ))}
-            </datalist>
           </div>
 
           {/* Tags */}

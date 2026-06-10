@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { useSearchParams } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
 import AssetsTab from './AssetsTab';
 import useFinanceStore from '../store/useFinanceStore';
-import useCategorySelect from '../hooks/useCategorySelect';
+import CategorySelector from '../components/CategorySelector';
 
 export default function FinanceDashboard() {
   const [activeTab, setActiveTab] = useState('spending'); // 'spending' | 'assets'
@@ -30,23 +30,7 @@ export default function FinanceDashboard() {
   // form state
   const [amount, setAmount] = useState('');
   const [desc, setDesc] = useState('');
-
-  // category form state via custom hook
-  const {
-    spendCategoryId: categoryId,
-    setSpendCategoryId: setCategoryId,
-    catSearch,
-    setCatSearch,
-    catDropdownOpen,
-    setCatDropdownOpen,
-    isCreatingCat,
-    catRef,
-    filteredCategories,
-    exactMatch,
-    createCategoryInline,
-    selectCategory,
-    resetCategorySelect
-  } = useCategorySelect();
+  const [categoryId, setCategoryId] = useState('');
 
 
   // category editing state
@@ -63,7 +47,7 @@ export default function FinanceDashboard() {
     e.preventDefault();
     const success = await addTransaction(parseFloat(amount), categoryId, desc);
     if (success) {
-      resetCategorySelect();
+      setCategoryId('');
       setAmount(''); 
       setDesc('');
     }
@@ -395,63 +379,15 @@ export default function FinanceDashboard() {
                   <h2 className="text-xl font-bold mb-4 text-slate-800">Quick Log</h2>
                   <form onSubmit={handleLog} className="flex flex-col gap-4">
                     <input type="number" placeholder="Amount" value={amount} onChange={e=>setAmount(e.target.value)} className="bg-white border border-slate-300 rounded p-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
-                    <div className="relative" ref={catRef}>
-                      <div className="relative">
-                        {categoryId && (
-                          <span
-                            className="absolute left-2.5 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full"
-                            style={{ backgroundColor: categories.find(c => c.id === categoryId)?.colorHex || '#CBD5E1' }}
-                          />
-                        )}
-                        <input
-                          type="text"
-                          placeholder="Select Category..."
-                          value={catSearch}
-                          onChange={(e) => {
-                            setCatSearch(e.target.value);
-                            setCategoryId('');
-                            setCatDropdownOpen(true);
-                          }}
-                          onFocus={() => setCatDropdownOpen(true)}
-                          className={`w-full border border-slate-300 rounded p-2 text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white ${
-                            categoryId ? 'pl-8' : ''
-                          }`}
-                          disabled={isCreatingCat}
-                          required={!categoryId}
-                        />
-                      </div>
-                      {catDropdownOpen && (
-                        <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                          {filteredCategories.length > 0 && filteredCategories.map(c => (
-                            <button
-                              key={c.id}
-                              type="button"
-                              onClick={() => selectCategory(c)}
-                              className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 flex items-center gap-2 transition-colors"
-                            >
-                              <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: c.colorHex || '#CBD5E1' }} />
-                              {c.name}
-                            </button>
-                          ))}
-                          {catSearch.trim() && !exactMatch && (
-                            <button
-                              type="button"
-                              onClick={() => createCategoryInline(catSearch.trim())}
-                              disabled={isCreatingCat}
-                              className="w-full text-left px-3 py-2 text-sm text-indigo-600 hover:bg-indigo-50 font-medium border-t border-slate-100 flex items-center gap-2 transition-colors disabled:opacity-50"
-                            >
-                              <span className="text-indigo-400">+</span>
-                              {isCreatingCat ? 'Creating...' : `Create "${catSearch.trim()}"`}
-                            </button>
-                          )}
-                          {filteredCategories.length === 0 && (!catSearch.trim() || exactMatch) && (
-                            <div className="px-3 py-2 text-sm text-slate-400 italic">No categories found</div>
-                          )}
-                        </div>
-                      )}
+                    <div className="relative">
+                      <CategorySelector 
+                        value={categoryId}
+                        onChange={setCategoryId}
+                        placeholder="Select Category..."
+                      />
                     </div>
                     <input type="text" placeholder="Description" value={desc} onChange={e=>setDesc(e.target.value)} className="bg-white border border-slate-300 rounded p-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                    <button type="submit" disabled={!categoryId || isCreatingCat} className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Log Expense</button>
+                    <button type="submit" disabled={!categoryId} className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Log Expense</button>
                   </form>
                 </div>
               </div>

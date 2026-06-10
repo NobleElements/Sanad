@@ -6,7 +6,7 @@ import useBookStore from '../store/useBookStore';
 import CachedImage from '../components/CachedImage';
 
 import { timeAgo } from '../utils/dateUtils';
-import useCategorySelect from '../hooks/useCategorySelect';
+import CategorySelector from '../components/CategorySelector';
 
 export default function Dashboard() {
   const [content, setContent] = useState('');
@@ -30,22 +30,7 @@ export default function Dashboard() {
   const [spendDesc, setSpendDesc] = useState('');
   const [isLoggingSpend, setIsLoggingSpend] = useState(false);
   const [showSpendModal, setShowSpendModal] = useState(false);
-  // Category combobox state via custom hook
-  const {
-    spendCategoryId,
-    catSearch,
-    setCatSearch,
-    catDropdownOpen,
-    setCatDropdownOpen,
-    isCreatingCat,
-    catRef,
-    filteredCategories,
-    categories,
-    exactMatch,
-    createCategoryInline,
-    selectCategory,
-    resetCategorySelect
-  } = useCategorySelect();
+  const [spendCategoryId, setSpendCategoryId] = useState('');
 
   // Daily Goal state
   const [dailyGoal, setDailyGoal] = useState('');
@@ -53,16 +38,6 @@ export default function Dashboard() {
   const [editGoalValue, setEditGoalValue] = useState('');
   const [isSavingGoal, setIsSavingGoal] = useState(false);
 
-  // Close dropdown on outside click
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (catRef.current && !catRef.current.contains(e.target)) {
-        setCatDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   const loadDailyGoal = async () => {
     try {
@@ -136,7 +111,7 @@ export default function Dashboard() {
     if (success) {
       setSpendAmount('');
       setSpendDesc('');
-      resetCategorySelect();
+      setSpendCategoryId('');
       setShowSpendModal(false);
       fetchTimeline();
     }
@@ -368,60 +343,13 @@ export default function Dashboard() {
                   />
                 </div>
               </div>
-              <div className="relative" ref={catRef}>
+              <div className="relative">
                 <label className="block text-sm text-slate-600 mb-1 font-medium">Category</label>
-                <div className="relative">
-                  {spendCategoryId && (
-                    <span
-                      className="absolute left-2.5 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full"
-                      style={{ backgroundColor: categories.find(c => c.id === spendCategoryId)?.colorHex || '#CBD5E1' }}
-                    />
-                  )}
-                  <input
-                    type="text"
-                    placeholder="Type to search..."
-                    value={catSearch}
-                    onChange={(e) => {
-                      setCatSearch(e.target.value);
-                      setSpendCategoryId('');
-                      setCatDropdownOpen(true);
-                    }}
-                    onFocus={() => setCatDropdownOpen(true)}
-                    className={`w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white ${
-                      spendCategoryId ? 'pl-7' : ''
-                    }`}
-                    disabled={isLoggingSpend || isCreatingCat}
-                  />
-                </div>
-                {catDropdownOpen && (
-                  <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                    {filteredCategories.length > 0 && filteredCategories.map(c => (
-                      <button
-                        key={c.id}
-                        type="button"
-                        onClick={() => selectCategory(c)}
-                        className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 flex items-center gap-2 transition-colors"
-                      >
-                        <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: c.colorHex || '#CBD5E1' }} />
-                        {c.name}
-                      </button>
-                    ))}
-                    {catSearch.trim() && !exactMatch && (
-                      <button
-                        type="button"
-                        onClick={() => createCategoryInline(catSearch.trim())}
-                        disabled={isCreatingCat}
-                        className="w-full text-left px-3 py-2 text-sm text-indigo-600 hover:bg-indigo-50 font-medium border-t border-slate-100 flex items-center gap-2 transition-colors disabled:opacity-50"
-                      >
-                        <span className="text-indigo-400">+</span>
-                        {isCreatingCat ? 'Creating...' : `Create "${catSearch.trim()}"`}
-                      </button>
-                    )}
-                    {filteredCategories.length === 0 && (!catSearch.trim() || exactMatch) && (
-                      <div className="px-3 py-2 text-sm text-slate-400 italic">No categories found</div>
-                    )}
-                  </div>
-                )}
+                <CategorySelector 
+                  value={spendCategoryId}
+                  onChange={setSpendCategoryId}
+                  disabled={isLoggingSpend}
+                />
               </div>
               <div>
                 <label className="block text-sm text-slate-600 mb-1 font-medium">Description</label>
