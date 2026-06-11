@@ -35,6 +35,7 @@ export default function TaskModal({ isOpen, task, onClose, onSave }) {
   } = useTaskStore();
 
   const [newComment, setNewComment] = useState('');
+  const [isAddingComment, setIsAddingComment] = useState(false);
   const fileInputRef = useRef(null);
   const activeTask = internalTask || {};
 
@@ -152,9 +153,14 @@ export default function TaskModal({ isOpen, task, onClose, onSave }) {
 
   const handleAddComment = async () => {
     if (!newComment.trim() || !activeTask?.id) return;
-    const success = await addTaskComment(activeTask.id, newComment.trim());
-    if (success) {
-      setNewComment('');
+    setIsAddingComment(true);
+    try {
+      const success = await addTaskComment(activeTask.id, newComment.trim());
+      if (success) {
+        setNewComment('');
+      }
+    } finally {
+      setIsAddingComment(false);
     }
   };
 
@@ -368,7 +374,10 @@ export default function TaskModal({ isOpen, task, onClose, onSave }) {
                               </a>
                               <button
                                 type="button"
-                                onClick={() => deleteTaskAttachment(activeTask.id, att.id || att._id)}
+                                onClick={() => {
+                                  if (!window.confirm('Are you sure you want to delete this?')) return;
+                                  deleteTaskAttachment(activeTask.id, att.id || att._id);
+                                }}
                                 className="p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -404,7 +413,7 @@ export default function TaskModal({ isOpen, task, onClose, onSave }) {
                     <button
                       type="button"
                       onClick={handleAddComment}
-                      disabled={!newComment.trim()}
+                      disabled={!newComment.trim() || isAddingComment}
                       className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
                       Comment
@@ -431,8 +440,11 @@ export default function TaskModal({ isOpen, task, onClose, onSave }) {
                               </div>
                               <button
                                 type="button"
-                                onClick={() => deleteTaskComment(activeTask.id, comment.id || comment._id)}
-                                className="p-1.5 text-gray-400 opacity-0 group-hover:opacity-100 hover:text-red-600 dark:hover:text-red-400 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-all flex-shrink-0"
+                                onClick={() => {
+                                  if (!window.confirm('Are you sure you want to delete this?')) return;
+                                  deleteTaskComment(activeTask.id, comment.id || comment._id);
+                                }}
+                                className="p-1.5 text-gray-400 md:opacity-0 group-hover:opacity-100 hover:text-red-600 dark:hover:text-red-400 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-all flex-shrink-0"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
