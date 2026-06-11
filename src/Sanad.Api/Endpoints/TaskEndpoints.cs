@@ -18,6 +18,8 @@ public static class TaskEndpoints
         app.MapDelete("/api/tasks/{id}", DeleteTask);
         app.MapPost("/api/tasks/{id}/comments", CreateTaskComment);
         app.MapPost("/api/tasks/{id}/attachments", CreateTaskAttachment);
+        app.MapDelete("/api/tasks/{id}/comments/{commentId}", DeleteTaskComment);
+        app.MapDelete("/api/tasks/{id}/attachments/{attachmentId}", DeleteTaskAttachment);
     }
 
     public static async Task<IResult> GetTasks(SanadDbContext db, string? project)
@@ -142,6 +144,32 @@ public static class TaskEndpoints
         await db.SaveChangesAsync();
         
         return Results.Created($"/api/tasks/{id}/attachments/{attachment.Id}", attachment);
+    }
+
+    public static async Task<IResult> DeleteTaskComment(SanadDbContext db, Guid id, Guid commentId)
+    {
+        var comment = await db.TaskComments.FirstOrDefaultAsync(c => c.Id == commentId && c.TaskItemId == id);
+        if (comment == null) return Results.NotFound();
+        
+        db.TaskComments.Remove(comment);
+        await db.SaveChangesAsync();
+        return Results.NoContent();
+    }
+
+    public static async Task<IResult> DeleteTaskAttachment(SanadDbContext db, Guid id, Guid attachmentId)
+    {
+        var attachment = await db.TaskAttachments.FirstOrDefaultAsync(a => a.Id == attachmentId && a.TaskItemId == id);
+        if (attachment == null) return Results.NotFound();
+
+        var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Data", attachment.FilePath.TrimStart('/'));
+        if (File.Exists(filePath))
+        {
+            File.Delete(filePath);
+        }
+        
+        db.TaskAttachments.Remove(attachment);
+        await db.SaveChangesAsync();
+        return Results.NoContent();
     }
 }
 
