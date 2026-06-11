@@ -8,8 +8,9 @@ Sanad is a comprehensive personal management application designed to help you or
 - **Finance Tracking**: Manage your transactions, categorize expenses, track budgets, and monitor asset snapshots over time.
 - **Books & Reading Progress**: Manage your personal bookshelf, track current reads, log reading progress, and maintain reading plans.
 - **Habit Tracking**: Define daily, weekly, or monthly routines, visualize your consistency with a 90-day heat map, and build streaks.
+- **File Management**: Upload, organize, and preview files seamlessly. Includes full pagination, server-side sorting/filtering, recursive folder management, chunked uploads for large files, and direct browser-to-disk folder downloads.
 - **User Authentication**: Secure user accounts and data privacy.
-- **AI Integration**: Built with Model Context Protocol (MCP) support for extensible AI capabilities.
+- **AI Integration**: Built with Model Context Protocol (MCP) support for extensible AI capabilities, enabling AI agents to manage files, tasks, finances, and more.
 
 ## Stack
 **Frontend**:
