@@ -35,4 +35,79 @@ public class TaskApiTests
         Assert.IsType<NoContent>(result);
         Assert.Equal(0, context.TaskComments.Count());
     }
+
+    [Fact]
+    public async Task CanDeleteTaskAttachment()
+    {
+        var options = new DbContextOptionsBuilder<SanadDbContext>()
+            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .Options;
+
+        using var context = new SanadDbContext(options);
+        
+        var task = new TaskItem { Title = "Test Task" };
+        context.TaskItems.Add(task);
+        await context.SaveChangesAsync();
+
+        var uniqueFileName = $"{Guid.NewGuid()}.txt";
+        var attachment = new TaskAttachment 
+        { 
+            TaskItemId = task.Id, 
+            FileName = "test.txt",
+            FilePath = $"/attachments/{uniqueFileName}"
+        };
+        context.TaskAttachments.Add(attachment);
+        await context.SaveChangesAsync();
+
+        var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "Data", "attachments");
+        Directory.CreateDirectory(uploadsDir);
+        var filePath = Path.Combine(uploadsDir, uniqueFileName);
+        await File.WriteAllTextAsync(filePath, "dummy content");
+
+        Assert.True(File.Exists(filePath));
+
+        var result = await TaskEndpoints.DeleteTaskAttachment(context, task.Id, attachment.Id);
+        
+        Assert.IsType<NoContent>(result);
+        Assert.Equal(0, context.TaskAttachments.Count());
+        Assert.False(File.Exists(filePath));
+    }
+
+    [Fact]
+    public async Task CanDeleteTaskWithAttachments()
+    {
+        var options = new DbContextOptionsBuilder<SanadDbContext>()
+            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .Options;
+
+        using var context = new SanadDbContext(options);
+        
+        var task = new TaskItem { Title = "Test Task to Delete" };
+        context.TaskItems.Add(task);
+        await context.SaveChangesAsync();
+
+        var uniqueFileName = $"{Guid.NewGuid()}.txt";
+        var attachment = new TaskAttachment 
+        { 
+            TaskItemId = task.Id, 
+            FileName = "test.txt",
+            FilePath = $"/attachments/{uniqueFileName}"
+        };
+        context.TaskAttachments.Add(attachment);
+        await context.SaveChangesAsync();
+
+        var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "Data", "attachments");
+        Directory.CreateDirectory(uploadsDir);
+        var filePath = Path.Combine(uploadsDir, uniqueFileName);
+        await File.WriteAllTextAsync(filePath, "dummy content");
+
+        Assert.True(File.Exists(filePath));
+
+        var result = await TaskEndpoints.DeleteTask(context, task.Id);
+        
+        Assert.IsType<NoContent>(result);
+        Assert.Equal(0, context.TaskItems.Count());
+        Assert.Equal(0, context.TaskAttachments.Count()); // Testing that in memory cascades properly, wait in memory might not cascade actually. We'll see.
+        Assert.False(File.Exists(filePath));
+    }
 }

@@ -91,8 +91,23 @@ public static class TaskEndpoints
 
     public static async Task<IResult> DeleteTask(SanadDbContext db, Guid id)
     {
-        var task = await db.TaskItems.FindAsync(id);
+        var task = await db.TaskItems
+            .Include(t => t.Attachments)
+            .FirstOrDefaultAsync(t => t.Id == id);
+            
         if (task == null) return Results.NotFound();
+        
+        if (task.Attachments != null)
+        {
+            foreach (var attachment in task.Attachments)
+            {
+                var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Data", attachment.FilePath.TrimStart('/'));
+                if (File.Exists(filePath))
+                {
+                    File.Delete(filePath);
+                }
+            }
+        }
         
         db.TaskItems.Remove(task);
         await db.SaveChangesAsync();
