@@ -41,6 +41,8 @@ builder.Services.AddDbContext<SanadDbContext>(options =>
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles);
 
+builder.Services.AddHttpClient<Sanad.Api.Services.IBookSearchService, Sanad.Api.Services.BookSearchService>();
+
 builder.Services.AddMcpServer()
     .WithHttpTransport(options => options.Stateless = true)
     .WithTools<McpEndpoints>();

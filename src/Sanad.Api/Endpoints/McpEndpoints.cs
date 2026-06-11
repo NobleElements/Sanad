@@ -14,10 +14,12 @@ namespace Sanad.Api.Endpoints;
 public class McpEndpoints
 {
     private readonly SanadDbContext _db;
+    private readonly Sanad.Api.Services.IBookSearchService _searchService;
 
-    public McpEndpoints(SanadDbContext db)
+    public McpEndpoints(SanadDbContext db, Sanad.Api.Services.IBookSearchService searchService)
     {
         _db = db;
+        _searchService = searchService;
     }
 
     // Thoughts Tools
@@ -145,6 +147,191 @@ public class McpEndpoints
         if (note != null)
         {
             _db.Notes.Remove(note);
+            await _db.SaveChangesAsync();
+            return true;
+        }
+        return false;
+    }
+
+    // Books Tools
+    [McpServerTool, Description("Get all books")]
+    public async Task<List<Book>> GetBooks()
+    {
+        return await _db.Books.OrderByDescending(b => b.CreatedAt).ToListAsync();
+    }
+
+    [McpServerTool, Description("Create a new book")]
+    public async Task<Book> CreateBook(string title, string author, string coverUrl, int totalPages)
+    {
+        var book = new Book { Title = title, Author = author, CoverUrl = coverUrl, TotalPages = totalPages };
+        _db.Books.Add(book);
+        await _db.SaveChangesAsync();
+        return book;
+    }
+
+    [McpServerTool, Description("Search for books from external sources (Google Books, OpenLibrary, Apple Books)")]
+    public async Task<List<Sanad.Api.Services.BookSearchResult>> SearchBooks(string query)
+    {
+        return await _searchService.SearchBooksAsync(query);
+    }
+
+    [McpServerTool, Description("Update an existing book")]
+    public async Task<Book?> UpdateBook(int id, string title, string author, string coverUrl, int totalPages)
+    {
+        var book = await _db.Books.FindAsync(id);
+        if (book != null)
+        {
+            book.Title = title;
+            book.Author = author;
+            book.CoverUrl = coverUrl;
+            book.TotalPages = totalPages;
+            await _db.SaveChangesAsync();
+        }
+        return book;
+    }
+
+    [McpServerTool, Description("Delete a book by ID")]
+    public async Task<bool> DeleteBook(int id)
+    {
+        var book = await _db.Books.FindAsync(id);
+        if (book != null)
+        {
+            _db.Books.Remove(book);
+            await _db.SaveChangesAsync();
+            return true;
+        }
+        return false;
+    }
+
+    // Reading Tools
+    [McpServerTool, Description("Get all reading periods")]
+    public async Task<List<ReadingPeriod>> GetReadingPeriods()
+    {
+        return await _db.ReadingPeriods
+            .Include(p => p.Book)
+            .Include(p => p.Plans)
+            .Include(p => p.Logs)
+            .OrderByDescending(p => p.StartDate)
+            .ToListAsync();
+    }
+
+    [McpServerTool, Description("Get current active reading period")]
+    public async Task<object?> GetCurrentReading()
+    {
+        var current = await _db.ReadingPeriods
+            .Include(p => p.Book)
+            .Include(p => p.Plans)
+            .Include(p => p.Logs)
+            .Where(p => p.Status == "Reading")
+            .OrderByDescending(p => p.StartDate)
+            .FirstOrDefaultAsync();
+
+        if (current == null) return null;
+
+        var highestPage = current.Logs.Any() ? current.Logs.Max(l => l.EndPage) : 0;
+        var currentPlan = current.Plans.OrderBy(p => p.OrderIndex)
+            .FirstOrDefault(p => highestPage >= p.StartPage && highestPage < p.EndPage) 
+            ?? current.Plans.OrderBy(p => p.OrderIndex).FirstOrDefault(p => highestPage < p.StartPage)
+            ?? current.Plans.LastOrDefault();
+
+        return new 
+        {
+            Period = current,
+            CurrentPage = highestPage,
+            CurrentChapter = currentPlan?.Title,
+            PagesLeftInChapter = currentPlan != null ? (currentPlan.EndPage - highestPage) : 0
+        };
+    }
+
+    [McpServerTool, Description("Start a new reading period")]
+    public async Task<ReadingPeriod> StartReadingPeriod(int bookId)
+    {
+        var period = new ReadingPeriod
+        {
+            BookId = bookId,
+            Status = "Reading",
+            StartDate = DateTime.UtcNow,
+            Plans = new List<ReadingPlan>()
+        };
+        _db.ReadingPeriods.Add(period);
+        await _db.SaveChangesAsync();
+        return period;
+    }
+
+    [McpServerTool, Description("Log reading progress")]
+    public async Task<ReadingLog?> LogReading(int readingPeriodId, int startPage, int endPage)
+    {
+        var period = await _db.ReadingPeriods
+            .Include(p => p.Book)
+            .FirstOrDefaultAsync(p => p.Id == readingPeriodId);
+            
+        if (period == null) return null;
+
+        var log = new ReadingLog
+        {
+            ReadingPeriodId = readingPeriodId,
+            Date = DateTime.UtcNow,
+            StartPage = startPage,
+            EndPage = endPage
+        };
+        _db.ReadingLogs.Add(log);
+
+        if (endPage >= period.Book.TotalPages)
+        {
+            period.Status = "Completed";
+            period.EndDate = DateTime.UtcNow;
+        }
+
+        await _db.SaveChangesAsync();
+        return log;
+    }
+
+    [McpServerTool, Description("Update reading status (e.g. Reading, Paused, Completed)")]
+    public async Task<ReadingPeriod?> UpdateReadingStatus(int id, string status)
+    {
+        var period = await _db.ReadingPeriods.FindAsync(id);
+        if (period == null) return null;
+
+        if (status == "Reading")
+        {
+            var otherActive = await _db.ReadingPeriods.Where(p => p.Status == "Reading" && p.Id != id).ToListAsync();
+            foreach (var other in otherActive)
+            {
+                other.Status = "Paused";
+            }
+        }
+
+        period.Status = status;
+        await _db.SaveChangesAsync();
+        return period;
+    }
+
+    [McpServerTool, Description("Update reading plans for a period")]
+    public async Task<List<ReadingPlan>?> UpdateReadingPlans(int id, List<ReadingEndpoints.PlanDto> plans)
+    {
+        var period = await _db.ReadingPeriods.Include(p => p.Plans).FirstOrDefaultAsync(p => p.Id == id);
+        if (period == null) return null;
+
+        _db.ReadingPlans.RemoveRange(period.Plans);
+        period.Plans = plans.Select((p, i) => new ReadingPlan
+        {
+            Title = p.Title,
+            StartPage = p.StartPage,
+            EndPage = p.EndPage,
+            OrderIndex = i
+        }).ToList();
+
+        await _db.SaveChangesAsync();
+        return period.Plans;
+    }
+
+    [McpServerTool, Description("Delete a reading period")]
+    public async Task<bool> DeleteReadingPeriod(int id)
+    {
+        var period = await _db.ReadingPeriods.FindAsync(id);
+        if (period != null)
+        {
+            _db.ReadingPeriods.Remove(period);
             await _db.SaveChangesAsync();
             return true;
         }
