@@ -363,4 +363,103 @@ public class McpEndpoints
         await _db.SaveChangesAsync();
         return goal;
     }
+
+    // Habits Tools
+    [McpServerTool, Description("Get all habits and their logs")]
+    public async Task<List<Habit>> GetHabits()
+    {
+        return await _db.Habits
+            .Include(h => h.Logs)
+            .Where(h => !h.IsDeleted)
+            .OrderBy(h => h.Order)
+            .ThenByDescending(h => h.CreatedAt)
+            .ToListAsync();
+    }
+
+    [McpServerTool, Description("Create a new habit")]
+    public async Task<Habit> CreateHabit(string name, string icon, string frequency)
+    {
+        var habit = new Habit
+        {
+            Id = Guid.NewGuid().ToString(),
+            Name = name,
+            Icon = icon,
+            Frequency = frequency,
+            CreatedAt = DateTime.UtcNow
+        };
+        _db.Habits.Add(habit);
+        await _db.SaveChangesAsync();
+        return habit;
+    }
+
+    [McpServerTool, Description("Update an existing habit")]
+    public async Task<Habit?> UpdateHabit(string id, string name, string icon, string frequency)
+    {
+        var habit = await _db.Habits.FindAsync(id);
+        if (habit == null || habit.IsDeleted) return null;
+
+        habit.Name = name;
+        habit.Icon = icon;
+        habit.Frequency = frequency;
+
+        await _db.SaveChangesAsync();
+        return habit;
+    }
+
+    [McpServerTool, Description("Delete a habit by ID")]
+    public async Task<bool> DeleteHabit(string id)
+    {
+        var habit = await _db.Habits.FindAsync(id);
+        if (habit == null || habit.IsDeleted) return false;
+
+        habit.IsDeleted = true;
+        await _db.SaveChangesAsync();
+        return true;
+    }
+
+    [McpServerTool, Description("Toggle habit completion for a specific date")]
+    public async Task<HabitLog?> ToggleHabitLog(string id, DateTime date)
+    {
+        var habit = await _db.Habits.FindAsync(id);
+        if (habit == null || habit.IsDeleted) return null;
+
+        var targetDate = date.Date;
+        var log = await _db.HabitLogs.FirstOrDefaultAsync(l => l.HabitId == id && l.Date.Date == targetDate);
+        if (log != null)
+        {
+            log.Completed = !log.Completed;
+        }
+        else
+        {
+            log = new HabitLog
+            {
+                Id = Guid.NewGuid().ToString(),
+                HabitId = id,
+                Date = targetDate,
+                Completed = true
+            };
+            _db.HabitLogs.Add(log);
+        }
+
+        await _db.SaveChangesAsync();
+        return log;
+    }
+
+    [McpServerTool, Description("Reorder habits using a list of their IDs")]
+    public async Task<bool> ReorderHabits(List<string> habitIds)
+    {
+        var habits = await _db.Habits.Where(h => habitIds.Contains(h.Id)).ToListAsync();
+        
+        for (int i = 0; i < habitIds.Count; i++)
+        {
+            var habit = habits.FirstOrDefault(h => h.Id == habitIds[i]);
+            if (habit != null)
+            {
+                habit.Order = i;
+            }
+        }
+
+        await _db.SaveChangesAsync();
+        return true;
+    }
 }

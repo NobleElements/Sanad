@@ -6,7 +6,8 @@ Sanad is a comprehensive personal management application designed to help you or
 - **Task Management**: Create, organize, and track daily tasks and goals.
 - **Notes & Thoughts**: Capture thoughts quickly and organize detailed notes into notebooks using a rich-text editor.
 - **Finance Tracking**: Manage your transactions, categorize expenses, track budgets, and monitor asset snapshots over time.
-- **Reading Logs**: Keep track of the books you are reading, create reading plans, and log reading periods.
+- **Books & Reading Progress**: Manage your personal bookshelf, track current reads, log reading progress, and maintain reading plans.
+- **Habit Tracking**: Define daily, weekly, or monthly routines, visualize your consistency with a 90-day heat map, and build streaks.
 - **User Authentication**: Secure user accounts and data privacy.
 - **AI Integration**: Built with Model Context Protocol (MCP) support for extensible AI capabilities.
 
