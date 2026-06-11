@@ -337,4 +337,30 @@ public class McpEndpoints
         }
         return false;
     }
+
+    // Goals Tools
+    [McpServerTool, Description("Get today's goal")]
+    public async Task<DailyGoal?> GetTodaysGoal()
+    {
+        var dateStr = DateTime.Now.ToString("yyyy-MM-dd");
+        return await _db.DailyGoals.FindAsync(dateStr);
+    }
+
+    [McpServerTool, Description("Set today's goal")]
+    public async Task<DailyGoal> SetTodaysGoal(string goalText)
+    {
+        var dateStr = DateTime.Now.ToString("yyyy-MM-dd");
+        var goal = await _db.DailyGoals.FindAsync(dateStr);
+        if (goal == null)
+        {
+            goal = new DailyGoal { DateStr = dateStr, Goal = goalText };
+            _db.DailyGoals.Add(goal);
+        }
+        else
+        {
+            goal.Goal = goalText;
+        }
+        await _db.SaveChangesAsync();
+        return goal;
+    }
 }
