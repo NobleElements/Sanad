@@ -3,7 +3,9 @@ import { API_BASE } from '../config';
 import useFinanceStore from '../store/useFinanceStore';
 import useThoughtsStore from '../store/useThoughtsStore';
 import useBookStore from '../store/useBookStore';
+import useHabitStore from '../store/useHabitStore';
 import CachedImage from '../components/CachedImage';
+import { format } from 'date-fns';
 
 import { timeAgo } from '../utils/dateUtils';
 import CategorySelector from '../components/CategorySelector';
@@ -25,6 +27,9 @@ export default function Dashboard() {
 
   // Book store
   const { currentRead, fetchCurrentRead, logProgress } = useBookStore();
+
+  // Habit store
+  const { habits, fetchHabits, toggleHabitLog } = useHabitStore();
 
   const [spendAmount, setSpendAmount] = useState('');
   const [spendDesc, setSpendDesc] = useState('');
@@ -88,7 +93,8 @@ export default function Dashboard() {
     fetchFinanceData();
     loadDailyGoal();
     fetchCurrentRead();
-  }, [fetchTimeline, fetchFinanceData, fetchCurrentRead]);
+    fetchHabits();
+  }, [fetchTimeline, fetchFinanceData, fetchCurrentRead, fetchHabits]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -125,6 +131,11 @@ export default function Dashboard() {
       return txDate.toDateString() === today.toDateString();
     })
     .reduce((sum, tx) => sum + tx.amount, 0);
+
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
+  const uncompletedHabitsToday = habits.filter(h => 
+    !h.logs?.some(l => l.completed && format(new Date(l.date), 'yyyy-MM-dd') === todayStr)
+  );
 
   return (
     <div className="flex-1 flex flex-col p-8 overflow-y-auto">
@@ -169,9 +180,36 @@ export default function Dashboard() {
             </div>
           )}
         </div>
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
-          <h3 className="text-sm text-slate-500 font-semibold uppercase">Habits</h3>
-          <p className="text-slate-400 mt-2">No habits tracked</p>
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200 flex flex-col max-h-[140px]">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm text-slate-500 font-semibold uppercase">Today's Habits</h3>
+            <a href="/habits" className="text-xs text-indigo-600 hover:text-indigo-800 font-medium">All →</a>
+          </div>
+          <div className="overflow-y-auto flex-1 pr-1 custom-scrollbar">
+            {uncompletedHabitsToday.length === 0 ? (
+               <p className="text-slate-400 text-sm mt-2">All done for today! 🎉</p>
+            ) : (
+               <div className="flex flex-col gap-2 mt-2">
+                 {uncompletedHabitsToday.map(habit => (
+                   <div key={habit.id} className="flex items-center justify-between group">
+                     <div className="flex items-center gap-2 min-w-0">
+                       <span className="text-lg flex-shrink-0">{habit.icon}</span>
+                       <span className="text-sm font-medium text-slate-700 truncate" title={habit.name}>{habit.name}</span>
+                     </div>
+                     <button
+                       onClick={() => toggleHabitLog(habit.id, todayStr)}
+                       className="w-5 h-5 rounded border border-slate-300 flex items-center justify-center text-transparent hover:border-emerald-500 hover:text-emerald-500 transition-colors flex-shrink-0"
+                       title="Mark completed"
+                     >
+                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                       </svg>
+                     </button>
+                   </div>
+                 ))}
+               </div>
+            )}
+          </div>
         </div>
       </div>
       
@@ -253,7 +291,7 @@ export default function Dashboard() {
              </div>
            )}
 
-           <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200 mt-6">
+           <div className={"bg-white p-6 rounded-lg shadow-sm border border-slate-200" + (currentRead ? " mt-6" : "")}>
               <div className="flex items-center justify-between mb-4">
                 <a href="/finance" className="text-lg font-semibold text-slate-700 hover:text-indigo-600 transition-colors cursor-pointer">Recent Spending →</a>
                 <button

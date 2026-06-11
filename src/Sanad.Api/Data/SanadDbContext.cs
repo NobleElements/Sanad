@@ -25,4 +25,6 @@ public class SanadDbContext : DbContext
     public DbSet<ReadingPeriod> ReadingPeriods => Set<ReadingPeriod>();
     public DbSet<ReadingPlan> ReadingPlans => Set<ReadingPlan>();
     public DbSet<ReadingLog> ReadingLogs => Set<ReadingLog>();
+    public DbSet<Habit> Habits => Set<Habit>();
+    public DbSet<HabitLog> HabitLogs => Set<HabitLog>();
 }

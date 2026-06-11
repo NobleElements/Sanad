@@ -7,6 +7,7 @@ import FinanceDashboard from './pages/FinanceDashboard';
 import Notebook from './pages/Notebook';
 import Thoughts from './pages/Thoughts';
 import Books from './pages/Books';
+import Habits from './pages/Habits';
 import AuthOverlay from './components/AuthOverlay';
 import ToastContainer from './components/ToastContainer';
 import TaskModal from './components/TaskModal';
@@ -59,6 +60,7 @@ function App() {
             <Route path="/notebook" element={<Notebook />} />
             <Route path="/notebook/:noteId" element={<Notebook />} />
             <Route path="/books" element={<Books />} />
+            <Route path="/habits" element={<Habits />} />
           </Routes>
           <ToastContainer />
           
