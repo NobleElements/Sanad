@@ -15,7 +15,8 @@ public static class HabitEndpoints
             return await db.Habits
                 .Include(h => h.Logs)
                 .Where(h => !h.IsDeleted)
-                .OrderByDescending(h => h.CreatedAt)
+                .OrderBy(h => h.Order)
+                .ThenByDescending(h => h.CreatedAt)
                 .ToListAsync();
         });
 
@@ -78,7 +79,29 @@ public static class HabitEndpoints
             await db.SaveChangesAsync();
             return Results.Ok(log);
         });
+
+        group.MapPut("/reorder", async (SanadDbContext db, ReorderHabitsRequest req) =>
+        {
+            var habits = await db.Habits.Where(h => req.HabitIds.Contains(h.Id)).ToListAsync();
+            
+            for (int i = 0; i < req.HabitIds.Count; i++)
+            {
+                var habit = habits.FirstOrDefault(h => h.Id == req.HabitIds[i]);
+                if (habit != null)
+                {
+                    habit.Order = i;
+                }
+            }
+
+            await db.SaveChangesAsync();
+            return Results.NoContent();
+        });
     }
+}
+
+public class ReorderHabitsRequest
+{
+    public List<string> HabitIds { get; set; } = new();
 }
 
 public class ToggleHabitLogRequest

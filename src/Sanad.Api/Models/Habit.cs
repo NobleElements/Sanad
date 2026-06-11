@@ -8,6 +8,7 @@ public class Habit
     public string Frequency { get; set; } = "Daily"; // Daily, Weekly, Monthly
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public bool IsDeleted { get; set; } = false;
+    public int Order { get; set; } = 0;
     
     public List<HabitLog> Logs { get; set; } = new();
 }

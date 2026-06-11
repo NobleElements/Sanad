@@ -88,6 +88,32 @@ const useHabitStore = create((set, get) => ({
       useUIStore.getState().showError('Failed to toggle habit log');
       return false;
     }
+  },
+
+  reorderHabits: async (startIndex, endIndex) => {
+    const { habits } = get();
+    const newHabits = Array.from(habits);
+    const [movedHabit] = newHabits.splice(startIndex, 1);
+    newHabits.splice(endIndex, 0, movedHabit);
+
+    // Optimistic update
+    set({ habits: newHabits });
+
+    try {
+      const habitIds = newHabits.map(h => h.id);
+      const res = await fetch(`${API_BASE}/api/habits/reorder`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ habitIds })
+      });
+      if (!res.ok) {
+        throw new Error('Failed to reorder');
+      }
+    } catch (err) {
+      useUIStore.getState().showError('Failed to save habit order');
+      // Rollback
+      get().fetchHabits();
+    }
   }
 }));
 

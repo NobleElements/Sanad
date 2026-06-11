@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash, ChevronDown, ChevronUp, Check, X } from 'lucide-react';
+import { Plus, Trash, ChevronDown, ChevronUp, Check, X, GripVertical } from 'lucide-react';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import EmojiPicker from 'emoji-picker-react';
 import { format, subDays, startOfDay, isSameDay, subMonths, eachDayOfInterval } from 'date-fns';
 import useHabitStore from '../store/useHabitStore';
 
 export default function Habits() {
-  const { habits, isLoaded, fetchHabits, createHabit, deleteHabit, toggleHabitLog } = useHabitStore();
+  const { habits, isLoaded, fetchHabits, createHabit, deleteHabit, toggleHabitLog, reorderHabits } = useHabitStore();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newHabit, setNewHabit] = useState({ name: '', icon: '🌟', frequency: 'Daily' });
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -30,6 +31,12 @@ export default function Habits() {
     if (newSet.has(id)) newSet.delete(id);
     else newSet.add(id);
     setExpandedHabits(newSet);
+  };
+
+  const onDragEnd = (result) => {
+    if (!result.destination) return;
+    if (result.destination.index === result.source.index) return;
+    reorderHabits(result.source.index, result.destination.index);
   };
 
   // Helper to check if a habit has a completed log for a specific Date object
@@ -80,93 +87,116 @@ export default function Habits() {
               </button>
             </div>
           ) : (
-            habits.map(habit => (
-              <div key={habit.id} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden transition-all hover:shadow-md">
-                <div className="p-5 flex items-center justify-between">
-                  <div className="flex items-center gap-4 flex-1">
-                    <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-2xl">
-                      {habit.icon}
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-slate-800">{habit.name}</h3>
-                      <p className="text-sm text-slate-500">{habit.frequency}</p>
-                    </div>
-                  </div>
-                  
-                  {/* 7-Day Streak */}
-                  <div className="flex items-center gap-2 mr-6">
-                    {last7Days.map(date => {
-                      const completed = isCompleted(habit, date);
-                      const isToday = isSameDay(date, new Date());
-                      return (
-                        <button
-                          key={date.toISOString()}
-                          onClick={() => toggleHabitLog(habit.id, format(date, 'yyyy-MM-dd'))}
-                          className={`w-8 h-8 rounded-md flex items-center justify-center text-xs font-medium transition-all cursor-pointer
-                            ${completed ? 'bg-green-500 text-white shadow-sm' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}
-                            ${isToday && !completed ? 'ring-2 ring-indigo-200 ring-offset-1' : ''}
-                          `}
-                          title={format(date, 'MMM d, yyyy')}
-                        >
-                          {completed ? <Check className="w-4 h-4" /> : format(date, 'd')}
-                        </button>
-                      );
-                    })}
-                  </div>
+            <DragDropContext onDragEnd={onDragEnd}>
+              <Droppable droppableId="habits">
+                {(provided) => (
+                  <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-4">
+                    {habits.map((habit, index) => (
+                      <Draggable key={habit.id} draggableId={habit.id} index={index}>
+                        {(provided, snapshot) => (
+                          <div 
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            className={`bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden transition-all ${snapshot.isDragging ? 'shadow-xl ring-2 ring-indigo-500 scale-[1.02]' : 'hover:shadow-md'}`}
+                          >
+                            <div className="p-5 flex items-center justify-between">
+                              <div className="flex items-center gap-4 flex-1">
+                                <div 
+                                  {...provided.dragHandleProps} 
+                                  className="text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing p-1 -ml-2 rounded-lg hover:bg-slate-50"
+                                >
+                                  <GripVertical className="w-5 h-5" />
+                                </div>
+                                <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-2xl flex-shrink-0">
+                                  {habit.icon}
+                                </div>
+                                <div>
+                                  <h3 className="text-lg font-semibold text-slate-800">{habit.name}</h3>
+                                  <p className="text-sm text-slate-500">{habit.frequency}</p>
+                                </div>
+                              </div>
+                              
+                              {/* 7-Day Streak */}
+                              <div className="flex items-center gap-2 mr-6">
+                                {last7Days.map(date => {
+                                  const completed = isCompleted(habit, date);
+                                  const isToday = isSameDay(date, new Date());
+                                  return (
+                                    <button
+                                      key={date.toISOString()}
+                                      onClick={() => toggleHabitLog(habit.id, format(date, 'yyyy-MM-dd'))}
+                                      className={`w-8 h-8 rounded-md flex items-center justify-center text-xs font-medium transition-all cursor-pointer
+                                        ${completed ? 'bg-green-500 text-white shadow-sm' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}
+                                        ${isToday && !completed ? 'ring-2 ring-indigo-200 ring-offset-1' : ''}
+                                      `}
+                                      title={format(date, 'MMM d, yyyy')}
+                                    >
+                                      {completed ? <Check className="w-4 h-4" /> : format(date, 'd')}
+                                    </button>
+                                  );
+                                })}
+                              </div>
 
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => toggleExpand(habit.id)}
-                      className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg transition-colors"
-                    >
-                      {expandedHabits.has(habit.id) ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (confirm('Are you sure you want to delete this habit?')) {
-                          deleteHabit(habit.id);
-                        }
-                      }}
-                      className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                      <Trash className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => toggleExpand(habit.id)}
+                                  className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg transition-colors"
+                                >
+                                  {expandedHabits.has(habit.id) ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    if (confirm('Are you sure you want to delete this habit?')) {
+                                      deleteHabit(habit.id);
+                                    }
+                                  }}
+                                  className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                >
+                                  <Trash className="w-5 h-5" />
+                                </button>
+                              </div>
+                            </div>
 
-                {/* Expanded Section (Heat map & Analysis) */}
-                {expandedHabits.has(habit.id) && (
-                  <div className="border-t border-slate-100 p-5 bg-slate-50">
-                    <h4 className="text-sm font-semibold text-slate-700 mb-3">Last 3 Months Activity</h4>
-                    <div className="flex flex-wrap gap-1.5">
-                      {last90Days.map(date => {
-                        const completed = isCompleted(habit, date);
-                        return (
-                          <div
-                            key={date.toISOString()}
-                            onClick={() => toggleHabitLog(habit.id, format(date, 'yyyy-MM-dd'))}
-                            className={`w-4 h-4 rounded-[3px] cursor-pointer transition-colors
-                              ${completed ? 'bg-green-500 hover:bg-green-600' : 'bg-slate-200 hover:bg-slate-300'}
-                            `}
-                            title={`${format(date, 'MMM d, yyyy')}${completed ? ' (Completed)' : ''}`}
-                          />
-                        );
-                      })}
-                    </div>
-                    <div className="mt-4 flex gap-4 text-sm text-slate-500">
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-3 h-3 rounded-[2px] bg-slate-200"></div>
-                        <span>Uncompleted</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-3 h-3 rounded-[2px] bg-green-500"></div>
-                        <span>Completed</span>
-                      </div>
-                    </div>
+                            {/* Expanded Section (Heat map & Analysis) */}
+                            {expandedHabits.has(habit.id) && (
+                              <div className="border-t border-slate-100 p-5 bg-slate-50">
+                                <h4 className="text-sm font-semibold text-slate-700 mb-3">Last 3 Months Activity</h4>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {last90Days.map(date => {
+                                    const completed = isCompleted(habit, date);
+                                    return (
+                                      <div
+                                        key={date.toISOString()}
+                                        onClick={() => toggleHabitLog(habit.id, format(date, 'yyyy-MM-dd'))}
+                                        className={`w-4 h-4 rounded-[3px] cursor-pointer transition-colors
+                                          ${completed ? 'bg-green-500 hover:bg-green-600' : 'bg-slate-200 hover:bg-slate-300'}
+                                        `}
+                                        title={`${format(date, 'MMM d, yyyy')}${completed ? ' (Completed)' : ''}`}
+                                      />
+                                    );
+                                  })}
+                                </div>
+                                <div className="mt-4 flex gap-4 text-sm text-slate-500">
+                                  <div className="flex items-center gap-1.5">
+                                    <div className="w-3 h-3 rounded-[2px] bg-slate-200"></div>
+                                    <span>Uncompleted</span>
+                                  </div>
+                                  <div className="flex items-center gap-1.5">
+                                    <div className="w-3 h-3 rounded-[2px] bg-green-500"></div>
+                                    <span>Completed</span>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
                   </div>
                 )}
-              </div>
-            ))
+              </Droppable>
+            </DragDropContext>
           )}
         </div>
       </div>
@@ -174,7 +204,7 @@ export default function Habits() {
       {/* Add Habit Modal */}
       {isAddModalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
             <div className="flex justify-between items-center p-6 border-b border-slate-100">
               <h2 className="text-xl font-semibold text-slate-800">Create New Habit</h2>
               <button 
@@ -236,7 +266,7 @@ export default function Habits() {
               </div>
             </div>
 
-            <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
+            <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 rounded-b-2xl">
               <button
                 onClick={() => setIsAddModalOpen(false)}
                 className="px-4 py-2 text-slate-600 hover:text-slate-800 font-medium transition-colors"

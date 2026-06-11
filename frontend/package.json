@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@hello-pangea/dnd": "^18.0.1",
     "@tiptap/extension-code-block-lowlight": "^3.26.0",
     "@tiptap/extension-image": "^3.26.0",
     "@tiptap/extension-link": "^3.26.0",
