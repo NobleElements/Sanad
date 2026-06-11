@@ -97,6 +97,7 @@ public static class TaskEndpoints
             
         if (task == null) return Results.NotFound();
         
+        var filesToDelete = new System.Collections.Generic.List<string>();
         if (task.Attachments != null)
         {
             foreach (var attachment in task.Attachments)
@@ -104,13 +105,19 @@ public static class TaskEndpoints
                 var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Data", attachment.FilePath.TrimStart('/'));
                 if (File.Exists(filePath))
                 {
-                    File.Delete(filePath);
+                    filesToDelete.Add(filePath);
                 }
             }
         }
         
         db.TaskItems.Remove(task);
         await db.SaveChangesAsync();
+
+        foreach (var filePath in filesToDelete)
+        {
+            File.Delete(filePath);
+        }
+
         return Results.NoContent();
     }
 
@@ -177,13 +184,15 @@ public static class TaskEndpoints
         if (attachment == null) return Results.NotFound();
 
         var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Data", attachment.FilePath.TrimStart('/'));
+        
+        db.TaskAttachments.Remove(attachment);
+        await db.SaveChangesAsync();
+
         if (File.Exists(filePath))
         {
             File.Delete(filePath);
         }
-        
-        db.TaskAttachments.Remove(attachment);
-        await db.SaveChangesAsync();
+
         return Results.NoContent();
     }
 }

@@ -64,13 +64,23 @@ public class TaskApiTests
         var filePath = Path.Combine(uploadsDir, uniqueFileName);
         await File.WriteAllTextAsync(filePath, "dummy content");
 
-        Assert.True(File.Exists(filePath));
+        try
+        {
+            Assert.True(File.Exists(filePath));
 
-        var result = await TaskEndpoints.DeleteTaskAttachment(context, task.Id, attachment.Id);
-        
-        Assert.IsType<NoContent>(result);
-        Assert.Equal(0, context.TaskAttachments.Count());
-        Assert.False(File.Exists(filePath));
+            var result = await TaskEndpoints.DeleteTaskAttachment(context, task.Id, attachment.Id);
+            
+            Assert.IsType<NoContent>(result);
+            Assert.Equal(0, context.TaskAttachments.Count());
+            Assert.False(File.Exists(filePath));
+        }
+        finally
+        {
+            if (File.Exists(filePath))
+            {
+                File.Delete(filePath);
+            }
+        }
     }
 
     [Fact]
@@ -101,13 +111,23 @@ public class TaskApiTests
         var filePath = Path.Combine(uploadsDir, uniqueFileName);
         await File.WriteAllTextAsync(filePath, "dummy content");
 
-        Assert.True(File.Exists(filePath));
+        try
+        {
+            Assert.True(File.Exists(filePath));
 
-        var result = await TaskEndpoints.DeleteTask(context, task.Id);
-        
-        Assert.IsType<NoContent>(result);
-        Assert.Equal(0, context.TaskItems.Count());
-        Assert.Equal(0, context.TaskAttachments.Count()); // Testing that in memory cascades properly, wait in memory might not cascade actually. We'll see.
-        Assert.False(File.Exists(filePath));
+            var result = await TaskEndpoints.DeleteTask(context, task.Id);
+            
+            Assert.IsType<NoContent>(result);
+            Assert.Equal(0, context.TaskItems.Count());
+            Assert.Equal(0, context.TaskAttachments.Count());
+            Assert.False(File.Exists(filePath));
+        }
+        finally
+        {
+            if (File.Exists(filePath))
+            {
+                File.Delete(filePath);
+            }
+        }
     }
 }
