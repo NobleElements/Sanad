@@ -2,20 +2,17 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Sanad.Api.Data;
 
 #nullable disable
 
-namespace Sanad.Api.Migrations
+namespace Sanad.Api.Migrations.Sanad
 {
     [DbContext(typeof(SanadDbContext))]
-    [Migration("20260611072218_AddHabitOrder")]
-    partial class AddHabitOrder
+    partial class SanadDbContextModelSnapshot : ModelSnapshot
     {
-        /// <inheritdoc />
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.8");
@@ -115,6 +112,70 @@ namespace Sanad.Api.Migrations
                     b.HasKey("DateStr");
 
                     b.ToTable("DailyGoals");
+                });
+
+            modelBuilder.Entity("Sanad.Api.Models.FileItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Extension")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("FolderId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("LastModifiedDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MimeType")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("UploadDate")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FolderId");
+
+                    b.ToTable("FileItems");
+                });
+
+            modelBuilder.Entity("Sanad.Api.Models.Folder", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("ParentId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ParentId");
+
+                    b.ToTable("Folders");
                 });
 
             modelBuilder.Entity("Sanad.Api.Models.Habit", b =>
@@ -500,28 +561,6 @@ namespace Sanad.Api.Migrations
                     b.ToTable("TransactionCategories");
                 });
 
-            modelBuilder.Entity("Sanad.Api.Models.User", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("PasswordHash")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Username")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Users");
-                });
-
             modelBuilder.Entity("Sanad.Api.Models.AssetSnapshot", b =>
                 {
                     b.HasOne("Sanad.Api.Models.Asset", "Asset")
@@ -531,6 +570,26 @@ namespace Sanad.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("Asset");
+                });
+
+            modelBuilder.Entity("Sanad.Api.Models.FileItem", b =>
+                {
+                    b.HasOne("Sanad.Api.Models.Folder", "Folder")
+                        .WithMany("Files")
+                        .HasForeignKey("FolderId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("Folder");
+                });
+
+            modelBuilder.Entity("Sanad.Api.Models.Folder", b =>
+                {
+                    b.HasOne("Sanad.Api.Models.Folder", "Parent")
+                        .WithMany("Subfolders")
+                        .HasForeignKey("ParentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Parent");
                 });
 
             modelBuilder.Entity("Sanad.Api.Models.HabitLog", b =>
@@ -619,6 +678,13 @@ namespace Sanad.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("Category");
+                });
+
+            modelBuilder.Entity("Sanad.Api.Models.Folder", b =>
+                {
+                    b.Navigation("Files");
+
+                    b.Navigation("Subfolders");
                 });
 
             modelBuilder.Entity("Sanad.Api.Models.Habit", b =>

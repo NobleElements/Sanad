@@ -17,7 +17,7 @@ public class SanadDbContext : DbContext
     public DbSet<MonthlyBudget> MonthlyBudgets => Set<MonthlyBudget>();
     public DbSet<Notebook> Notebooks => Set<Notebook>();
     public DbSet<Note> Notes => Set<Note>();
-    public DbSet<User> Users => Set<User>();
+
     public DbSet<DailyGoal> DailyGoals => Set<DailyGoal>();
     public DbSet<Asset> Assets => Set<Asset>();
     public DbSet<AssetSnapshot> AssetSnapshots => Set<AssetSnapshot>();

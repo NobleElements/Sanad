@@ -91,7 +91,7 @@ public static class TaskEndpoints
         return Results.NoContent();
     }
 
-    public static async Task<IResult> DeleteTask(SanadDbContext db, Guid id)
+    public static async Task<IResult> DeleteTask(SanadDbContext db, Guid id, Sanad.Api.Services.ITenantProvider tenantProvider)
     {
         var task = await db.TaskItems
             .Include(t => t.Attachments)
@@ -104,7 +104,8 @@ public static class TaskEndpoints
         {
             foreach (var attachment in task.Attachments)
             {
-                var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Data", attachment.FilePath.TrimStart('/'));
+                var username = tenantProvider.GetUsername();
+                var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Data", username, attachment.FilePath.TrimStart('/'));
                 filesToDelete.Add(filePath);
             }
         }
@@ -140,7 +141,7 @@ public static class TaskEndpoints
         return Results.Created($"/api/tasks/{id}/comments/{comment.Id}", comment);
     }
 
-    public static async Task<IResult> CreateTaskAttachment(HttpRequest request, SanadDbContext db, Guid id)
+    public static async Task<IResult> CreateTaskAttachment(HttpRequest request, SanadDbContext db, Guid id, Sanad.Api.Services.ITenantProvider tenantProvider, Sanad.Api.Services.DiskQuotaService quotaService)
     {
         var taskExists = await db.TaskItems.AnyAsync(t => t.Id == id);
         if (!taskExists) return Results.NotFound();
@@ -151,7 +152,14 @@ public static class TaskEndpoints
         var file = form.Files.FirstOrDefault();
         if (file == null || file.Length == 0) return Results.BadRequest("No file uploaded");
 
-        var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "Data", "attachments");
+        var username = tenantProvider.GetUsername();
+        
+        var canUpload = await quotaService.CanUploadAsync(username, file.Length);
+        if (!canUpload)
+        {
+            return Results.BadRequest("Disk quota exceeded. Please upgrade your tier or delete files.");
+        }
+        var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "Data", username, "attachments");
         Directory.CreateDirectory(uploadsDir);
 
         var uniqueFileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
@@ -184,12 +192,13 @@ public static class TaskEndpoints
         return Results.NoContent();
     }
 
-    public static async Task<IResult> DeleteTaskAttachment(SanadDbContext db, Guid id, Guid attachmentId)
+    public static async Task<IResult> DeleteTaskAttachment(SanadDbContext db, Guid id, Guid attachmentId, Sanad.Api.Services.ITenantProvider tenantProvider)
     {
         var attachment = await db.TaskAttachments.FirstOrDefaultAsync(a => a.Id == attachmentId && a.TaskItemId == id);
         if (attachment == null) return Results.NotFound();
 
-        var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Data", attachment.FilePath.TrimStart('/'));
+        var username = tenantProvider.GetUsername();
+        var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Data", username, attachment.FilePath.TrimStart('/'));
         
         db.TaskAttachments.Remove(attachment);
         await db.SaveChangesAsync();

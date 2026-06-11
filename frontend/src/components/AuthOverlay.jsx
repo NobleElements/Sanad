@@ -1,20 +1,18 @@
 import React, { useState } from 'react';
 import useAuthStore from '../store/useAuthStore';
 
-import { API_BASE } from '../config';
-
-export default function AuthOverlay({ mode, onAuthenticated }) {
+export default function AuthOverlay({ onAuthenticated }) {
+    const [isSignup, setIsSignup] = useState(false);
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const isSetup = mode === 'setup';
-    const title = isSetup ? 'Welcome to Sanad' : 'Welcome Back';
-    const subtitle = isSetup 
-        ? 'Please create an account to secure your personal organizer.'
+    const title = isSignup ? 'Create an Account' : 'Welcome Back';
+    const subtitle = isSignup 
+        ? 'Join us to secure your personal organizer.'
         : 'Please log in to continue.';
-    const buttonText = isSetup ? 'Create Account' : 'Log In';
+    const buttonText = isSignup ? 'Sign Up' : 'Log In';
 
     const login = useAuthStore((state) => state.login);
 
@@ -23,7 +21,7 @@ export default function AuthOverlay({ mode, onAuthenticated }) {
         setError('');
         setLoading(true);
 
-        const result = await login(username, password, isSetup);
+        const result = await login(username, password, isSignup);
         if (result.success) {
             onAuthenticated(username);
         } else {
@@ -84,6 +82,16 @@ export default function AuthOverlay({ mode, onAuthenticated }) {
                     >
                         {loading ? 'Processing...' : buttonText}
                     </button>
+                    
+                    <div className="text-center mt-4">
+                        <button 
+                            type="button" 
+                            onClick={() => { setIsSignup(!isSignup); setError(''); }}
+                            className="text-sm text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                            {isSignup ? 'Already have an account? Log In' : 'Need an account? Sign Up'}
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>

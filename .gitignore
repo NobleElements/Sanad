@@ -488,6 +488,6 @@ $RECYCLE.BIN/
 *.db
 *.db-shm
 *.db-wal
-
-src/Sanad.Api/Data/attachments/
-src/Sanad.Api/Data/files/
+# Data directory containing tenant databases and files
+src/Sanad.Api/Data/*
+!src/Sanad.Api/Data/*.cs

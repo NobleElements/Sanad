@@ -4,9 +4,11 @@ import useUIStore from './useUIStore';
 
 const useAuthStore = create((set, get) => ({
   loaded: false,
-  setupRequired: false,
   authenticated: false,
   username: null,
+  isAdmin: false,
+  tierId: 1,
+  apiKey: null,
 
   checkAuthStatus: async () => {
     try {
@@ -14,18 +16,20 @@ const useAuthStore = create((set, get) => ({
       const data = await res.json();
       set({
         loaded: true,
-        setupRequired: data.setupRequired,
         authenticated: data.authenticated,
-        username: data.username
+        username: data.username,
+        isAdmin: data.isAdmin || false,
+        tierId: data.tierId || 1,
+        apiKey: data.apiKey || null
       });
     } catch (err) {
       console.error("Auth status error:", err);
-      set({ loaded: true, setupRequired: false, authenticated: false, username: null });
+      set({ loaded: true, authenticated: false, username: null, isAdmin: false, apiKey: null });
     }
   },
 
-  login: async (username, password, isSetup = false) => {
-    const endpoint = isSetup ? '/api/auth/setup' : '/api/auth/login';
+  login: async (username, password, isSignup = false) => {
+    const endpoint = isSignup ? '/api/auth/signup' : '/api/auth/login';
     try {
       const response = await fetch(`${API_BASE}${endpoint}`, {
         method: 'POST',
@@ -35,7 +39,13 @@ const useAuthStore = create((set, get) => ({
 
       if (response.ok) {
         const data = await response.json();
-        set({ authenticated: true, username: data.username, setupRequired: false });
+        set({ 
+            authenticated: true, 
+            username: data.username, 
+            isAdmin: data.isAdmin,
+            tierId: data.tierId || 1,
+            apiKey: data.apiKey || null
+        });
         return { success: true };
       } else {
         const errText = await response.text();
@@ -49,10 +59,24 @@ const useAuthStore = create((set, get) => ({
   logout: async () => {
     try {
       await fetch(`${API_BASE}/api/auth/logout`, { method: 'POST' });
-      set({ authenticated: false, username: null });
+      set({ authenticated: false, username: null, isAdmin: false, tierId: 1, apiKey: null });
     } catch (err) {
       console.error('Logout failed', err);
       useUIStore.getState().showError('Logout failed');
+    }
+  },
+
+  rerollApiKey: async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/api-key/reroll`, { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        set({ apiKey: data.apiKey });
+        return { success: true };
+      }
+      return { success: false, error: 'Failed to reroll API key' };
+    } catch (err) {
+      return { success: false, error: 'Network error' };
     }
   }
 }));

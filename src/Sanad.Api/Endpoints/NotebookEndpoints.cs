@@ -134,7 +134,7 @@ public static class NotebookEndpoints
         return Results.Ok(results);
     }
 
-    static async Task<IResult> UploadNoteImage(HttpRequest request, SanadDbContext db, Guid id)
+    static async Task<IResult> UploadNoteImage(HttpRequest request, SanadDbContext db, Sanad.Api.Services.ITenantProvider tenantProvider, Sanad.Api.Services.DiskQuotaService quotaService, Guid id)
     {
         var noteExists = await db.Notes.AnyAsync(n => n.Id == id);
         if (!noteExists) return Results.NotFound();
@@ -145,7 +145,13 @@ public static class NotebookEndpoints
         var file = form.Files.FirstOrDefault();
         if (file == null || file.Length == 0) return Results.BadRequest("No file uploaded");
 
-        var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "Data", "attachments");
+        var username = tenantProvider.GetUsername();
+        var canUpload = await quotaService.CanUploadAsync(username, file.Length);
+        if (!canUpload)
+        {
+            return Results.BadRequest("Disk quota exceeded. Please upgrade your tier or delete files.");
+        }
+        var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "Data", username, "attachments");
         Directory.CreateDirectory(uploadsDir);
 
         var uniqueFileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";

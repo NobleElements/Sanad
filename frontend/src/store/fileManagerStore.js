@@ -1,6 +1,9 @@
 import { create } from 'zustand';
+import { BYTES_PER_KB } from '../config';
+import useSubscriptionStore from './useSubscriptionStore';
+import useUIStore from './useUIStore';
 
-const CHUNK_SIZE = 1024 * 1024 * 2; // 2MB
+const CHUNK_SIZE = BYTES_PER_KB * BYTES_PER_KB * 2; // 2MB
 
 export const useFileManagerStore = create((set, get) => ({
   currentFolderId: null,
@@ -107,7 +110,10 @@ export const useFileManagerStore = create((set, get) => ({
     try {
       const url = isFolder ? `/api/folders/${id}` : `/api/files/${id}`;
       const response = await fetch(url, { method: 'DELETE' });
-      if (response.ok) get().fetchContents();
+      if (response.ok) {
+        get().fetchContents();
+        useSubscriptionStore.getState().fetchSubscriptionData();
+      }
     } catch (err) {
       console.error(err);
     }
@@ -142,6 +148,16 @@ export const useFileManagerStore = create((set, get) => ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: file.name, sizeBytes: file.size, mimeType: file.type, folderId: currentFolderId })
       });
+      
+      if (!initRes.ok) {
+        let errMessage = 'Failed to initialize upload';
+        try {
+          const errData = await initRes.text();
+          if (errData) errMessage = errData.replace(/"/g, '');
+        } catch(e) {}
+        throw new Error(errMessage);
+      }
+      
       const { uploadId } = await initRes.json();
       
       set(state => ({
@@ -152,6 +168,7 @@ export const useFileManagerStore = create((set, get) => ({
       get().processUploadChunk(id);
 
     } catch (err) {
+      useUIStore.getState().showError(err.message);
       set(state => ({
         transfers: state.transfers.map(t => t.id === id ? { ...t, status: 'error' } : t)
       }));

@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
@@ -14,9 +14,11 @@ import ToastContainer from './components/ToastContainer';
 import TaskModal from './components/TaskModal';
 import useAuthStore from './store/useAuthStore';
 import useTaskStore from './store/useTaskStore';
+import AdminDashboard from './pages/AdminDashboard';
+import Subscription from './pages/Subscription';
 
 function App() {
-  const { loaded, setupRequired, authenticated, username, checkAuthStatus } = useAuthStore();
+  const { loaded, authenticated, isAdmin, checkAuthStatus } = useAuthStore();
   const { isTaskModalOpen, activeTask, closeTaskModal, createTask, updateTask } = useTaskStore();
 
   useEffect(() => {
@@ -45,10 +47,8 @@ function App() {
 
   return (
     <BrowserRouter>
-      {setupRequired ? (
-        <AuthOverlay mode="setup" onAuthenticated={handleAuthenticated} />
-      ) : !authenticated ? (
-        <AuthOverlay mode="login" onAuthenticated={handleAuthenticated} />
+      {!authenticated ? (
+        <AuthOverlay onAuthenticated={handleAuthenticated} />
       ) : (
         <div className="flex h-screen w-full bg-slate-50 font-sans">
           <Sidebar />
@@ -64,6 +64,11 @@ function App() {
             <Route path="/habits" element={<Habits />} />
             <Route path="/files" element={<FileManager />} />
             <Route path="/files/:folderId" element={<FileManager />} />
+            <Route path="/subscription" element={<Subscription />} />
+            <Route 
+              path="/admin" 
+              element={isAdmin ? <AdminDashboard /> : <Navigate to="/" replace />} 
+            />
           </Routes>
           <ToastContainer />
           

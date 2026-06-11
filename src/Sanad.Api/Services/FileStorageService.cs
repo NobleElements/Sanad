@@ -9,10 +9,10 @@ public class FileStorageService
 {
     private readonly string _storagePath;
 
-    public FileStorageService(IWebHostEnvironment env)
+    public FileStorageService(IWebHostEnvironment env, ITenantProvider tenantProvider)
     {
-        // Store files in Data/files
-        _storagePath = Path.Combine(env.ContentRootPath, "Data", "files");
+        var username = tenantProvider.GetUsername();
+        _storagePath = Path.Combine(env.ContentRootPath, "Data", username, "files");
         EnsureDirectoryExists(_storagePath);
     }
 

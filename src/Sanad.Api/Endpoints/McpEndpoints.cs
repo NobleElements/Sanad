@@ -8,6 +8,7 @@ using ModelContextProtocol.Server;
 using Sanad.Api.Data;
 using Sanad.Api.Models;
 
+
 namespace Sanad.Api.Endpoints;
 
 [McpServerToolType]
@@ -17,11 +18,47 @@ public class McpEndpoints
     private readonly Sanad.Api.Services.IBookSearchService _searchService;
     private readonly Sanad.Api.Services.FileManagerService _fileManager;
 
-    public McpEndpoints(SanadDbContext db, Sanad.Api.Services.IBookSearchService searchService, Sanad.Api.Services.FileManagerService fileManager)
+    private readonly Sanad.Api.Services.ITenantProvider _tenantProvider;
+    private readonly Sanad.Api.Services.DiskQuotaService _quotaService;
+    private readonly AdminDbContext _adminDb;
+
+    public McpEndpoints(SanadDbContext db, Sanad.Api.Services.IBookSearchService searchService, Sanad.Api.Services.FileManagerService fileManager, Sanad.Api.Services.ITenantProvider tenantProvider, Sanad.Api.Services.DiskQuotaService quotaService, AdminDbContext adminDb)
     {
         _db = db;
         _searchService = searchService;
         _fileManager = fileManager;
+        _tenantProvider = tenantProvider;
+        _quotaService = quotaService;
+        _adminDb = adminDb;
+    }
+
+
+
+    [McpServerTool, Description("Get all available storage tiers")]
+    public async Task<List<StorageTier>> GetTiers()
+    {
+        return await _adminDb.Tiers.ToListAsync();
+    }
+
+    [McpServerTool, Description("Get current storage status for the authenticated user")]
+    public async Task<object> GetStorageStatus()
+    {
+        var username = _tenantProvider.GetUsername();
+        var user = await _adminDb.Users.Include(u => u.Tier).FirstOrDefaultAsync(u => u.Username == username);
+        
+        if (user == null) throw new Exception("User not found");
+
+        var userPath = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "Data", username);
+        var diskUsed = _quotaService.GetDirectorySize(userPath);
+        var diskLimitBytes = user.Tier?.DiskLimitBytes ?? (1L * Sanad.Api.Constants.BytesPerKb * Sanad.Api.Constants.BytesPerKb * Sanad.Api.Constants.BytesPerKb);
+
+        return new 
+        {
+            DiskUsedBytes = diskUsed,
+            DiskLimitBytes = diskLimitBytes,
+            TierName = user.Tier?.Name ?? "Unknown",
+            IsAdmin = user.IsAdmin
+        };
     }
 
     // Thoughts Tools
@@ -95,6 +132,22 @@ public class McpEndpoints
         return task;
     }
 
+    [McpServerTool, Description("Update the status of a specific task (e.g. ToDo, InProgress, Done)")]
+    public async Task<bool> UpdateTaskStatus(Guid taskId, string statusStr)
+    {
+        var task = await _db.TaskItems.FindAsync(taskId);
+        if (task == null) return false;
+        
+        if (Enum.TryParse<Sanad.Api.Models.TaskStatus>(statusStr, true, out var newStatus))
+        {
+            task.Status = newStatus;
+            task.UpdatedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+            return true;
+        }
+        return false;
+    }
+
     [McpServerTool, Description("Add a rich-text comment to a task")]
     public async Task<TaskComment?> AddTaskComment(Guid taskId, string text)
     {
@@ -124,7 +177,12 @@ public class McpEndpoints
         var taskExists = await _db.TaskItems.AnyAsync(t => t.Id == taskId);
         if (!taskExists || !System.IO.File.Exists(localFilePath)) return null;
 
-        var uploadsDir = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "Data", "attachments");
+        var fileInfo = new System.IO.FileInfo(localFilePath);
+        var username = _tenantProvider.GetUsername();
+        
+        var canUpload = await _quotaService.CanUploadAsync(username, fileInfo.Length);
+        if (!canUpload) return null;
+        var uploadsDir = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "Data", username, "attachments");
         System.IO.Directory.CreateDirectory(uploadsDir);
 
         var fileName = System.IO.Path.GetFileName(localFilePath);
@@ -159,7 +217,8 @@ public class McpEndpoints
         var attachment = await _db.TaskAttachments.FindAsync(attachmentId);
         if (attachment == null) return false;
 
-        var filePath = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "Data", attachment.FilePath.TrimStart('/'));
+        var username = _tenantProvider.GetUsername();
+        var filePath = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "Data", username, attachment.FilePath.TrimStart('/'));
 
         _db.TaskAttachments.Remove(attachment);
         await _db.SaveChangesAsync();

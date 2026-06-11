@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using Sanad.Api.Data;
 using Sanad.Api.Endpoints;
-using Sanad.Api.Models;
+using Sanad.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,27 +28,56 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
             return Task.CompletedTask;
         };
-    });
-builder.Services.AddAuthorization();
+        options.Events.OnRedirectToAccessDenied = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            return Task.CompletedTask;
+        };
+    })
+    .AddScheme<Sanad.Api.Services.ApiKeyAuthenticationOptions, Sanad.Api.Services.ApiKeyAuthenticationHandler>(
+        Sanad.Api.Services.ApiKeyAuthenticationOptions.DefaultScheme, null);
 
-// Configure DB
-var dbPath = Path.Combine(Directory.GetCurrentDirectory(), "Data", "sanad.db");
-Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
-builder.Services.AddDbContext<SanadDbContext>(options =>
-    options.UseSqlite($"Data Source={dbPath}"));
+builder.Services.AddAuthorization(options =>
+{
+    var defaultPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder(
+        CookieAuthenticationDefaults.AuthenticationScheme,
+        Sanad.Api.Services.ApiKeyAuthenticationOptions.DefaultScheme)
+        .RequireAuthenticatedUser()
+        .Build();
+    options.DefaultPolicy = defaultPolicy;
+});
+
+// Add HttpContextAccessor and TenantProvider
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ITenantProvider, TenantProvider>();
+builder.Services.AddScoped<DiskQuotaService>();
+
+// Configure Admin DB
+var adminDbPath = Path.Combine(Directory.GetCurrentDirectory(), "Data", "admin.db");
+Directory.CreateDirectory(Path.GetDirectoryName(adminDbPath)!);
+builder.Services.AddDbContext<AdminDbContext>(options =>
+    options.UseSqlite($"Data Source={adminDbPath}"));
+
+// Configure Tenant DB
+builder.Services.AddDbContext<SanadDbContext>((sp, options) => 
+{
+    var tenantProvider = sp.GetRequiredService<ITenantProvider>();
+    options.UseSqlite(tenantProvider.GetConnectionString());
+});
 
 // Ignore JSON reference cycles
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles);
 
-builder.Services.AddHttpClient<Sanad.Api.Services.IBookSearchService, Sanad.Api.Services.BookSearchService>();
+builder.Services.AddHttpClient<IBookSearchService, BookSearchService>();
 
 builder.Services.AddMcpServer()
     .WithHttpTransport(options => options.Stateless = true)
     .WithTools<McpEndpoints>();
 
-builder.Services.AddSingleton<Sanad.Api.Services.FileStorageService>();
-builder.Services.AddScoped<Sanad.Api.Services.FileManagerService>();
+// Change to Scoped since it needs ITenantProvider
+builder.Services.AddScoped<FileStorageService>();
+builder.Services.AddScoped<FileManagerService>();
 
 var app = builder.Build();
 
@@ -57,12 +86,12 @@ app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Create DB if not exists
+// Create Admin DB if not exists
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<SanadDbContext>();
-    db.Database.Migrate();
-    db.Database.ExecuteSqlRaw("PRAGMA journal_mode=WAL;");
+    var adminDb = scope.ServiceProvider.GetRequiredService<AdminDbContext>();
+    adminDb.Database.Migrate();
+    adminDb.Database.ExecuteSqlRaw("PRAGMA journal_mode=WAL;");
 }
 
 app.MapGet("/", () => "Sanad API Running");
@@ -86,15 +115,21 @@ api.MapHabitEndpoints();
 api.MapFolderEndpoints();
 api.MapFileEndpoints();
 
-app.MapMcp("/mcp");
+// Admin Endpoints
+api.MapAdminEndpoints();
 
-// Serve uploaded attachments
-var attachmentsDir = Path.Combine(Directory.GetCurrentDirectory(), "Data", "attachments");
-Directory.CreateDirectory(attachmentsDir);
-app.UseStaticFiles(new StaticFileOptions
+app.MapMcp("/mcp").RequireAuthorization();
+
+// Serve uploaded attachments dynamically based on authenticated user
+app.MapGet("/attachments/{fileName}", IResult (string fileName, ITenantProvider tenantProvider, HttpContext context) =>
 {
-    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(attachmentsDir),
-    RequestPath = "/attachments"
-});
+    var username = tenantProvider.GetUsername();
+    if (string.IsNullOrEmpty(username)) return Results.Unauthorized();
+    
+    var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Data", username, "attachments", fileName);
+    if (!File.Exists(filePath)) return Results.NotFound();
+    
+    return Results.File(filePath);
+}).RequireAuthorization();
 
 app.Run();

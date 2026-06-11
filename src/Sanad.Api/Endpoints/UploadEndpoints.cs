@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Sanad.Api.Data;
 using Sanad.Api.Models;
+using Sanad.Api.Services;
 using System.IO;
 
 namespace Sanad.Api.Endpoints;
@@ -13,7 +15,10 @@ public static class UploadEndpoints
         app.MapPost("/api/upload/image", UploadImage);
     }
 
-    public static async Task<IResult> UploadImage(HttpRequest request)
+    public static async Task<IResult> UploadImage(
+        HttpRequest request, 
+        [FromServices] ITenantProvider tenantProvider,
+        [FromServices] DiskQuotaService quotaService)
     {
         if (!request.HasFormContentType) return Results.BadRequest("Invalid form data");
 
@@ -21,7 +26,16 @@ public static class UploadEndpoints
         var file = form.Files.FirstOrDefault();
         if (file == null || file.Length == 0) return Results.BadRequest("No file uploaded");
 
-        var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "Data", "attachments");
+        var username = tenantProvider.GetUsername();
+        
+        // Enforce quota
+        var canUpload = await quotaService.CanUploadAsync(username, file.Length);
+        if (!canUpload)
+        {
+            return Results.BadRequest("Disk quota exceeded. Please upgrade your tier or delete files.");
+        }
+
+        var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "Data", username, "attachments");
         Directory.CreateDirectory(uploadsDir);
 
         var uniqueFileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";

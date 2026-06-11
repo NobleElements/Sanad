@@ -20,8 +20,14 @@ public static class FileEndpoints
     {
         var group = app.MapGroup("/api/files").WithTags("Files");
 
-        group.MapPost("/upload/init", async ([FromBody] InitUploadRequest req) =>
+        group.MapPost("/upload/init", async ([FromBody] InitUploadRequest req, DiskQuotaService quotaService, ITenantProvider tenantProvider) =>
         {
+            var username = tenantProvider.GetUsername();
+            if (!await quotaService.CanUploadAsync(username, req.SizeBytes))
+            {
+                return Results.BadRequest("Disk quota exceeded. Please upgrade your tier or delete files.");
+            }
+
             var uploadId = Guid.NewGuid().ToString();
             var physicalName = Guid.NewGuid().ToString() + Path.GetExtension(req.Name);
             

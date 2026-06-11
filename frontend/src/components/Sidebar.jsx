@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Lightbulb, CheckSquare, Book, DollarSign, BookOpen, Menu, LogOut, Repeat, Folder } from 'lucide-react';
+import { LayoutDashboard, Lightbulb, CheckSquare, Book, DollarSign, BookOpen, Menu, LogOut, Repeat, Folder, Shield, CreditCard } from 'lucide-react';
 import useAuthStore from '../store/useAuthStore';
 
 export default function Sidebar() {
   const location = useLocation();
   const logout = useAuthStore((state) => state.logout);
+  const isAdmin = useAuthStore((state) => state.isAdmin);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Auto collapse on small screens
@@ -78,6 +79,20 @@ export default function Sidebar() {
           <Folder className="w-5 h-5 flex-shrink-0" />
           {!isCollapsed && <span className="font-medium">Files</span>}
         </Link>
+
+        <div className="my-2 border-t border-slate-800"></div>
+
+        <Link to="/subscription" className={getLinkClass('/subscription')} title="Subscription & Limits">
+          <CreditCard className="w-5 h-5 flex-shrink-0" />
+          {!isCollapsed && <span className="font-medium">Subscription</span>}
+        </Link>
+
+        {isAdmin && (
+          <Link to="/admin" className={getLinkClass('/admin')} title="Admin Dashboard">
+            <Shield className="w-5 h-5 flex-shrink-0" />
+            {!isCollapsed && <span className="font-medium">Admin Dashboard</span>}
+          </Link>
+        )}
       </nav>
       
       <div className="p-3 border-t border-slate-800">

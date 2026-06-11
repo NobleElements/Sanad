@@ -5,6 +5,7 @@ import { Folder as FolderIcon, File as FileIcon, ChevronRight, Home, FolderPlus,
 import FileUploader from './FileUploader';
 import FilePreview from './FilePreview';
 import TransferProgress from './TransferProgress';
+import { BYTES_PER_KB } from '../../config';
 
 const FileManager = () => {
   const { folderId } = useParams();
@@ -59,7 +60,7 @@ const FileManager = () => {
 
   const formatSize = (bytes) => {
     if (bytes === 0) return '0 B';
-    const k = 1024, sizes = ['B', 'KB', 'MB', 'GB'];
+    const k = BYTES_PER_KB, sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   };

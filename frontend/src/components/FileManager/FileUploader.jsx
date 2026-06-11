@@ -1,34 +1,54 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useRef, useEffect } from 'react';
 import { useFileManagerStore } from '../../store/fileManagerStore';
-import { UploadCloud } from 'lucide-react';
+import useSubscriptionStore from '../../store/useSubscriptionStore';
+import { UploadCloud, AlertCircle } from 'lucide-react';
 
 const FileUploader = () => {
   const uploadFile = useFileManagerStore(state => state.uploadFile);
+  const { storageData, fetchSubscriptionData } = useSubscriptionStore();
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    fetchSubscriptionData();
+  }, [fetchSubscriptionData]);
+
+  const isQuotaExceeded = storageData && storageData.diskUsed >= storageData.diskLimitBytes;
 
   const onDragOver = useCallback((e) => {
     e.preventDefault();
+    if (isQuotaExceeded) return;
     e.dataTransfer.dropEffect = 'copy';
-  }, []);
+  }, [isQuotaExceeded]);
 
   const onDrop = useCallback(async (e) => {
     e.preventDefault();
+    if (isQuotaExceeded) return;
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       Array.from(e.dataTransfer.files).forEach(file => {
         uploadFile(file);
       });
     }
-  }, [uploadFile]);
+  }, [uploadFile, isQuotaExceeded]);
 
   const handleFileChange = (e) => {
+    if (isQuotaExceeded) return;
     if (e.target.files && e.target.files.length > 0) {
       Array.from(e.target.files).forEach(file => {
         uploadFile(file);
       });
-      // reset input
       e.target.value = '';
     }
   };
+
+  if (isQuotaExceeded) {
+    return (
+      <div className="border-2 border-dashed border-red-300 dark:border-red-800 rounded-lg p-6 flex flex-col items-center justify-center bg-red-50 dark:bg-red-900/10">
+        <AlertCircle className="w-12 h-12 text-red-400 mb-2" />
+        <p className="text-red-600 dark:text-red-400 font-medium">Storage Quota Exceeded</p>
+        <p className="text-red-500 text-sm mt-1">Please upgrade your subscription tier to upload more files.</p>
+      </div>
+    );
+  }
 
   return (
     <div

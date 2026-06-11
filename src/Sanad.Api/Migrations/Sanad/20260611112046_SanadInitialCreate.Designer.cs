@@ -8,11 +8,11 @@ using Sanad.Api.Data;
 
 #nullable disable
 
-namespace Sanad.Api.Migrations
+namespace Sanad.Api.Migrations.Sanad
 {
     [DbContext(typeof(SanadDbContext))]
-    [Migration("20260611084435_AddFileManagerModels")]
-    partial class AddFileManagerModels
+    [Migration("20260611112046_SanadInitialCreate")]
+    partial class SanadInitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -562,28 +562,6 @@ namespace Sanad.Api.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("TransactionCategories");
-                });
-
-            modelBuilder.Entity("Sanad.Api.Models.User", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("PasswordHash")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Username")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("Sanad.Api.Models.AssetSnapshot", b =>

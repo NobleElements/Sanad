@@ -1,0 +1,40 @@
+using Microsoft.EntityFrameworkCore;
+using Sanad.Api.Data;
+using System.IO;
+
+namespace Sanad.Api.Services;
+
+public class DiskQuotaService
+{
+    private readonly AdminDbContext _adminDb;
+
+    public DiskQuotaService(AdminDbContext adminDb)
+    {
+        _adminDb = adminDb;
+    }
+
+    public long GetDirectorySize(string folderPath)
+    {
+        if (!Directory.Exists(folderPath)) return 0;
+        
+        var dirInfo = new DirectoryInfo(folderPath);
+        return dirInfo.EnumerateFiles("*", SearchOption.AllDirectories).Sum(file => file.Length);
+    }
+
+    public async Task<bool> CanUploadAsync(string username, long newFileSize)
+    {
+        var user = await _adminDb.Users
+            .Include(u => u.Tier)
+            .FirstOrDefaultAsync(u => u.Username == username);
+
+        if (user == null) return false;
+        if (user.IsAdmin) return true; // Admins have no limit
+
+        var userPath = Path.Combine(Directory.GetCurrentDirectory(), "Data", username);
+        var currentSize = GetDirectorySize(userPath);
+
+        var limitBytes = user.Tier?.DiskLimitBytes ?? (1L * Constants.BytesPerKb * Constants.BytesPerKb * Constants.BytesPerKb); // default 1GB if no tier
+
+        return (currentSize + newFileSize) <= limitBytes;
+    }
+}
