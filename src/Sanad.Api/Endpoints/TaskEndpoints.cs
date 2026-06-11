@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -97,16 +99,13 @@ public static class TaskEndpoints
             
         if (task == null) return Results.NotFound();
         
-        var filesToDelete = new System.Collections.Generic.List<string>();
+        var filesToDelete = new List<string>();
         if (task.Attachments != null)
         {
             foreach (var attachment in task.Attachments)
             {
                 var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Data", attachment.FilePath.TrimStart('/'));
-                if (File.Exists(filePath))
-                {
-                    filesToDelete.Add(filePath);
-                }
+                filesToDelete.Add(filePath);
             }
         }
         
@@ -115,7 +114,14 @@ public static class TaskEndpoints
 
         foreach (var filePath in filesToDelete)
         {
-            File.Delete(filePath);
+            try
+            {
+                File.Delete(filePath);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error deleting file {filePath}: {ex.Message}");
+            }
         }
 
         return Results.NoContent();
@@ -188,9 +194,13 @@ public static class TaskEndpoints
         db.TaskAttachments.Remove(attachment);
         await db.SaveChangesAsync();
 
-        if (File.Exists(filePath))
+        try
         {
             File.Delete(filePath);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deleting file {filePath}: {ex.Message}");
         }
 
         return Results.NoContent();
