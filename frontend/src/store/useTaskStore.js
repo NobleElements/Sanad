@@ -8,6 +8,8 @@ const useTaskStore = create((set, get) => ({
   isTaskModalOpen: false,
   activeTask: null,
   activeTaskDetails: null,
+  isLoadingTaskDetails: false,
+  isUploadingAttachment: false,
 
   fetchTasks: async () => {
     try {
@@ -93,15 +95,17 @@ const useTaskStore = create((set, get) => ({
   },
 
   getTaskDetails: async (id) => {
+    set({ isLoadingTaskDetails: true });
     try {
       const res = await fetch(`${API_BASE}/api/tasks/${id}`);
-      if (res.ok) {
-        const data = await res.json();
-        set({ activeTaskDetails: data });
-        return data;
-      }
+      if (!res.ok) throw new Error('Failed to load task details');
+      const data = await res.json();
+      set({ activeTaskDetails: data });
+      return data;
     } catch (err) {
       useUIStore.getState().showError('Failed to load task details');
+    } finally {
+      set({ isLoadingTaskDetails: false });
     }
     return null;
   },
@@ -114,7 +118,12 @@ const useTaskStore = create((set, get) => ({
         body: JSON.stringify({ text })
       });
       if (res.ok) {
-        await get().getTaskDetails(taskId);
+        const newComment = await res.json();
+        set(state => ({
+          activeTaskDetails: state.activeTaskDetails
+            ? { ...state.activeTaskDetails, comments: [...(state.activeTaskDetails.comments || []), newComment] }
+            : null
+        }));
         return true;
       }
       throw new Error('Failed to post comment');
@@ -128,7 +137,11 @@ const useTaskStore = create((set, get) => ({
     try {
       const res = await fetch(`${API_BASE}/api/tasks/${taskId}/comments/${commentId}`, { method: 'DELETE' });
       if (res.ok) {
-        await get().getTaskDetails(taskId);
+        set(state => ({
+          activeTaskDetails: state.activeTaskDetails
+            ? { ...state.activeTaskDetails, comments: state.activeTaskDetails.comments.filter(c => c.id !== commentId && c._id !== commentId) }
+            : null
+        }));
         return true;
       }
       throw new Error('Failed to delete comment');
@@ -139,6 +152,7 @@ const useTaskStore = create((set, get) => ({
   },
 
   uploadTaskAttachment: async (taskId, file) => {
+    set({ isUploadingAttachment: true });
     try {
       const formData = new FormData();
       formData.append('file', file);
@@ -147,13 +161,20 @@ const useTaskStore = create((set, get) => ({
         body: formData
       });
       if (res.ok) {
-        await get().getTaskDetails(taskId);
+        const newAttachment = await res.json();
+        set(state => ({
+          activeTaskDetails: state.activeTaskDetails
+            ? { ...state.activeTaskDetails, attachments: [...(state.activeTaskDetails.attachments || []), newAttachment] }
+            : null
+        }));
         return true;
       }
       throw new Error('Failed to upload file');
     } catch (err) {
       useUIStore.getState().showError('Failed to upload file');
       return false;
+    } finally {
+      set({ isUploadingAttachment: false });
     }
   },
 
@@ -161,7 +182,11 @@ const useTaskStore = create((set, get) => ({
     try {
       const res = await fetch(`${API_BASE}/api/tasks/${taskId}/attachments/${attachmentId}`, { method: 'DELETE' });
       if (res.ok) {
-        await get().getTaskDetails(taskId);
+        set(state => ({
+          activeTaskDetails: state.activeTaskDetails
+            ? { ...state.activeTaskDetails, attachments: state.activeTaskDetails.attachments.filter(a => a.id !== attachmentId && a._id !== attachmentId) }
+            : null
+        }));
         return true;
       }
       throw new Error('Failed to delete attachment');
