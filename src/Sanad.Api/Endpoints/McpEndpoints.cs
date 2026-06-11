@@ -90,7 +90,7 @@ public class McpEndpoints
             .FirstOrDefaultAsync(t => t.Id == id);
             
         if (task == null) return null;
-        return new { Task = task, Comments = task.Comments, Attachments = task.Attachments };
+        return task;
     }
 
     [McpServerTool, Description("Add a rich-text comment to a task")]
@@ -129,7 +129,16 @@ public class McpEndpoints
         var uniqueFileName = $"{Guid.NewGuid()}{System.IO.Path.GetExtension(localFilePath)}";
         var destPath = System.IO.Path.Combine(uploadsDir, uniqueFileName);
 
-        System.IO.File.Copy(localFilePath, destPath);
+        try
+        {
+            using var sourceStream = new System.IO.FileStream(localFilePath, System.IO.FileMode.Open, System.IO.FileAccess.Read, System.IO.FileShare.Read, 4096, true);
+            using var destinationStream = new System.IO.FileStream(destPath, System.IO.FileMode.CreateNew, System.IO.FileAccess.Write, System.IO.FileShare.None, 4096, true);
+            await sourceStream.CopyToAsync(destinationStream);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
 
         var attachment = new TaskAttachment
         {
@@ -149,13 +158,22 @@ public class McpEndpoints
         if (attachment == null) return false;
 
         var filePath = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "Data", attachment.FilePath.TrimStart('/'));
-        if (System.IO.File.Exists(filePath))
-        {
-            System.IO.File.Delete(filePath);
-        }
 
         _db.TaskAttachments.Remove(attachment);
         await _db.SaveChangesAsync();
+
+        if (System.IO.File.Exists(filePath))
+        {
+            try
+            {
+                System.IO.File.Delete(filePath);
+            }
+            catch (Exception)
+            {
+                // Ignore file deletion error if DB update succeeded
+            }
+        }
+
         return true;
     }
 
