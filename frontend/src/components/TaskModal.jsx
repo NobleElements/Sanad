@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Save, Paperclip, MessageSquare, AlertCircle, Tag, FolderKanban, Timer } from 'lucide-react';
+import { X, Save, Paperclip, MessageSquare, AlertCircle, Tag, FolderKanban, Timer, Download, Trash2, Loader2 } from 'lucide-react';
 import TipTapEditor from './TipTapEditor';
 import { API_BASE } from '../config';
 import ProjectSelector from './ProjectSelector';
+import useTaskStore from '../store/useTaskStore';
 
 const TAG_COLORS = [
   'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300',
@@ -26,6 +27,22 @@ export default function TaskModal({ isOpen, task, onClose, onSave }) {
   const [minutes, setMinutes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
+
+  const { 
+    activeTaskDetails, isLoadingTaskDetails, isUploadingAttachment,
+    getTaskDetails, addTaskComment, deleteTaskComment, 
+    uploadTaskAttachment, deleteTaskAttachment 
+  } = useTaskStore();
+
+  const [newComment, setNewComment] = useState('');
+  const fileInputRef = useRef(null);
+  const activeTask = internalTask || {};
+
+  useEffect(() => {
+    if (isOpen && activeTask?.id) {
+      getTaskDetails(activeTask.id);
+    }
+  }, [isOpen, activeTask?.id, getTaskDetails]);
 
   useEffect(() => {
     if (isOpen && task) {
@@ -132,7 +149,23 @@ export default function TaskModal({ isOpen, task, onClose, onSave }) {
 
   // We need to render even if !isOpen to allow slide out animation
   // If internalTask is null, we can render an empty shell or nothing
-  const activeTask = internalTask || {};
+
+  const handleAddComment = async () => {
+    if (!newComment.trim() || !activeTask?.id) return;
+    const success = await addTaskComment(activeTask.id, newComment.trim());
+    if (success) {
+      setNewComment('');
+    }
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !activeTask?.id) return;
+    await uploadTaskAttachment(activeTask.id, file);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   return (
     <>
@@ -281,17 +314,140 @@ export default function TaskModal({ isOpen, task, onClose, onSave }) {
             <TipTapEditor content={content} onChange={setContent} onImageUpload={handleImageUpload} />
           </div>
 
-          <div className="pt-4 space-y-4 border-t border-gray-100 dark:border-gray-800">
-            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-800 border-dashed text-gray-500 dark:text-gray-400">
-              <Paperclip className="w-5 h-5" />
-              <span className="text-sm">Attachments area (coming soon)</span>
+          {activeTask?.id && (
+            <div className="pt-4 space-y-6 border-t border-gray-100 dark:border-gray-800">
+              {/* Attachments Section */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center gap-1.5 text-sm font-medium text-gray-900 dark:text-white">
+                    <Paperclip className="w-4 h-4" />
+                    Attachments
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploadingAttachment}
+                    className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium disabled:opacity-50 flex items-center gap-1"
+                  >
+                    {isUploadingAttachment ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Add File'}
+                  </button>
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    onChange={handleFileUpload} 
+                    className="hidden" 
+                  />
+                </div>
+                
+                {isLoadingTaskDetails ? (
+                  <div className="text-sm text-gray-500 dark:text-gray-400 py-2">Loading attachments...</div>
+                ) : (
+                  <div className="space-y-2">
+                    {activeTaskDetails?.attachments?.length > 0 ? (
+                      <ul className="space-y-2">
+                        {activeTaskDetails.attachments.map(att => (
+                          <li key={att.id || att._id} className="flex items-center justify-between p-2.5 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-800">
+                            <div className="flex items-center gap-2 overflow-hidden">
+                              <Paperclip className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                              <a 
+                                href={`${API_BASE}${att.filePath}`} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-sm text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 truncate"
+                              >
+                                {att.fileName}
+                              </a>
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                              <a 
+                                href={`${API_BASE}${att.filePath}`}
+                                download
+                                className="p-1.5 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                              >
+                                <Download className="w-4 h-4" />
+                              </a>
+                              <button
+                                type="button"
+                                onClick={() => deleteTaskAttachment(activeTask.id, att.id || att._id)}
+                                className="p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div className="text-sm text-gray-500 dark:text-gray-400 italic">No attachments yet.</div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Comments Section */}
+              <div className="space-y-3">
+                <label className="flex items-center gap-1.5 text-sm font-medium text-gray-900 dark:text-white">
+                  <MessageSquare className="w-4 h-4" />
+                  Comments
+                </label>
+                
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <textarea
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      placeholder="Add a comment..."
+                      className="flex-1 min-h-[80px] p-2.5 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500 resize-y"
+                    />
+                  </div>
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={handleAddComment}
+                      disabled={!newComment.trim()}
+                      className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    >
+                      Comment
+                    </button>
+                  </div>
+                </div>
+
+                {isLoadingTaskDetails ? (
+                  <div className="text-sm text-gray-500 dark:text-gray-400 py-2">Loading comments...</div>
+                ) : (
+                  <div className="space-y-3 mt-4">
+                    {activeTaskDetails?.comments?.length > 0 ? (
+                      <ul className="space-y-3">
+                        {activeTaskDetails.comments.map(comment => (
+                          <li key={comment.id || comment._id} className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-800 group">
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="space-y-1">
+                                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                                  {comment.text}
+                                </p>
+                                <span className="text-xs text-gray-500 dark:text-gray-400">
+                                  {new Date(comment.createdAt).toLocaleString()}
+                                </span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => deleteTaskComment(activeTask.id, comment.id || comment._id)}
+                                className="p-1.5 text-gray-400 opacity-0 group-hover:opacity-100 hover:text-red-600 dark:hover:text-red-400 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-all flex-shrink-0"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div className="text-sm text-gray-500 dark:text-gray-400 italic">No comments yet.</div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
-            
-            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-800 border-dashed text-gray-500 dark:text-gray-400">
-              <MessageSquare className="w-5 h-5" />
-              <span className="text-sm">Comments area (coming soon)</span>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Footer */}
