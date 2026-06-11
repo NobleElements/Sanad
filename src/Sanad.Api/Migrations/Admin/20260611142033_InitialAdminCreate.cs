@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Sanad.Api.Migrations.Admin
 {
     /// <inheritdoc />
-    public partial class AdminInitialCreate : Migration
+    public partial class InitialAdminCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -35,6 +35,7 @@ namespace Sanad.Api.Migrations.Admin
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     Username = table.Column<string>(type: "TEXT", nullable: false),
                     PasswordHash = table.Column<string>(type: "TEXT", nullable: false),
+                    ApiKey = table.Column<string>(type: "TEXT", nullable: false),
                     IsAdmin = table.Column<bool>(type: "INTEGER", nullable: false),
                     IsBlocked = table.Column<bool>(type: "INTEGER", nullable: false),
                     TierId = table.Column<int>(type: "INTEGER", nullable: false),
@@ -58,10 +59,10 @@ namespace Sanad.Api.Migrations.Admin
                 columns: new[] { "Id", "DiskLimitBytes", "Name", "Price" },
                 values: new object[,]
                 {
-                    { 1, 5368709120L, "Supporter", 1m },
-                    { 2, 10737418240L, "Individual", 3m },
-                    { 3, 53687091200L, "Family", 7m },
-                    { 4, 214748364800L, "Data Hoarder", 12m }
+                    { 1, 5000000000L, "Supporter", 1m },
+                    { 2, 10000000000L, "Individual", 3m },
+                    { 3, 50000000000L, "Family", 7m },
+                    { 4, 200000000000L, "Data Hoarder", 12m }
                 });
 
             migrationBuilder.CreateIndex(

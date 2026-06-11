@@ -11,8 +11,8 @@ using Sanad.Api.Data;
 namespace Sanad.Api.Migrations.Admin
 {
     [DbContext(typeof(AdminDbContext))]
-    [Migration("20260611115446_UpdateTierDiskLimitsTo1000")]
-    partial class UpdateTierDiskLimitsTo1000
+    [Migration("20260611142033_InitialAdminCreate")]
+    partial class InitialAdminCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -24,6 +24,10 @@ namespace Sanad.Api.Migrations.Admin
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ApiKey")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedAt")

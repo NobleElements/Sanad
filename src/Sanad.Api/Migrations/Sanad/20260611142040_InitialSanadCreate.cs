@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Sanad.Api.Migrations.Sanad
 {
     /// <inheritdoc />
-    public partial class SanadInitialCreate : Migration
+    public partial class InitialSanadCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
