@@ -7,6 +7,7 @@ const useTaskStore = create((set, get) => ({
   isLoaded: false,
   isTaskModalOpen: false,
   activeTask: null,
+  activeTaskDetails: null,
 
   fetchTasks: async () => {
     try {
@@ -91,6 +92,85 @@ const useTaskStore = create((set, get) => ({
     }
   },
 
+  getTaskDetails: async (id) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/tasks/${id}`);
+      if (res.ok) {
+        const data = await res.json();
+        set({ activeTaskDetails: data });
+        return data;
+      }
+    } catch (err) {
+      useUIStore.getState().showError('Failed to load task details');
+    }
+    return null;
+  },
+
+  addTaskComment: async (taskId, text) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/tasks/${taskId}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
+      });
+      if (res.ok) {
+        await get().getTaskDetails(taskId);
+        return true;
+      }
+      throw new Error('Failed to post comment');
+    } catch (err) {
+      useUIStore.getState().showError('Failed to post comment');
+      return false;
+    }
+  },
+
+  deleteTaskComment: async (taskId, commentId) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/tasks/${taskId}/comments/${commentId}`, { method: 'DELETE' });
+      if (res.ok) {
+        await get().getTaskDetails(taskId);
+        return true;
+      }
+      throw new Error('Failed to delete comment');
+    } catch (err) {
+      useUIStore.getState().showError('Failed to delete comment');
+      return false;
+    }
+  },
+
+  uploadTaskAttachment: async (taskId, file) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`${API_BASE}/api/tasks/${taskId}/attachments`, {
+        method: 'POST',
+        body: formData
+      });
+      if (res.ok) {
+        await get().getTaskDetails(taskId);
+        return true;
+      }
+      throw new Error('Failed to upload file');
+    } catch (err) {
+      useUIStore.getState().showError('Failed to upload file');
+      return false;
+    }
+  },
+
+  deleteTaskAttachment: async (taskId, attachmentId) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/tasks/${taskId}/attachments/${attachmentId}`, { method: 'DELETE' });
+      if (res.ok) {
+        await get().getTaskDetails(taskId);
+        return true;
+      }
+      throw new Error('Failed to delete attachment');
+    } catch (err) {
+      useUIStore.getState().showError('Failed to delete attachment');
+      return false;
+    }
+  },
+
   openTaskModal: (task = null) => {
     set({
       isTaskModalOpen: true,
@@ -99,7 +179,7 @@ const useTaskStore = create((set, get) => ({
   },
 
   closeTaskModal: () => {
-    set({ isTaskModalOpen: false, activeTask: null });
+    set({ isTaskModalOpen: false, activeTask: null, activeTaskDetails: null });
   }
 }));
 
