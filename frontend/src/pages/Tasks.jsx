@@ -170,7 +170,7 @@ export default function Tasks() {
 
 
   return (
-    <div className="max-w-full mx-auto space-y-6 p-4 md:p-6 lg:p-8">
+    <div className="flex-1 h-full overflow-y-auto max-w-full mx-auto space-y-6 p-4 md:p-6 lg:p-8">
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
