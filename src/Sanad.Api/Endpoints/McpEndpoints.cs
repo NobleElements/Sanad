@@ -80,6 +80,85 @@ public class McpEndpoints
         return false;
     }
 
+    [McpServerTool, Description("Get specific task details including comments and attachments")]
+    public async Task<object?> GetTaskDetails(Guid id)
+    {
+        var task = await _db.TaskItems
+            .Include(t => t.Comments.OrderBy(c => c.CreatedAt))
+            .Include(t => t.Attachments)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(t => t.Id == id);
+            
+        if (task == null) return null;
+        return new { Task = task, Comments = task.Comments, Attachments = task.Attachments };
+    }
+
+    [McpServerTool, Description("Add a rich-text comment to a task")]
+    public async Task<TaskComment?> AddTaskComment(Guid taskId, string text)
+    {
+        var taskExists = await _db.TaskItems.AnyAsync(t => t.Id == taskId);
+        if (!taskExists) return null;
+
+        var comment = new TaskComment { TaskItemId = taskId, Text = text };
+        _db.TaskComments.Add(comment);
+        await _db.SaveChangesAsync();
+        return comment;
+    }
+
+    [McpServerTool, Description("Delete a specific task comment")]
+    public async Task<bool> DeleteTaskComment(Guid commentId)
+    {
+        var comment = await _db.TaskComments.FindAsync(commentId);
+        if (comment == null) return false;
+
+        _db.TaskComments.Remove(comment);
+        await _db.SaveChangesAsync();
+        return true;
+    }
+
+    [McpServerTool, Description("Attach a local file to a task. Provide the absolute file path on disk.")]
+    public async Task<TaskAttachment?> AttachFileToTask(Guid taskId, string localFilePath)
+    {
+        var taskExists = await _db.TaskItems.AnyAsync(t => t.Id == taskId);
+        if (!taskExists || !System.IO.File.Exists(localFilePath)) return null;
+
+        var uploadsDir = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "Data", "attachments");
+        System.IO.Directory.CreateDirectory(uploadsDir);
+
+        var fileName = System.IO.Path.GetFileName(localFilePath);
+        var uniqueFileName = $"{Guid.NewGuid()}{System.IO.Path.GetExtension(localFilePath)}";
+        var destPath = System.IO.Path.Combine(uploadsDir, uniqueFileName);
+
+        System.IO.File.Copy(localFilePath, destPath);
+
+        var attachment = new TaskAttachment
+        {
+            TaskItemId = taskId,
+            FileName = fileName,
+            FilePath = $"/attachments/{uniqueFileName}"
+        };
+        _db.TaskAttachments.Add(attachment);
+        await _db.SaveChangesAsync();
+        return attachment;
+    }
+
+    [McpServerTool, Description("Delete a specific task attachment")]
+    public async Task<bool> DeleteTaskAttachment(Guid attachmentId)
+    {
+        var attachment = await _db.TaskAttachments.FindAsync(attachmentId);
+        if (attachment == null) return false;
+
+        var filePath = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "Data", attachment.FilePath.TrimStart('/'));
+        if (System.IO.File.Exists(filePath))
+        {
+            System.IO.File.Delete(filePath);
+        }
+
+        _db.TaskAttachments.Remove(attachment);
+        await _db.SaveChangesAsync();
+        return true;
+    }
+
     // Transactions Tools
     [McpServerTool, Description("Get transaction categories")]
     public async Task<List<TransactionCategory>> GetCategories()
