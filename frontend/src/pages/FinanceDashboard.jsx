@@ -27,10 +27,16 @@ export default function FinanceDashboard() {
     }
   }, [urlMonth, urlYear, currentMonth, currentYear, setDate, fetchFinanceData]);
   
+  const getLocalDateStr = () => {
+    const d = new Date();
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+  };
+
   // form state
   const [amount, setAmount] = useState('');
   const [desc, setDesc] = useState('');
   const [categoryId, setCategoryId] = useState('');
+  const [logDate, setLogDate] = useState(getLocalDateStr());
 
 
   // category editing state
@@ -45,11 +51,13 @@ export default function FinanceDashboard() {
 
   const handleLog = async (e) => {
     e.preventDefault();
-    const success = await addTransaction(parseFloat(amount), categoryId, desc);
+    const dateToLog = logDate ? new Date(logDate + 'T12:00:00Z').toISOString() : null;
+    const success = await addTransaction(parseFloat(amount), categoryId, desc, 'Expense', dateToLog);
     if (success) {
       setCategoryId('');
       setAmount(''); 
       setDesc('');
+      setLogDate(getLocalDateStr());
     }
   };
 
@@ -379,6 +387,7 @@ export default function FinanceDashboard() {
                   <h2 className="text-xl font-bold mb-4 text-slate-800">Quick Log</h2>
                   <form onSubmit={handleLog} className="flex flex-col gap-4">
                     <input type="number" placeholder="Amount" value={amount} onChange={e=>setAmount(e.target.value)} className="bg-white border border-slate-300 rounded p-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+                    <input type="date" value={logDate} onChange={e=>setLogDate(e.target.value)} className="bg-white border border-slate-300 rounded p-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
                     <div className="relative">
                       <CategorySelector 
                         value={categoryId}

@@ -137,12 +137,13 @@ const useFinanceStore = create((set, get) => ({
     }
   },
 
-  addTransaction: async (amount, categoryId, description, type = 'Expense') => {
+  addTransaction: async (amount, categoryId, description, type = 'Expense', date = null) => {
     try {
+      const txDate = date ? new Date(date).toISOString() : new Date().toISOString();
       const res = await fetch(`${API_BASE}/api/finances/transactions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount, categoryId, description, type, date: new Date().toISOString() })
+        body: JSON.stringify({ amount, categoryId, description, type, date: txDate })
       });
       if (res.ok) {
         useUIStore.getState().showSuccess('Transaction logged');
