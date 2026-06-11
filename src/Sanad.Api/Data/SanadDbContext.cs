@@ -27,4 +27,23 @@ public class SanadDbContext : DbContext
     public DbSet<ReadingLog> ReadingLogs => Set<ReadingLog>();
     public DbSet<Habit> Habits => Set<Habit>();
     public DbSet<HabitLog> HabitLogs => Set<HabitLog>();
+    public DbSet<Folder> Folders => Set<Folder>();
+    public DbSet<FileItem> FileItems => Set<FileItem>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<Folder>()
+            .HasMany(f => f.Subfolders)
+            .WithOne(f => f.Parent)
+            .HasForeignKey(f => f.ParentId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Folder>()
+            .HasMany(f => f.Files)
+            .WithOne(fi => fi.Folder)
+            .HasForeignKey(fi => fi.FolderId)
+            .OnDelete(DeleteBehavior.Cascade);
+    }
 }

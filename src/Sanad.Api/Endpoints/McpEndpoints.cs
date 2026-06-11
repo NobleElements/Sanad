@@ -15,11 +15,13 @@ public class McpEndpoints
 {
     private readonly SanadDbContext _db;
     private readonly Sanad.Api.Services.IBookSearchService _searchService;
+    private readonly Sanad.Api.Services.FileManagerService _fileManager;
 
-    public McpEndpoints(SanadDbContext db, Sanad.Api.Services.IBookSearchService searchService)
+    public McpEndpoints(SanadDbContext db, Sanad.Api.Services.IBookSearchService searchService, Sanad.Api.Services.FileManagerService fileManager)
     {
         _db = db;
         _searchService = searchService;
+        _fileManager = fileManager;
     }
 
     // Thoughts Tools
@@ -558,5 +560,42 @@ public class McpEndpoints
 
         await _db.SaveChangesAsync();
         return true;
+    }
+
+    // File Manager Tools
+    [McpServerTool, Description("Get contents of a specific folder in the File Manager. If folderId is null, returns the root folder.")]
+    public async Task<object> GetFolderContents(int? folderId = null)
+    {
+        return await _fileManager.GetFolderContentsAsync(folderId);
+    }
+
+    [McpServerTool, Description("Search for files and folders in the File Manager by name.")]
+    public async Task<object> SearchFiles(string query)
+    {
+        return await _fileManager.SearchFilesAsync(query);
+    }
+
+    [McpServerTool, Description("Upload a local file from disk to the File Manager. Provide the absolute local file path.")]
+    public async Task<FileItem?> UploadFileToSanad(string localFilePath, int? folderId = null)
+    {
+        return await _fileManager.UploadLocalFileAsync(localFilePath, folderId);
+    }
+
+    [McpServerTool, Description("Upload a local folder (recursively) to the File Manager. Provide the absolute local folder path and optionally the target parent Folder ID.")]
+    public async Task<Folder?> UploadFolderToSanad(string localFolderPath, int? targetParentId = null)
+    {
+        return await _fileManager.UploadLocalFolderAsync(localFolderPath, targetParentId);
+    }
+
+    [McpServerTool, Description("Download a file from the File Manager to a local directory. Provide the File ID and destination absolute path (or directory).")]
+    public async Task<bool> DownloadFileFromSanad(int fileId, string destinationPath)
+    {
+        return await _fileManager.DownloadFileToLocalAsync(fileId, destinationPath);
+    }
+
+    [McpServerTool, Description("Download an entire folder (recursively) from the File Manager to a local directory.")]
+    public async Task<bool> DownloadFolderFromSanad(int folderId, string destinationDirectory)
+    {
+        return await _fileManager.DownloadFolderToLocalAsync(folderId, destinationDirectory);
     }
 }

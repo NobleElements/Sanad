@@ -490,3 +490,4 @@ $RECYCLE.BIN/
 *.db-wal
 
 src/Sanad.Api/Data/attachments/
+src/Sanad.Api/Data/files/

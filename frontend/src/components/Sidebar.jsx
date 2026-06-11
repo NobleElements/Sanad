@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Lightbulb, CheckSquare, Book, DollarSign, BookOpen, Menu, LogOut, Repeat } from 'lucide-react';
+import { LayoutDashboard, Lightbulb, CheckSquare, Book, DollarSign, BookOpen, Menu, LogOut, Repeat, Folder } from 'lucide-react';
 import useAuthStore from '../store/useAuthStore';
 
 export default function Sidebar() {
@@ -73,6 +73,10 @@ export default function Sidebar() {
         <Link to="/books" className={getLinkClass('/books')} title="Reading">
           <BookOpen className="w-5 h-5 flex-shrink-0" />
           {!isCollapsed && <span className="font-medium">Reading</span>}
+        </Link>
+        <Link to="/files" className={getLinkClass('/files')} title="Files">
+          <Folder className="w-5 h-5 flex-shrink-0" />
+          {!isCollapsed && <span className="font-medium">Files</span>}
         </Link>
       </nav>
       

@@ -47,6 +47,9 @@ builder.Services.AddMcpServer()
     .WithHttpTransport(options => options.Stateless = true)
     .WithTools<McpEndpoints>();
 
+builder.Services.AddSingleton<Sanad.Api.Services.FileStorageService>();
+builder.Services.AddScoped<Sanad.Api.Services.FileManagerService>();
+
 var app = builder.Build();
 
 app.UseCors("AllowAll");
@@ -59,6 +62,7 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<SanadDbContext>();
     db.Database.Migrate();
+    db.Database.ExecuteSqlRaw("PRAGMA journal_mode=WAL;");
 }
 
 app.MapGet("/", () => "Sanad API Running");
@@ -79,6 +83,8 @@ api.MapAssetEndpoints();
 api.MapBookEndpoints();
 api.MapReadingEndpoints();
 api.MapHabitEndpoints();
+api.MapFolderEndpoints();
+api.MapFileEndpoints();
 
 app.MapMcp("/mcp");
 

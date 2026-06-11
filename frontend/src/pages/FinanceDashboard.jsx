@@ -277,7 +277,7 @@ export default function FinanceDashboard() {
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
-                  <div className="flex-1 flex flex-col gap-3 overflow-y-auto max-h-64">
+                  <div className="flex-1 flex flex-col gap-3 overflow-y-auto max-h-64" style={{scrollbarWidth: "none"}}>
                     {catSummary.map((item) => {
                       const pct = item.category.monthlyBudget > 0
                         ? Math.min((item.spent / item.category.monthlyBudget) * 100, 100)
