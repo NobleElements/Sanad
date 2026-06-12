@@ -48,6 +48,11 @@ public static class FileEndpoints
             if (!UploadSessions.TryGetValue(uploadId, out var session))
                 return Results.NotFound("Upload session not found");
 
+            if (session.UploadedBytes + (req.ContentLength ?? 0) > session.SizeBytes) 
+            {
+                return Results.BadRequest("Uploaded chunks exceed the declared file size.");
+            }
+
             await storage.AppendChunkAsync(session.PhysicalName, req.Body);
             
             // Note: client should send the actual bytes appended in headers or we calculate from stream length
@@ -118,9 +123,10 @@ public static class FileEndpoints
             var file = await db.FileItems.FindAsync(id);
             if (file == null) return Results.NotFound();
 
-            storage.DeleteFile(file.FileName);
             db.FileItems.Remove(file);
             await db.SaveChangesAsync();
+
+            storage.DeleteFile(file.FileName);
 
             await quotaService.UpdateDiskUsageAsync(tenantProvider.GetUsername());
 

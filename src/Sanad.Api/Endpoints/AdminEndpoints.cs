@@ -33,8 +33,8 @@ public static class AdminEndpoints
             var users = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
             
             // Calculate Summaries
-            var totalDiskUsage = await db.Users.SumAsync(u => u.DiskUsed);
-            var monthlyRevenue = await db.Users.SumAsync(u => u.Tier != null ? u.Tier.Price : 0);
+            var totalDiskUsage = await db.Users.SumAsync(u => (long?)u.DiskUsed) ?? 0;
+            var monthlyRevenue = await db.Users.SumAsync(u => u.Tier != null ? (decimal?)u.Tier.Price : 0m) ?? 0m;
             var usersByTier = await db.Users.GroupBy(u => u.Tier != null ? u.Tier.Name : "Free")
                                              .Select(g => new { Name = g.Key, Count = g.Count() })
                                              .ToDictionaryAsync(g => g.Name, g => g.Count);
