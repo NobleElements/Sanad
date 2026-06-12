@@ -62,7 +62,15 @@ builder.Services.AddDbContext<AdminDbContext>(options =>
 builder.Services.AddDbContext<SanadDbContext>((sp, options) => 
 {
     var tenantProvider = sp.GetRequiredService<ITenantProvider>();
-    options.UseSqlite(tenantProvider.GetConnectionString());
+    try 
+    {
+        options.UseSqlite(tenantProvider.GetConnectionString());
+    }
+    catch (UnauthorizedAccessException)
+    {
+        // Fallback for design-time tools (e.g. EF migrations)
+        options.UseSqlite("Data Source=Data/migrations.db");
+    }
 });
 
 // Ignore JSON reference cycles

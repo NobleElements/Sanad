@@ -18,6 +18,8 @@ public class AppUser
     public int TierId { get; set; }
     public StorageTier? Tier { get; set; }
     
+    public long DiskUsed { get; set; }
+    
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? LastVisitAt { get; set; }
     public string CreatedIpAddress { get; set; } = string.Empty;
