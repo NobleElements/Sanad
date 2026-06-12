@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import ReactDOM from 'react-dom';
 import { Plus, CheckCircle2, Circle, Clock, Tag, Loader2, GripVertical, Filter, FolderKanban, Timer, Eye, EyeOff, Search } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import useTaskStore from '../store/useTaskStore';
@@ -157,9 +158,9 @@ export default function Tasks() {
 
 
   return (
-    <div className="flex-1 h-full overflow-y-auto max-w-full mx-auto space-y-6 p-4 md:p-6 lg:p-8">
+    <div className="flex flex-col flex-1 h-full max-w-full mx-auto p-4 md:p-6 lg:p-8 overflow-hidden">
       {/* Header Section */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 shrink-0">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
             Tasks
@@ -267,7 +268,7 @@ export default function Tasks() {
                       </div>
 
                       {/* Cards */}
-                      <div className="flex-1 p-3 space-y-3 overflow-y-auto">
+                      <div className="flex-1 p-3 overflow-y-auto">
                         {colTasks.length === 0 ? (
                           <div className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-gray-400 dark:text-gray-500 transition-colors">
                             <GripVertical className="w-6 h-6 mb-2 opacity-40" />
@@ -283,77 +284,88 @@ export default function Tasks() {
 
                             return (
                               <Draggable key={task.id} draggableId={task.id.toString()} index={index}>
-                                {(provided, snapshot) => (
-                                  <div
-                                    ref={provided.innerRef}
-                                    {...provided.draggableProps}
-                                    className={`kanban-card bg-white dark:bg-gray-800/80 border border-gray-100 dark:border-gray-700/60 p-3.5 ${snapshot.isDragging ? 'shadow-xl ring-2 ring-indigo-500 scale-[1.02]' : 'hover:shadow-md'}`}
-                                  >
-                                    <div className="flex items-start gap-3">
-                                      {/* Quick Complete Checkbox */}
-                                      <button
-                                        onClick={(e) => handleQuickComplete(e, task)}
-                                        className={`mt-0.5 flex-shrink-0 transition-colors ${isDone ? 'text-emerald-500 hover:text-emerald-600' : 'text-gray-300 dark:text-gray-600 hover:text-emerald-400 dark:hover:text-emerald-500'}`}
-                                        aria-label={isDone ? 'Mark as to do' : 'Mark as done'}
-                                      >
-                                        {isDone ? (
-                                          <CheckCircle2 className="w-5 h-5" />
-                                        ) : (
-                                          <Circle className="w-5 h-5" />
-                                        )}
-                                      </button>
-
-                                      <div className="flex-1 min-w-0" onClick={() => openTaskModal(task)}>
-                                        {/* Title */}
-                                        <p className={`text-sm font-semibold leading-snug cursor-pointer ${isDone ? 'text-gray-400 dark:text-gray-500 line-through' : 'text-gray-900 dark:text-gray-100'}`}>
-                                          {task.title}
-                                        </p>
-
-                                        {/* Metadata row */}
-                                        <div className="flex flex-wrap items-center gap-2 mt-2">
-                                          {/* Project Badge */}
-                                          {task.project && (
-                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-500/10 text-xs font-medium text-indigo-600 dark:text-indigo-400">
-                                              <FolderKanban className="w-3 h-3" />
-                                              {task.project}
-                                            </span>
-                                          )}
-
-                                          {/* Estimated Time Badge */}
-                                          {estTime && (
-                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 text-xs font-medium text-gray-500 dark:text-gray-400">
-                                              <Timer className="w-3 h-3" />
-                                              {estTime}
-                                            </span>
-                                          )}
-                                        </div>
-
-                                        {/* Tags */}
-                                        {taskTags.length > 0 && (
-                                          <div className="flex flex-wrap gap-1.5 mt-2">
-                                            {taskTags.map((tag, i) => (
-                                              <span
-                                                key={tag}
-                                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${TAG_COLORS[i % TAG_COLORS.length]}`}
-                                              >
-                                                <Tag className="w-2.5 h-2.5" />
-                                                {tag}
-                                              </span>
-                                            ))}
-                                          </div>
-                                        )}
-                                      </div>
-
-                                      {/* Drag Handle */}
+                                {(provided, snapshot) => {
+                                  const child = (
+                                    <div
+                                      ref={provided.innerRef}
+                                      {...provided.draggableProps}
+                                      {...provided.dragHandleProps}
+                                      style={provided.draggableProps.style}
+                                      className="pb-3"
+                                    >
                                       <div
-                                        {...provided.dragHandleProps}
-                                        className="cursor-grab active:cursor-grabbing p-1 -mr-1 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700/50"
+                                        className={`kanban-card bg-white dark:bg-gray-800/80 border border-gray-100 dark:border-gray-700/60 p-3.5 cursor-grab active:cursor-grabbing ${snapshot.isDragging ? 'shadow-2xl ring-2 ring-indigo-500' : 'hover:shadow-md'}`}
                                       >
-                                        <GripVertical className="w-4 h-4 flex-shrink-0 text-gray-300 dark:text-gray-600 mt-0.5" />
+                                        <div className="flex items-start gap-3">
+                                          {/* Quick Complete Checkbox */}
+                                          <button
+                                            onClick={(e) => handleQuickComplete(e, task)}
+                                            className={`mt-0.5 flex-shrink-0 transition-colors ${isDone ? 'text-emerald-500 hover:text-emerald-600' : 'text-gray-300 dark:text-gray-600 hover:text-emerald-400 dark:hover:text-emerald-500'}`}
+                                            aria-label={isDone ? 'Mark as to do' : 'Mark as done'}
+                                          >
+                                            {isDone ? (
+                                              <CheckCircle2 className="w-5 h-5" />
+                                            ) : (
+                                              <Circle className="w-5 h-5" />
+                                            )}
+                                          </button>
+
+                                          <div className="flex-1 min-w-0" onClick={() => openTaskModal(task)}>
+                                            {/* Title */}
+                                            <p className={`text-sm font-semibold leading-snug cursor-pointer ${isDone ? 'text-gray-400 dark:text-gray-500 line-through' : 'text-gray-900 dark:text-gray-100'}`}>
+                                              {task.title}
+                                            </p>
+
+                                            {/* Metadata row */}
+                                            <div className="flex flex-wrap items-center gap-2 mt-2">
+                                              {/* Project Badge */}
+                                              {task.project && (
+                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-500/10 text-xs font-medium text-indigo-600 dark:text-indigo-400">
+                                                  <FolderKanban className="w-3 h-3" />
+                                                  {task.project}
+                                                </span>
+                                              )}
+
+                                              {/* Estimated Time Badge */}
+                                              {estTime && (
+                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 text-xs font-medium text-gray-500 dark:text-gray-400">
+                                                  <Timer className="w-3 h-3" />
+                                                  {estTime}
+                                                </span>
+                                              )}
+                                            </div>
+
+                                            {/* Tags */}
+                                            {taskTags.length > 0 && (
+                                              <div className="flex flex-wrap gap-1.5 mt-2">
+                                                {taskTags.map((tag, i) => (
+                                                  <span
+                                                    key={tag}
+                                                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${TAG_COLORS[i % TAG_COLORS.length]}`}
+                                                  >
+                                                    <Tag className="w-2.5 h-2.5" />
+                                                    {tag}
+                                                  </span>
+                                                ))}
+                                              </div>
+                                            )}
+                                          </div>
+
+                                          {/* Drag Handle Visual */}
+                                          <div className="p-1 -mr-1 rounded-md text-gray-300 dark:text-gray-600">
+                                            <GripVertical className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                                          </div>
+                                        </div>
                                       </div>
                                     </div>
-                                  </div>
-                                )}
+                                  );
+
+                                  if (snapshot.isDragging) {
+                                    return ReactDOM.createPortal(child, document.body);
+                                  }
+
+                                  return child;
+                                }}
                               </Draggable>
                             );
                           })

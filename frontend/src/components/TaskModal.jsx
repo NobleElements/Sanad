@@ -74,7 +74,8 @@ export default function TaskModal({ isOpen, task, onClose, onSave }) {
       
       // Auto-focus the title input when opening
       setTimeout(() => {
-        titleInputRef.current?.focus();
+        if(!!!titleInputRef.current?.value)
+          titleInputRef.current?.focus();
       }, 100);
     }
   }, [isOpen, task]);
