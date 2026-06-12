@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Sanad.Api.Data;
 using Sanad.Api.Endpoints;
 using Sanad.Api.Models;
+using Sanad.Api.Services;
 using Xunit;
 using System.IO;
 
@@ -14,6 +15,12 @@ namespace Sanad.Api.Tests;
 
 public class TaskApiTests
 {
+    private class DummyTenantProvider : ITenantProvider
+    {
+        public string GetUsername() => "testuser";
+        public Guid GetTenantId() => Guid.Empty;
+        public string GetConnectionString() => "";
+    }
     [Fact]
     public async Task CanDeleteTaskComment()
     {
@@ -59,7 +66,7 @@ public class TaskApiTests
         context.TaskAttachments.Add(attachment);
         await context.SaveChangesAsync();
 
-        var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "Data", "attachments");
+        var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "Data", "testuser", "attachments");
         Directory.CreateDirectory(uploadsDir);
         var filePath = Path.Combine(uploadsDir, uniqueFileName);
         await File.WriteAllTextAsync(filePath, "dummy content");
@@ -68,7 +75,7 @@ public class TaskApiTests
         {
             Assert.True(File.Exists(filePath));
 
-            var result = await TaskEndpoints.DeleteTaskAttachment(context, task.Id, attachment.Id);
+            var result = await TaskEndpoints.DeleteTaskAttachment(context, task.Id, attachment.Id, new DummyTenantProvider());
             
             Assert.IsType<NoContent>(result);
             Assert.Equal(0, context.TaskAttachments.Count());
@@ -106,7 +113,7 @@ public class TaskApiTests
         context.TaskAttachments.Add(attachment);
         await context.SaveChangesAsync();
 
-        var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "Data", "attachments");
+        var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "Data", "testuser", "attachments");
         Directory.CreateDirectory(uploadsDir);
         var filePath = Path.Combine(uploadsDir, uniqueFileName);
         await File.WriteAllTextAsync(filePath, "dummy content");
@@ -115,7 +122,7 @@ public class TaskApiTests
         {
             Assert.True(File.Exists(filePath));
 
-            var result = await TaskEndpoints.DeleteTask(context, task.Id);
+            var result = await TaskEndpoints.DeleteTask(context, task.Id, new DummyTenantProvider());
             
             Assert.IsType<NoContent>(result);
             Assert.Equal(0, context.TaskItems.Count());
