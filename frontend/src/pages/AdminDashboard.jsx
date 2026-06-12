@@ -211,7 +211,10 @@ export default function AdminDashboard() {
                   Tier {getSortIndicator('Tier')}
                 </th>
                 <th className="p-3 cursor-pointer hover:bg-slate-50 select-none" onClick={() => handleSort('CreatedAt')}>
-                  Created / Last Visit {getSortIndicator('CreatedAt')}
+                  Created {getSortIndicator('CreatedAt')}
+                </th>
+                <th className="p-3 cursor-pointer hover:bg-slate-50 select-none" onClick={() => handleSort('LastVisitAt')}>
+                  Last Visit {getSortIndicator('LastVisitAt')}
                 </th>
                 <th className="p-3">Status</th>
                 <th className="p-3 text-right">Actions</th>
@@ -232,8 +235,10 @@ export default function AdminDashboard() {
                     </select>
                   </td>
                   <td className="p-3 text-slate-500">
-                    <div>C: {new Date(u.createdAt).toLocaleDateString()}</div>
-                    <div>V: {u.lastVisitAt ? new Date(u.lastVisitAt).toLocaleDateString() : 'Never'}</div>
+                    {new Date(u.createdAt).toLocaleDateString()}
+                  </td>
+                  <td className="p-3 text-slate-500">
+                    {u.lastVisitAt ? new Date(u.lastVisitAt).toLocaleDateString() : 'Never'}
                   </td>
                   <td className="p-3 space-y-2">
                     <label className="flex items-center space-x-2">
