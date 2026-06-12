@@ -14,8 +14,7 @@ export default function Dashboard() {
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Thoughts store
-  const { timeline, fetchTimeline, addThought } = useThoughtsStore();
+  const { addThought } = useThoughtsStore();
 
   // Finance store
   const { 
@@ -89,12 +88,11 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    fetchTimeline();
     fetchFinanceData();
     loadDailyGoal();
     fetchCurrentRead();
     fetchHabits();
-  }, [fetchTimeline, fetchFinanceData, fetchCurrentRead, fetchHabits]);
+  }, [fetchFinanceData, fetchCurrentRead, fetchHabits]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -119,7 +117,6 @@ export default function Dashboard() {
       setSpendDesc('');
       setSpendCategoryId('');
       setShowSpendModal(false);
-      fetchTimeline();
     }
     setIsLoggingSpend(false);
   };
@@ -238,23 +235,7 @@ export default function Dashboard() {
           </div>
 
 
-          
-          {/* Timeline */}
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
-             <h3 className="text-lg font-semibold mb-4 text-slate-700">Timeline</h3>
-             <div className="flex flex-col gap-4">
-               {timeline.length === 0 ? (
-                 <p className="text-slate-500 italic">No timeline items yet.</p>
-               ) : (
-                 timeline.map(item => (
-                   <div key={item.id} className="p-4 bg-slate-50 rounded border border-slate-100 flex flex-col gap-1">
-                     <div className="text-xs text-slate-400">{new Date(item.createdAt).toLocaleString()} &bull; {item.itemType}</div>
-                     <div className="text-slate-800" dangerouslySetInnerHTML={{ __html: item.content }} />
-                   </div>
-                 ))
-               )}
-             </div>
-          </div>
+
         </div>
         <div className="w-1/3">
            {/* Current Read Widget */}

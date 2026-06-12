@@ -4,7 +4,6 @@ import useUIStore from './useUIStore';
 
 const useThoughtsStore = create((set, get) => ({
   thoughts: [],
-  timeline: [],
   isLoaded: false,
 
   fetchThoughts: async (page = 1, search = '') => {
@@ -29,18 +28,6 @@ const useThoughtsStore = create((set, get) => ({
     }
   },
 
-  fetchTimeline: async () => {
-    try {
-      const res = await fetch(`${API_BASE}/api/timeline`);
-      if (res.ok) {
-        const data = await res.json();
-        set({ timeline: data });
-      }
-    } catch (err) {
-      useUIStore.getState().showError('Failed to load timeline');
-    }
-  },
-
   addThought: async (content, tags) => {
     try {
       const res = await fetch(`${API_BASE}/api/thoughts`, {
@@ -50,7 +37,7 @@ const useThoughtsStore = create((set, get) => ({
       });
       if (res.ok) {
         useUIStore.getState().showSuccess('Thought saved');
-        await Promise.all([get().fetchThoughts(), get().fetchTimeline()]);
+        await get().fetchThoughts();
         return true;
       }
       throw new Error('Failed to save');
@@ -65,7 +52,7 @@ const useThoughtsStore = create((set, get) => ({
       const res = await fetch(`${API_BASE}/api/thoughts/${id}`, { method: 'DELETE' });
       if (res.ok) {
         useUIStore.getState().showSuccess('Thought deleted');
-        await Promise.all([get().fetchThoughts(1), get().fetchTimeline()]);
+        await get().fetchThoughts(1);
         return true;
       }
       throw new Error('Failed to delete');
@@ -84,7 +71,7 @@ const useThoughtsStore = create((set, get) => ({
       });
       if (res.ok) {
         useUIStore.getState().showSuccess('Thought updated');
-        await Promise.all([get().fetchThoughts(1), get().fetchTimeline()]);
+        await get().fetchThoughts(1);
         return true;
       }
       throw new Error('Failed to update');

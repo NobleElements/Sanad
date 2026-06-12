@@ -102,7 +102,7 @@ export default function Thoughts() {
     <div className="flex-1 flex flex-col p-8 overflow-y-auto bg-slate-50">
       <div className="max-w-3xl w-full mx-auto">
         <div className="flex justify-between items-center mb-8">
-          <h2 className="text-3xl font-bold text-slate-800">Thoughts Timeline</h2>
+          <h2 className="text-3xl font-bold text-slate-800">Thoughts</h2>
           <div className="relative w-64">
             <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
