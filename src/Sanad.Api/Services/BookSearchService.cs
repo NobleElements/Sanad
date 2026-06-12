@@ -1,5 +1,3 @@
-using System.Net.Http.Json;
-
 namespace Sanad.Api.Services;
 
 public class BookSearchResult

@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Sanad.Api.Data;
-using System.IO;
 
 namespace Sanad.Api.Services;
 

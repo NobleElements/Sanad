@@ -1,6 +1,3 @@
-using System;
-using System.Text.Json.Serialization;
-
 namespace Sanad.Api.Models;
 
 public class StorageTier

@@ -1,9 +1,5 @@
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Sanad.Api.Data;
-using System.Security.Claims;
-using System.IO;
 
 namespace Sanad.Api.Endpoints;
 
@@ -15,7 +11,7 @@ public static class AdminEndpoints
             policy.RequireAssertion(context => 
                 context.User.HasClaim(c => c.Type == "IsAdmin" && c.Value == "True")));
 
-        group.MapGet("/users", async (AdminDbContext db, Sanad.Api.Services.DiskQuotaService quotaService) =>
+        group.MapGet("/users", async (AdminDbContext db, Services.DiskQuotaService quotaService) =>
         {
             var users = await db.Users.Include(u => u.Tier).ToListAsync();
             var result = users.Select(u => new

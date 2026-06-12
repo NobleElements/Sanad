@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Sanad.Api.Data;
 using Sanad.Api.Models;
@@ -91,7 +87,7 @@ public static class TaskEndpoints
         return Results.NoContent();
     }
 
-    public static async Task<IResult> DeleteTask(SanadDbContext db, Guid id, Sanad.Api.Services.ITenantProvider tenantProvider)
+    public static async Task<IResult> DeleteTask(SanadDbContext db, Guid id, Services.ITenantProvider tenantProvider)
     {
         var task = await db.TaskItems
             .Include(t => t.Attachments)
@@ -216,4 +212,4 @@ public static class TaskEndpoints
     }
 }
 
-public record StatusUpdateRequest(Sanad.Api.Models.TaskStatus Status);
+public record StatusUpdateRequest(Models.TaskStatus Status);

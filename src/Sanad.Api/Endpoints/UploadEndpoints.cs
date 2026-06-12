@@ -1,10 +1,5 @@
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Sanad.Api.Data;
-using Sanad.Api.Models;
 using Sanad.Api.Services;
-using System.IO;
 
 namespace Sanad.Api.Endpoints;
 
@@ -13,10 +8,26 @@ public static class UploadEndpoints
     public static void MapUploadEndpoints(this IEndpointRouteBuilder app)
     {
         app.MapPost("/api/upload/image", UploadImage);
+        // Serve uploaded attachments dynamically based on authenticated user
+        app.MapGet("/attachments/{fileName}", DownloadAttachment);
     }
 
+    public static async Task<IResult> DownloadAttachment(
+        string fileName,
+        [FromServices] ITenantProvider tenantProvider)
+    {
+        var username = tenantProvider.GetUsername();
+        if (string.IsNullOrEmpty(username)) return Results.Unauthorized();
+
+        var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Data", username, "attachments", fileName);
+        if (!File.Exists(filePath)) return Results.NotFound();
+
+        return Results.File(filePath);
+    }
+
+
     public static async Task<IResult> UploadImage(
-        HttpRequest request, 
+        HttpRequest request,
         [FromServices] ITenantProvider tenantProvider,
         [FromServices] DiskQuotaService quotaService)
     {
@@ -27,7 +38,7 @@ public static class UploadEndpoints
         if (file == null || file.Length == 0) return Results.BadRequest("No file uploaded");
 
         var username = tenantProvider.GetUsername();
-        
+
         // Enforce quota
         var canUpload = await quotaService.CanUploadAsync(username, file.Length);
         if (!canUpload)

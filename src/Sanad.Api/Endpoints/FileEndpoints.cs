@@ -1,9 +1,5 @@
 using System.Collections.Concurrent;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Routing;
-using Microsoft.EntityFrameworkCore;
 using Sanad.Api.Data;
 using Sanad.Api.Models;
 using Sanad.Api.Services;
@@ -90,7 +86,7 @@ public static class FileEndpoints
             if (file == null) return Results.NotFound();
 
             var filePath = storage.GetFilePath(file.FileName);
-            if (!System.IO.File.Exists(filePath)) return Results.NotFound();
+            if (!File.Exists(filePath)) return Results.NotFound();
 
             // Enable Range processing
             if (inline == true) 

@@ -15,7 +15,7 @@ public static class FolderEndpoints
         var group = app.MapGroup("/api/folders").WithTags("Folders");
 
         group.MapGet("/{id?}", async (
-            Sanad.Api.Services.FileManagerService fileManager,
+            Services.FileManagerService fileManager,
             int? id, 
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 50,

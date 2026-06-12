@@ -10,7 +10,7 @@ public static class BookEndpoints
     {
         var group = app.MapGroup("/books");
 
-        group.MapGet("/search", async (string query, Sanad.Api.Services.IBookSearchService searchService) =>
+        group.MapGet("/search", async (string query, Services.IBookSearchService searchService) =>
         {
             var results = await searchService.SearchBooksAsync(query);
             return Results.Ok(results);

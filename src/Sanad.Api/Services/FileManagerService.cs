@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Sanad.Api.Data;
 using Sanad.Api.Models;
@@ -161,15 +156,15 @@ public class FileManagerService
 
     public async Task<FileItem?> UploadLocalFileAsync(string localFilePath, int? folderId = null)
     {
-        if (!System.IO.File.Exists(localFilePath)) return null;
+        if (!File.Exists(localFilePath)) return null;
 
-        var name = System.IO.Path.GetFileName(localFilePath);
-        var ext = System.IO.Path.GetExtension(localFilePath);
-        var fileInfo = new System.IO.FileInfo(localFilePath);
+        var name = Path.GetFileName(localFilePath);
+        var ext = Path.GetExtension(localFilePath);
+        var fileInfo = new FileInfo(localFilePath);
         var uniqueFileName = $"{Guid.NewGuid()}{ext}";
         
         var destPath = _storage.GetFilePath(uniqueFileName);
-        System.IO.File.Copy(localFilePath, destPath, true);
+        File.Copy(localFilePath, destPath, true);
 
         var provider = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
         if (!provider.TryGetContentType(name, out var mimeType))
@@ -193,9 +188,9 @@ public class FileManagerService
 
     public async Task<Folder?> UploadLocalFolderAsync(string localFolderPath, int? targetParentId = null)
     {
-        if (!System.IO.Directory.Exists(localFolderPath)) return null;
+        if (!Directory.Exists(localFolderPath)) return null;
         
-        var folderName = new System.IO.DirectoryInfo(localFolderPath).Name;
+        var folderName = new DirectoryInfo(localFolderPath).Name;
         var folder = new Folder { Name = folderName, ParentId = targetParentId };
         _db.Folders.Add(folder);
         await _db.SaveChangesAsync();
@@ -206,13 +201,13 @@ public class FileManagerService
 
     private async Task UploadFolderRecursive(string localPath, int parentId)
     {
-        foreach(var file in System.IO.Directory.GetFiles(localPath))
+        foreach(var file in Directory.GetFiles(localPath))
         {
             await UploadLocalFileAsync(file, parentId);
         }
-        foreach(var dir in System.IO.Directory.GetDirectories(localPath))
+        foreach(var dir in Directory.GetDirectories(localPath))
         {
-            var dirName = new System.IO.DirectoryInfo(dir).Name;
+            var dirName = new DirectoryInfo(dir).Name;
             var folder = new Folder { Name = dirName, ParentId = parentId };
             _db.Folders.Add(folder);
             await _db.SaveChangesAsync();
@@ -226,14 +221,14 @@ public class FileManagerService
         if (fileItem == null) return false;
 
         var sourcePath = _storage.GetFilePath(fileItem.FileName);
-        if (!System.IO.File.Exists(sourcePath)) return false;
+        if (!File.Exists(sourcePath)) return false;
 
-        if (System.IO.Directory.Exists(destinationPath))
+        if (Directory.Exists(destinationPath))
         {
-            destinationPath = System.IO.Path.Combine(destinationPath, fileItem.Name);
+            destinationPath = Path.Combine(destinationPath, fileItem.Name);
         }
 
-        System.IO.File.Copy(sourcePath, destinationPath, true);
+        File.Copy(sourcePath, destinationPath, true);
         return true;
     }
 
@@ -242,8 +237,8 @@ public class FileManagerService
         var folder = await _db.Folders.FindAsync(folderId);
         if (folder == null) return false;
 
-        var targetDir = System.IO.Path.Combine(destinationDirectory, folder.Name);
-        System.IO.Directory.CreateDirectory(targetDir);
+        var targetDir = Path.Combine(destinationDirectory, folder.Name);
+        Directory.CreateDirectory(targetDir);
         await DownloadFolderToLocalRecursive(folderId, targetDir);
         return true;
     }
@@ -254,17 +249,17 @@ public class FileManagerService
         foreach(var file in files)
         {
             var sourcePath = _storage.GetFilePath(file.FileName);
-            if (System.IO.File.Exists(sourcePath))
+            if (File.Exists(sourcePath))
             {
-                System.IO.File.Copy(sourcePath, System.IO.Path.Combine(destDir, file.Name), true);
+                File.Copy(sourcePath, Path.Combine(destDir, file.Name), true);
             }
         }
 
         var subfolders = await _db.Folders.Where(f => f.ParentId == folderId).ToListAsync();
         foreach(var sub in subfolders)
         {
-            var subDir = System.IO.Path.Combine(destDir, sub.Name);
-            System.IO.Directory.CreateDirectory(subDir);
+            var subDir = Path.Combine(destDir, sub.Name);
+            Directory.CreateDirectory(subDir);
             await DownloadFolderToLocalRecursive(sub.Id, subDir);
         }
     }

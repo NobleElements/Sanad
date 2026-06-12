@@ -1,7 +1,5 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Sanad.Api.Data;
 using Sanad.Api.Models;
@@ -115,7 +113,7 @@ public static class AuthEndpoints
             return Results.Ok(new { message = "Logged out successfully" });
         });
 
-        group.MapGet("/storage", async (AdminDbContext db, Sanad.Api.Services.DiskQuotaService quotaService, HttpContext context) =>
+        group.MapGet("/storage", async (AdminDbContext db, Services.DiskQuotaService quotaService, HttpContext context) =>
         {
             var username = context.User.Identity?.Name;
             if (string.IsNullOrEmpty(username)) return Results.Unauthorized();
@@ -149,7 +147,7 @@ public static class AuthEndpoints
     {
         // We override the username in the scoped TenantProvider to ensure SanadDbContext connects to the right DB
         using var scope = services.CreateScope();
-        var tenantProvider = scope.ServiceProvider.GetRequiredService<Sanad.Api.Services.ITenantProvider>() as Sanad.Api.Services.TenantProvider;
+        var tenantProvider = scope.ServiceProvider.GetRequiredService<Services.ITenantProvider>() as Services.TenantProvider;
         if (tenantProvider != null)
         {
             tenantProvider.SetOverrideUsername(username);

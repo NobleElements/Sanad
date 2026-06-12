@@ -34,14 +34,14 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
             return Task.CompletedTask;
         };
     })
-    .AddScheme<Sanad.Api.Services.ApiKeyAuthenticationOptions, Sanad.Api.Services.ApiKeyAuthenticationHandler>(
-        Sanad.Api.Services.ApiKeyAuthenticationOptions.DefaultScheme, null);
+    .AddScheme<ApiKeyAuthenticationOptions, ApiKeyAuthenticationHandler>(
+        ApiKeyAuthenticationOptions.DefaultScheme, null);
 
 builder.Services.AddAuthorization(options =>
 {
     var defaultPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder(
         CookieAuthenticationDefaults.AuthenticationScheme,
-        Sanad.Api.Services.ApiKeyAuthenticationOptions.DefaultScheme)
+        ApiKeyAuthenticationOptions.DefaultScheme)
         .RequireAuthenticatedUser()
         .Build();
     options.DefaultPolicy = defaultPolicy;
@@ -119,17 +119,5 @@ api.MapFileEndpoints();
 api.MapAdminEndpoints();
 
 app.MapMcp("/mcp").RequireAuthorization();
-
-// Serve uploaded attachments dynamically based on authenticated user
-app.MapGet("/attachments/{fileName}", IResult (string fileName, ITenantProvider tenantProvider, HttpContext context) =>
-{
-    var username = tenantProvider.GetUsername();
-    if (string.IsNullOrEmpty(username)) return Results.Unauthorized();
-    
-    var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Data", username, "attachments", fileName);
-    if (!File.Exists(filePath)) return Results.NotFound();
-    
-    return Results.File(filePath);
-}).RequireAuthorization();
 
 app.Run();
