@@ -33,8 +33,12 @@ public class TenantProvider : ITenantProvider
         var context = _httpContextAccessor.HttpContext;
         var user = context?.User;
         var username = user?.FindFirst(ClaimTypes.Name)?.Value;
+        if (string.IsNullOrEmpty(username))
+        {
+            throw new UnauthorizedAccessException("Tenant username could not be determined. Ensure the user is authenticated.");
+        }
         
-        return username ?? "default";
+        return username;
     }
 
     public string GetConnectionString()

@@ -94,6 +94,43 @@ const useTaskStore = create((set, get) => ({
     }
   },
 
+  reorderTasks: async (tasksToUpdate) => {
+    try {
+      // Optimistic update
+      const currentTasks = get().tasks;
+      
+      const newTasks = currentTasks.map(t => {
+        const update = tasksToUpdate.find(u => u.id === t.id);
+        if (update) {
+          return { ...t, status: update.status, order: update.order };
+        }
+        return t;
+      });
+      
+      // Keep it sorted
+      newTasks.sort((a, b) => {
+        if (a.order !== b.order) return a.order - b.order;
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      });
+      
+      set({ tasks: newTasks });
+
+      const res = await fetch(`${API_BASE}/api/tasks/reorder`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tasks: tasksToUpdate })
+      });
+      
+      if (!res.ok) throw new Error('Failed to reorder');
+      return true;
+    } catch (err) {
+      useUIStore.getState().showError('Failed to reorder tasks');
+      await get().fetchTasks(); // Revert
+      return false;
+    }
+  },
+
+
   getTaskDetails: async (id) => {
     set({ isLoadingTaskDetails: true });
     try {

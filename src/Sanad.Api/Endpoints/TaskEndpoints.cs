@@ -13,6 +13,7 @@ public static class TaskEndpoints
         app.MapPost("/api/tasks", CreateTask);
         app.MapPut("/api/tasks/{id}", UpdateTask);
         app.MapPatch("/api/tasks/{id}/status", UpdateTaskStatus);
+        app.MapPatch("/api/tasks/reorder", ReorderTasks);
         app.MapDelete("/api/tasks/{id}", DeleteTask);
         app.MapPost("/api/tasks/{id}/comments", CreateTaskComment);
         app.MapPost("/api/tasks/{id}/attachments", CreateTaskAttachment);
@@ -25,7 +26,7 @@ public static class TaskEndpoints
         var query = db.TaskItems.AsQueryable();
         if (!string.IsNullOrEmpty(project))
             query = query.Where(t => t.Project == project);
-        return Results.Ok(await query.OrderByDescending(t => t.CreatedAt).ToListAsync());
+        return Results.Ok(await query.OrderBy(t => t.Order).ThenByDescending(t => t.CreatedAt).ToListAsync());
     }
 
     public static async Task<IResult> GetTask(SanadDbContext db, Guid id)
@@ -76,6 +77,26 @@ public static class TaskEndpoints
         if (task == null) return Results.NotFound();
         task.Status = request.Status;
         task.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+        return Results.NoContent();
+    }
+
+    public static async Task<IResult> ReorderTasks(SanadDbContext db, ReorderTasksRequest request)
+    {
+        var ids = request.Tasks.Select(t => t.Id).ToList();
+        var tasks = await db.TaskItems.Where(t => ids.Contains(t.Id)).ToListAsync();
+        
+        foreach (var update in request.Tasks)
+        {
+            var task = tasks.FirstOrDefault(t => t.Id == update.Id);
+            if (task != null)
+            {
+                task.Status = update.Status;
+                task.Order = update.Order;
+                task.UpdatedAt = DateTime.UtcNow;
+            }
+        }
+        
         await db.SaveChangesAsync();
         return Results.NoContent();
     }
@@ -206,3 +227,6 @@ public static class TaskEndpoints
 }
 
 public record StatusUpdateRequest(Models.TaskStatus Status);
+
+public record ReorderTasksRequest(List<TaskUpdateDto> Tasks);
+public record TaskUpdateDto(Guid Id, Models.TaskStatus Status, int Order);
