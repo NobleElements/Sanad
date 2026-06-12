@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { API_BASE, BYTES_PER_KB } from '../config';
+import { formatBytes } from '../utils/formatUtils';
 
 export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
@@ -87,14 +88,6 @@ export default function AdminDashboard() {
     } catch (e) {
       console.error(e);
     }
-  };
-
-  const formatBytes = (bytes) => {
-    if (bytes === 0) return '0 B';
-    const k = BYTES_PER_KB;
-    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   if (loading) return <div className="p-8">Loading admin data...</div>;

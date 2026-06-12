@@ -59,9 +59,9 @@ namespace Sanad.Api.Migrations.Admin
                 columns: new[] { "Id", "DiskLimitBytes", "Name", "Price" },
                 values: new object[,]
                 {
-                    { 1, 5000000000L, "Supporter", 1m },
-                    { 2, 10000000000L, "Individual", 3m },
-                    { 3, 50000000000L, "Family", 7m },
+                    { 1, 1000000000L, "Free", 0m },
+                    { 2, 5000000000L, "Supporter", 1m },
+                    { 3, 10000000000L, "Individual", 3m },
                     { 4, 200000000000L, "Data Hoarder", 12m }
                 });
 

@@ -85,30 +85,30 @@ namespace Sanad.Api.Migrations.Admin
                         new
                         {
                             Id = 1,
+                            DiskLimitBytes = 1000000000L,
+                            Name = "Free",
+                            Price = 0m
+                        },
+                        new
+                        {
+                            Id = 2,
                             DiskLimitBytes = 5000000000L,
                             Name = "Supporter",
                             Price = 1m
                         },
                         new
                         {
-                            Id = 2,
+                            Id = 3,
                             DiskLimitBytes = 10000000000L,
                             Name = "Individual",
                             Price = 3m
                         },
                         new
                         {
-                            Id = 3,
-                            DiskLimitBytes = 50000000000L,
-                            Name = "Family",
-                            Price = 7m
-                        },
-                        new
-                        {
                             Id = 4,
                             DiskLimitBytes = 200000000000L,
                             Name = "Data Hoarder",
-                            Price = 12m
+                            Price = 7m
                         });
                 });
 

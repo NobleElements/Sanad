@@ -32,7 +32,7 @@ public class DiskQuotaService
         var userPath = Path.Combine(Directory.GetCurrentDirectory(), "Data", username);
         var currentSize = GetDirectorySize(userPath);
 
-        var limitBytes = user.Tier?.DiskLimitBytes ?? (1L * Constants.BytesPerKb * Constants.BytesPerKb * Constants.BytesPerKb); // default 1GB if no tier
+        var limitBytes = user.Tier?.DiskLimitBytes ?? (1L * Constants.GigaByte); // default 1GB if no tier
 
         return (currentSize + newFileSize) <= limitBytes;
     }

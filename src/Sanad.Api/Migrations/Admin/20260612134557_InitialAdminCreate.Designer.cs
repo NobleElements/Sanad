@@ -11,7 +11,7 @@ using Sanad.Api.Data;
 namespace Sanad.Api.Migrations.Admin
 {
     [DbContext(typeof(AdminDbContext))]
-    [Migration("20260611142033_InitialAdminCreate")]
+    [Migration("20260612134557_InitialAdminCreate")]
     partial class InitialAdminCreate
     {
         /// <inheritdoc />
@@ -88,23 +88,23 @@ namespace Sanad.Api.Migrations.Admin
                         new
                         {
                             Id = 1,
+                            DiskLimitBytes = 1000000000L,
+                            Name = "Free",
+                            Price = 0m
+                        },
+                        new
+                        {
+                            Id = 2,
                             DiskLimitBytes = 5000000000L,
                             Name = "Supporter",
                             Price = 1m
                         },
                         new
                         {
-                            Id = 2,
+                            Id = 3,
                             DiskLimitBytes = 10000000000L,
                             Name = "Individual",
                             Price = 3m
-                        },
-                        new
-                        {
-                            Id = 3,
-                            DiskLimitBytes = 50000000000L,
-                            Name = "Family",
-                            Price = 7m
                         },
                         new
                         {

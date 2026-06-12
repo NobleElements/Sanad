@@ -1,17 +1,7 @@
 import React from 'react';
 import { useFileManagerStore } from '../../store/fileManagerStore';
 import { X, Pause, Play, Upload, Download, CheckCircle, AlertCircle } from 'lucide-react';
-import { BYTES_PER_KB } from '../../config';
-
-const formatBytes = (bytes, decimals = 2) => {
-  if (bytes === 0) return '0 Bytes';
-  const k = BYTES_PER_KB;
-  const dm = decimals < 0 ? 0 : decimals;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
-};
-
+import { formatBytes } from '../../utils/formatUtils';
 const TransferProgress = () => {
   const { transfers, pauseTransfer, resumeTransfer, cancelTransfer, clearTransfers } = useFileManagerStore();
 

@@ -61,7 +61,7 @@ public static class AuthEndpoints
                 Username = request.Username,
                 PasswordHash = BCryptLib.HashPassword(request.Password),
                 IsAdmin = isAdmin,
-                TierId = 1, // Default tier (Supporter)
+                TierId = 1, // Default tier (Free)
                 CreatedIpAddress = ipAddress,
                 CreatedAt = DateTime.UtcNow,
                 LastVisitAt = DateTime.UtcNow
@@ -123,7 +123,8 @@ public static class AuthEndpoints
 
             var userPath = Path.Combine(Directory.GetCurrentDirectory(), "Data", username);
             var diskUsed = quotaService.GetDirectorySize(userPath);
-            var diskLimitBytes = user.Tier?.DiskLimitBytes ?? (1L * Constants.BytesPerKb * Constants.BytesPerKb * Constants.BytesPerKb);
+
+            var diskLimitBytes = user.Tier?.DiskLimitBytes ?? (1L * Constants.GigaByte);
 
             return Results.Ok(new { diskUsed, diskLimitBytes, isAdmin = user.IsAdmin });
         }).RequireAuthorization();

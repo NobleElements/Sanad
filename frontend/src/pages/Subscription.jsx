@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
 import useAuthStore from '../store/useAuthStore';
 import useSubscriptionStore from '../store/useSubscriptionStore';
-import { BYTES_PER_KB } from '../config';
+import { formatBytes } from '../utils/formatUtils';
 
 export default function Subscription() {
   const { tiers, storageData, loading, fetchSubscriptionData } = useSubscriptionStore();
@@ -12,14 +12,6 @@ export default function Subscription() {
   useEffect(() => {
     fetchSubscriptionData();
   }, [fetchSubscriptionData]);
-
-  const formatBytes = (bytes) => {
-    if (bytes === 0) return '0 B';
-    const k = BYTES_PER_KB;
-    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
 
   if (loading) return <div className="p-8">Loading subscription data...</div>;
 
@@ -75,16 +67,6 @@ export default function Subscription() {
                   <span className="text-blue-500 mr-2">✓</span>
                   {formatBytes(tier.diskLimitBytes)} Storage
                 </li>
-                <li className="flex items-center">
-                  <span className="text-blue-500 mr-2">✓</span>
-                  Unlimited Devices
-                </li>
-                {tier.id > 1 && (
-                  <li className="flex items-center">
-                    <span className="text-blue-500 mr-2">✓</span>
-                    Premium Support
-                  </li>
-                )}
               </ul>
               
               <button 
