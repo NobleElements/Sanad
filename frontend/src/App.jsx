@@ -15,6 +15,7 @@ import TaskModal from './components/TaskModal';
 import useAuthStore from './store/useAuthStore';
 import useTaskStore from './store/useTaskStore';
 import AdminDashboard from './pages/AdminDashboard';
+import StorageTiers from './pages/StorageTiers';
 import Subscription from './pages/Subscription';
 
 function App() {
@@ -68,6 +69,10 @@ function App() {
             <Route 
               path="/admin" 
               element={isAdmin ? <AdminDashboard /> : <Navigate to="/" replace />} 
+            />
+            <Route 
+              path="/admin/tiers" 
+              element={isAdmin ? <StorageTiers /> : <Navigate to="/" replace />} 
             />
           </Routes>
           <ToastContainer />
