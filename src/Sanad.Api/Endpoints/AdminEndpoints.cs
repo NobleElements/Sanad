@@ -23,7 +23,7 @@ public static class AdminEndpoints
             {
                 "Username" => sortDesc ? query.OrderByDescending(u => u.Username) : query.OrderBy(u => u.Username),
                 "DiskUsed" => sortDesc ? query.OrderByDescending(u => u.DiskUsed) : query.OrderBy(u => u.DiskUsed),
-                "Tier" => sortDesc ? query.OrderByDescending(u => u.Tier.Name) : query.OrderBy(u => u.Tier.Name),
+                "Tier" => sortDesc ? query.OrderByDescending(u => u.Tier!.Name) : query.OrderBy(u => u.Tier!.Name),
                 "CreatedAt" => sortDesc ? query.OrderByDescending(u => u.CreatedAt) : query.OrderBy(u => u.CreatedAt),
                 "LastVisitAt" => sortDesc ? query.OrderByDescending(u => u.LastVisitAt) : query.OrderBy(u => u.LastVisitAt),
                 _ => query.OrderByDescending(u => u.CreatedAt)
