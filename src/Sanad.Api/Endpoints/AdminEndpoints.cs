@@ -11,7 +11,7 @@ public static class AdminEndpoints
             policy.RequireAssertion(context => 
                 context.User.HasClaim(c => c.Type == "IsAdmin" && c.Value == "True")));
 
-        group.MapGet("/users", async (AdminDbContext db, Services.DiskQuotaService quotaService, int page = 1, int pageSize = 10, string? sortBy = null, bool sortDesc = false, string? statusFilter = null, int? tierFilter = null) =>
+        group.MapGet("/users", async (AdminDbContext db, int page = 1, int pageSize = 10, string? sortBy = null, bool sortDesc = false, string? statusFilter = null, int? tierFilter = null) =>
         {
             var query = db.Users.Include(u => u.Tier).AsQueryable();
             
@@ -33,10 +33,11 @@ public static class AdminEndpoints
             var users = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
             
             // Calculate Summaries
-            var allUsers = await db.Users.Include(u => u.Tier).ToListAsync();
-            var totalDiskUsage = allUsers.Sum(u => u.DiskUsed);
-            var monthlyRevenue = allUsers.Sum(u => u.Tier?.Price ?? 0);
-            var usersByTier = allUsers.GroupBy(u => u.Tier?.Name ?? "Free").ToDictionary(g => g.Key, g => g.Count());
+            var totalDiskUsage = await db.Users.SumAsync(u => u.DiskUsed);
+            var monthlyRevenue = await db.Users.SumAsync(u => u.Tier != null ? u.Tier.Price : 0);
+            var usersByTier = await db.Users.GroupBy(u => u.Tier != null ? u.Tier.Name : "Free")
+                                             .Select(g => new { Name = g.Key, Count = g.Count() })
+                                             .ToDictionaryAsync(g => g.Name, g => g.Count);
             
             var result = users.Select(u => new
             {
