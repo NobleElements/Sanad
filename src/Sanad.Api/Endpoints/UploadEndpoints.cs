@@ -49,8 +49,7 @@ public static class UploadEndpoints
         var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "Data", username, "attachments");
         Directory.CreateDirectory(uploadsDir);
 
-        var uniqueFileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
-        var filePath = Path.Combine(uploadsDir, uniqueFileName);
+        var (uniqueFileName, filePath) = Sanad.Api.Utils.FileUtils.GenerateUniqueFile(uploadsDir, Path.GetExtension(file.FileName));
 
         using (var stream = new FileStream(filePath, FileMode.Create))
         {

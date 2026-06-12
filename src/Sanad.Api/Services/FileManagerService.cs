@@ -161,9 +161,7 @@ public class FileManagerService
         var name = Path.GetFileName(localFilePath);
         var ext = Path.GetExtension(localFilePath);
         var fileInfo = new FileInfo(localFilePath);
-        var uniqueFileName = $"{Guid.NewGuid()}{ext}";
-        
-        var destPath = _storage.GetFilePath(uniqueFileName);
+        var (uniqueFileName, destPath) = Sanad.Api.Utils.FileUtils.GenerateUniqueFile(_storage.GetFilePath, ext);
         File.Copy(localFilePath, destPath, true);
 
         var provider = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();

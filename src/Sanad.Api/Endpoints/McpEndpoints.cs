@@ -186,8 +186,7 @@ public class McpEndpoints
         System.IO.Directory.CreateDirectory(uploadsDir);
 
         var fileName = System.IO.Path.GetFileName(localFilePath);
-        var uniqueFileName = $"{Guid.NewGuid()}{System.IO.Path.GetExtension(localFilePath)}";
-        var destPath = System.IO.Path.Combine(uploadsDir, uniqueFileName);
+        var (uniqueFileName, destPath) = Sanad.Api.Utils.FileUtils.GenerateUniqueFile(uploadsDir, System.IO.Path.GetExtension(localFilePath));
 
         try
         {

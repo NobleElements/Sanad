@@ -16,7 +16,7 @@ public static class FileEndpoints
     {
         var group = app.MapGroup("/api/files").WithTags("Files");
 
-        group.MapPost("/upload/init", async ([FromBody] InitUploadRequest req, DiskQuotaService quotaService, ITenantProvider tenantProvider) =>
+        group.MapPost("/upload/init", async ([FromBody] InitUploadRequest req, DiskQuotaService quotaService, ITenantProvider tenantProvider, FileStorageService storage) =>
         {
             var username = tenantProvider.GetUsername();
             if (!await quotaService.CanUploadAsync(username, req.SizeBytes))
@@ -25,8 +25,9 @@ public static class FileEndpoints
             }
 
             var uploadId = Guid.NewGuid().ToString();
-            var physicalName = Guid.NewGuid().ToString() + Path.GetExtension(req.Name);
             
+            var (physicalName, destPath) = Sanad.Api.Utils.FileUtils.GenerateUniqueFile(storage.GetFilePath, Path.GetExtension(req.Name));
+
             UploadSessions[uploadId] = new UploadSession
             {
                 UploadId = uploadId,
