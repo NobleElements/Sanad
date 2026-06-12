@@ -29,11 +29,20 @@ public class DiskQuotaService
         if (user == null) return false;
         if (user.IsAdmin) return true; // Admins have no limit
 
-        var userPath = Path.Combine(Directory.GetCurrentDirectory(), "Data", username);
-        var currentSize = GetDirectorySize(userPath);
+        var currentSize = user.DiskUsed;
 
         var limitBytes = user.Tier?.DiskLimitBytes ?? (1L * Constants.GigaByte); // default 1GB if no tier
 
         return (currentSize + newFileSize) <= limitBytes;
+    }
+
+    public async Task UpdateDiskUsageAsync(string username)
+    {
+        var user = await _adminDb.Users.FirstOrDefaultAsync(u => u.Username == username);
+        if (user == null) return;
+        
+        var userPath = Path.Combine(Directory.GetCurrentDirectory(), "Data", username);
+        user.DiskUsed = GetDirectorySize(userPath);
+        await _adminDb.SaveChangesAsync();
     }
 }
