@@ -5,8 +5,10 @@ import { Trash2 } from 'lucide-react';
 import AssetsTab from './AssetsTab';
 import useFinanceStore from '../store/useFinanceStore';
 import CategorySelector from '../components/CategorySelector';
+import usePageTitle from '../hooks/usePageTitle';
 
 export default function FinanceDashboard() {
+  usePageTitle('Finance');
   const [activeTab, setActiveTab] = useState('spending'); // 'spending' | 'assets'
   
   const [searchParams, setSearchParams] = useSearchParams();

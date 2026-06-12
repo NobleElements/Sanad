@@ -9,8 +9,10 @@ import { format } from 'date-fns';
 
 import { timeAgo } from '../utils/dateUtils';
 import CategorySelector from '../components/CategorySelector';
+import usePageTitle from '../hooks/usePageTitle';
 
 export default function Dashboard() {
+  usePageTitle('Dashboard');
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 

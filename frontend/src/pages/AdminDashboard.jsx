@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { API_BASE, BYTES_PER_KB } from '../config';
 import { formatBytes } from '../utils/formatUtils';
+import usePageTitle from '../hooks/usePageTitle';
 
 export default function AdminDashboard() {
+  usePageTitle('Admin');
   const [users, setUsers] = useState([]);
   const [tiers, setTiers] = useState([]);
   const [loading, setLoading] = useState(true);

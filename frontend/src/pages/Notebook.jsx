@@ -4,8 +4,10 @@ import TipTapEditor from '../components/TipTapEditor';
 import { Plus, Search, FolderOpen, FileText, Trash2, Pencil, X, Check, BookOpen } from 'lucide-react';
 import useNotebookStore from '../store/useNotebookStore';
 import { timeAgo } from '../utils/dateUtils';
+import usePageTitle from '../hooks/usePageTitle';
 
 export default function Notebook() {
+  usePageTitle('Notebook');
   const { noteId: urlNoteId } = useParams();
   const navigate = useNavigate();
 

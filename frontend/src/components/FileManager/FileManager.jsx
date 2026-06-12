@@ -6,8 +6,10 @@ import FileUploader from './FileUploader';
 import FilePreview from './FilePreview';
 import TransferProgress from './TransferProgress';
 import { BYTES_PER_KB } from '../../config';
+import usePageTitle from '../../hooks/usePageTitle';
 
 const FileManager = () => {
+  usePageTitle('Files');
   const { folderId } = useParams();
   const navigate = useNavigate();
 

@@ -6,8 +6,10 @@ import BookModal from '../components/BookModal';
 import PlanModal from '../components/PlanModal';
 import LogModal from '../components/LogModal';
 import CachedImage from '../components/CachedImage';
+import usePageTitle from '../hooks/usePageTitle';
 
 export default function Books() {
+  usePageTitle('Reading');
   const { books, periods, fetchBooks, fetchPeriods, searchBooks, searchResults, addBook, deleteBook, startReadingPeriod, currentRead, fetchCurrentRead, setPeriodStatus, deletePeriod } = useBookStore();
   
   const [searchParams, setSearchParams] = useSearchParams();

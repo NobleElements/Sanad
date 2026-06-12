@@ -3,8 +3,10 @@ import { AlertTriangle, X } from 'lucide-react';
 import useAuthStore from '../store/useAuthStore';
 import useSubscriptionStore from '../store/useSubscriptionStore';
 import { formatBytes } from '../utils/formatUtils';
+import usePageTitle from '../hooks/usePageTitle';
 
 export default function Subscription() {
+  usePageTitle('Subscription');
   const { tiers, storageData, loading, fetchSubscriptionData } = useSubscriptionStore();
   const { tierId, apiKey, rerollApiKey } = useAuthStore();
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);

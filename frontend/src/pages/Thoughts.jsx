@@ -3,8 +3,10 @@ import { Loader2, Search } from 'lucide-react';
 import useThoughtsStore from '../store/useThoughtsStore';
 
 import { parseUTCDate, timeAgo } from '../utils/dateUtils';
+import usePageTitle from '../hooks/usePageTitle';
 
 export default function Thoughts() {
+  usePageTitle('Thoughts');
   const { thoughts, hasMore, isLoaded, fetchThoughts, addThought, updateThought, deleteThought: storeDeleteThought } = useThoughtsStore();
   
   const [loadingMore, setLoadingMore] = useState(false);

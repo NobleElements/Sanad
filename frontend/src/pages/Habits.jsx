@@ -4,8 +4,10 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import EmojiPicker from 'emoji-picker-react';
 import { format, subDays, startOfDay, isSameDay, subMonths, eachDayOfInterval } from 'date-fns';
 import useHabitStore from '../store/useHabitStore';
+import usePageTitle from '../hooks/usePageTitle';
 
 export default function Habits() {
+  usePageTitle('Habits');
   const { habits, isLoaded, fetchHabits, createHabit, deleteHabit, toggleHabitLog, reorderHabits } = useHabitStore();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newHabit, setNewHabit] = useState({ name: '', icon: '🌟', frequency: 'Daily' });
