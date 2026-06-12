@@ -47,13 +47,6 @@ public static class TaskEndpoints
 
         db.TaskItems.Add(input);
         
-        var timelineItem = new TimelineItem 
-        {
-            ItemType = "Task",
-            ReferenceId = input.Id.ToString()
-        };
-        db.TimelineItems.Add(timelineItem);
-        
         await db.SaveChangesAsync();
         return Results.Created($"/api/tasks/{input.Id}", input);
     }

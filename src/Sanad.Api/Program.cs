@@ -103,7 +103,6 @@ var api = app.MapGroup("").RequireAuthorization();
 api.MapUploadEndpoints();
 api.MapThoughtEndpoints();
 api.MapGoalEndpoints();
-api.MapTimelineEndpoints();
 api.MapTaskEndpoints();
 
 api.MapFinanceEndpoints();

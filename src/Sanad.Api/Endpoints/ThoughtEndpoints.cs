@@ -19,13 +19,6 @@ public static class ThoughtEndpoints
         var thought = new Thought { Content = input.Content };
         db.Thoughts.Add(thought);
         
-        var timelineItem = new TimelineItem 
-        {
-            ItemType = "Thought",
-            ReferenceId = thought.Id
-        };
-        db.TimelineItems.Add(timelineItem);
-        
         await db.SaveChangesAsync();
         return Results.Ok(thought);
     }
@@ -65,12 +58,6 @@ public static class ThoughtEndpoints
         var thought = await db.Thoughts.FindAsync(id);
         if (thought == null) return Results.NotFound();
         
-        var timelineItem = await db.TimelineItems.FirstOrDefaultAsync(t => t.ItemType == "Thought" && t.ReferenceId == id);
-        if (timelineItem != null)
-        {
-            db.TimelineItems.Remove(timelineItem);
-        }
-
         db.Thoughts.Remove(thought);
         await db.SaveChangesAsync();
         return Results.NoContent();

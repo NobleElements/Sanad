@@ -68,13 +68,6 @@ public static class FinanceEndpoints
 
         db.Transactions.Add(transaction);
         
-        var timelineItem = new TimelineItem 
-        {
-            ItemType = "Transaction",
-            ReferenceId = transaction.Id.ToString()
-        };
-        db.TimelineItems.Add(timelineItem);
-        
         await db.SaveChangesAsync();
         return Results.Created($"/api/finances/transactions/{transaction.Id}", transaction);
     }
