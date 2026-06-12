@@ -86,6 +86,7 @@ builder.Services.AddMcpServer()
 // Change to Scoped since it needs ITenantProvider
 builder.Services.AddScoped<FileStorageService>();
 builder.Services.AddScoped<FileManagerService>();
+builder.Services.AddHostedService<DiskUsageSyncService>();
 
 var app = builder.Build();
 
