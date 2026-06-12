@@ -11,9 +11,33 @@ public static class AdminEndpoints
             policy.RequireAssertion(context => 
                 context.User.HasClaim(c => c.Type == "IsAdmin" && c.Value == "True")));
 
-        group.MapGet("/users", async (AdminDbContext db, Services.DiskQuotaService quotaService) =>
+        group.MapGet("/users", async (AdminDbContext db, Services.DiskQuotaService quotaService, int page = 1, int pageSize = 10, string? sortBy = null, bool sortDesc = false, string? statusFilter = null, int? tierFilter = null) =>
         {
-            var users = await db.Users.Include(u => u.Tier).ToListAsync();
+            var query = db.Users.Include(u => u.Tier).AsQueryable();
+            
+            if (statusFilter == "Active") query = query.Where(u => !u.IsBlocked);
+            if (statusFilter == "Blocked") query = query.Where(u => u.IsBlocked);
+            if (tierFilter.HasValue) query = query.Where(u => u.TierId == tierFilter.Value);
+            
+            query = sortBy switch
+            {
+                "Username" => sortDesc ? query.OrderByDescending(u => u.Username) : query.OrderBy(u => u.Username),
+                "DiskUsed" => sortDesc ? query.OrderByDescending(u => u.DiskUsed) : query.OrderBy(u => u.DiskUsed),
+                "Tier" => sortDesc ? query.OrderByDescending(u => u.Tier.Name) : query.OrderBy(u => u.Tier.Name),
+                "CreatedAt" => sortDesc ? query.OrderByDescending(u => u.CreatedAt) : query.OrderBy(u => u.CreatedAt),
+                "LastVisitAt" => sortDesc ? query.OrderByDescending(u => u.LastVisitAt) : query.OrderBy(u => u.LastVisitAt),
+                _ => query.OrderByDescending(u => u.CreatedAt)
+            };
+            
+            var totalUsers = await query.CountAsync();
+            var users = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+            
+            // Calculate Summaries
+            var allUsers = await db.Users.Include(u => u.Tier).ToListAsync();
+            var totalDiskUsage = allUsers.Sum(u => u.DiskUsed);
+            var monthlyRevenue = allUsers.Sum(u => u.Tier?.Price ?? 0);
+            var usersByTier = allUsers.GroupBy(u => u.Tier?.Name ?? "Free").ToDictionary(g => g.Key, g => g.Count());
+            
             var result = users.Select(u => new
             {
                 u.Id,
@@ -24,9 +48,17 @@ public static class AdminEndpoints
                 u.LastVisitAt,
                 u.TierId,
                 TierName = u.Tier?.Name,
-                DiskUsed = quotaService.GetDirectorySize(Path.Combine(Directory.GetCurrentDirectory(), "Data", u.Username))
+                DiskUsed = u.DiskUsed
             });
-            return Results.Ok(result);
+            return Results.Ok(new {
+                Users = result,
+                TotalCount = totalUsers,
+                TotalDiskUsage = totalDiskUsage,
+                MonthlyRevenue = monthlyRevenue,
+                UsersByTier = usersByTier,
+                Page = page,
+                PageSize = pageSize
+            });
         });
 
         group.MapPatch("/users/{id}", async (Guid id, AdminDbContext db, AdminUserUpdateRequest req) =>

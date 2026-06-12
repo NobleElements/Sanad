@@ -56,7 +56,7 @@ public static class FileEndpoints
             return Results.Ok(new { UploadedBytes = session.UploadedBytes });
         });
 
-        group.MapPost("/upload/{uploadId}/complete", async (string uploadId, SanadDbContext db) =>
+        group.MapPost("/upload/{uploadId}/complete", async (string uploadId, SanadDbContext db, DiskQuotaService quotaService, ITenantProvider tenantProvider) =>
         {
             if (!UploadSessions.TryGetValue(uploadId, out var session))
                 return Results.NotFound("Upload session not found");
@@ -77,6 +77,8 @@ public static class FileEndpoints
             await db.SaveChangesAsync();
 
             UploadSessions.TryRemove(uploadId, out _);
+
+            await quotaService.UpdateDiskUsageAsync(tenantProvider.GetUsername());
 
             return Results.Ok(fileItem);
         });
@@ -111,7 +113,7 @@ public static class FileEndpoints
             return Results.Ok(file);
         });
 
-        group.MapDelete("/{id}", async (int id, SanadDbContext db, FileStorageService storage) =>
+        group.MapDelete("/{id}", async (int id, SanadDbContext db, FileStorageService storage, DiskQuotaService quotaService, ITenantProvider tenantProvider) =>
         {
             var file = await db.FileItems.FindAsync(id);
             if (file == null) return Results.NotFound();
@@ -119,6 +121,8 @@ public static class FileEndpoints
             storage.DeleteFile(file.FileName);
             db.FileItems.Remove(file);
             await db.SaveChangesAsync();
+
+            await quotaService.UpdateDiskUsageAsync(tenantProvider.GetUsername());
 
             return Results.NoContent();
         });

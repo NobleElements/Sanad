@@ -56,6 +56,8 @@ public static class UploadEndpoints
             await file.CopyToAsync(stream);
         }
 
+        await quotaService.UpdateDiskUsageAsync(username);
+
         return Results.Ok(new { url = $"/attachments/{uniqueFileName}" });
     }
 }
