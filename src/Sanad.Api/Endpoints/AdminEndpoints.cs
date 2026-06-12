@@ -72,12 +72,6 @@ public static class AdminEndpoints
             return Results.Ok(tier);
         });
 
-        // Accessible to any authenticated user
-        app.MapGet("/api/admin/tiers", async (AdminDbContext db) =>
-        {
-            var tiers = await db.Tiers.ToListAsync();
-            return Results.Ok(tiers);
-        }).RequireAuthorization();
     }
 }
 

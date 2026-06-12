@@ -19,7 +19,7 @@ export default function AdminDashboard() {
     try {
       const [usersRes, tiersRes] = await Promise.all([
         fetch(`${API_BASE}/api/admin/users`),
-        fetch(`${API_BASE}/api/admin/tiers`)
+        fetch(`${API_BASE}/api/storage/tiers`)
       ]);
       
       const usersData = await usersRes.json();

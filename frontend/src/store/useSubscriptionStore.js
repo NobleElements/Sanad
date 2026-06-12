@@ -11,8 +11,8 @@ const useSubscriptionStore = create((set, get) => ({
     set({ loading: true, error: null });
     try {
       const [tiersRes, storageRes] = await Promise.all([
-        fetch(`${API_BASE}/api/admin/tiers`),
-        fetch(`${API_BASE}/api/auth/storage`)
+        fetch(`${API_BASE}/api/storage/tiers`),
+        fetch(`${API_BASE}/api/storage`)
       ]);
       
       let newTiers = get().tiers;

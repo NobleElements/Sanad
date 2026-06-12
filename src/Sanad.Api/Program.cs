@@ -113,6 +113,7 @@ api.MapReadingEndpoints();
 api.MapHabitEndpoints();
 api.MapFolderEndpoints();
 api.MapFileEndpoints();
+api.MapStorageEndpoints();
 
 // Admin Endpoints
 api.MapAdminEndpoints();
