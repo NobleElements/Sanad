@@ -1,11 +1,11 @@
 sanadcloud.app {
     # Proxy API endpoints to the .NET backend
-    handle_path /api/* {
+    handle /api/* {
         reverse_proxy sanad-api:8080
     }
     
     # Proxy MCP endpoints to the .NET backend
-    handle_path /mcp* {
+    handle /mcp* {
         reverse_proxy sanad-api:8080
     }
 
