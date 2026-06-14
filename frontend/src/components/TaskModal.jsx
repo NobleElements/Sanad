@@ -14,8 +14,7 @@ const TAG_COLORS = [
   'bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-300',
   'bg-cyan-100 text-cyan-700 dark:bg-cyan-500/20 dark:text-cyan-300',
 ];
-
-export default function TaskModal({ isOpen, task, onClose, onSave }) {
+export default function TaskModal() {
   const titleInputRef = useRef(null);
   const [internalTask, setInternalTask] = useState(null);
   const [title, setTitle] = useState('');
@@ -31,9 +30,10 @@ export default function TaskModal({ isOpen, task, onClose, onSave }) {
   const uploadedSessionImages = useRef([]);
 
   const { 
+    isTaskModalOpen: isOpen, activeTask: task, closeTaskModal: onClose, createTask, updateTask,
     activeTaskDetails, isLoadingTaskDetails, isUploadingAttachment,
     getTaskDetails, addTaskComment, deleteTaskComment, 
-    uploadTaskAttachment, deleteTaskAttachment, deleteTask 
+    uploadTaskAttachment, deleteTaskAttachment, deleteTask
   } = useTaskStore();
 
   const [newComment, setNewComment] = useState('');
@@ -95,7 +95,7 @@ export default function TaskModal({ isOpen, task, onClose, onSave }) {
     const estimatedMinutes = (h * 60 + m) || null;
 
     try {
-      await onSave({
+       const taskData = {
         ...internalTask,
         title,
         status: statusVal,
@@ -103,7 +103,17 @@ export default function TaskModal({ isOpen, task, onClose, onSave }) {
         project: project || null,
         tags: tags.length > 0 ? tags.join(',') : null,
         estimatedMinutes,
-      });
+      };
+
+      let success = false;
+      if (taskData.isNew) {
+        success = await createTask(taskData);
+      } else {
+        success = await updateTask(taskData.id, taskData);
+      }
+      if (success) {
+        onClose();
+      }
 
       // Cleanup unused images
       const initialImages = extractImagesFromHtml(task?.content || '');

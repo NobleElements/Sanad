@@ -6,6 +6,7 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import useTaskStore from '../store/useTaskStore';
 import { formatTime } from '../utils/dateUtils';
 import usePageTitle from '../hooks/usePageTitle';
+import TaskModal from '../components/TaskModal';
 
 const TAG_COLORS = [
   'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300',
@@ -382,6 +383,7 @@ export default function Tasks() {
           </div>
         </DragDropContext>
       )}
+      <TaskModal />
     </div>
   );
 }
