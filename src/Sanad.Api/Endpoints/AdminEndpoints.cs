@@ -75,8 +75,14 @@ public static class AdminEndpoints
             return Results.Ok(user);
         });
 
-        group.MapDelete("/users/{id}", async (Guid id, AdminDbContext db) =>
+        group.MapDelete("/users/{id}", async (Guid id, AdminDbContext db, System.Security.Claims.ClaimsPrincipal currentUser) =>
         {
+            var currentUserIdStr = currentUser.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (currentUserIdStr == id.ToString())
+            {
+                return Results.BadRequest("Cannot delete your own account.");
+            }
+
             var user = await db.Users.FindAsync(id);
             if (user == null) return Results.NotFound();
 

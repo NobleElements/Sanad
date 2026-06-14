@@ -3,9 +3,11 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { API_BASE } from '../config';
 import { formatBytes } from '../utils/formatUtils';
 import usePageTitle from '../hooks/usePageTitle';
+import useAuthStore from '../store/useAuthStore';
 
 export default function AdminDashboard() {
   usePageTitle('Admin');
+  const currentUsername = useAuthStore(state => state.username);
   const [searchParams, setSearchParams] = useSearchParams();
   const page = parseInt(searchParams.get('page') || '1', 10);
   const sortBy = searchParams.get('sortBy') || '';
@@ -261,12 +263,14 @@ export default function AdminDashboard() {
                     </label>
                   </td>
                   <td className="p-3 text-right">
-                    <button 
-                      onClick={() => deleteUser(u.id)}
-                      className="text-red-500 hover:text-red-700 px-3 py-1 border border-red-200 rounded hover:bg-red-50 transition-colors"
-                    >
-                      Delete
-                    </button>
+                    {u.username !== currentUsername && (
+                      <button 
+                        onClick={() => deleteUser(u.id)}
+                        className="text-red-500 hover:text-red-700 px-3 py-1 border border-red-200 rounded hover:bg-red-50 transition-colors"
+                      >
+                        Delete
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
