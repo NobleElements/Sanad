@@ -288,15 +288,29 @@ export const useFileManagerStore = create((set, get) => ({
     if (!response.ok) return;
     const data = await response.json();
 
+    const sanitizeName = (name) => {
+      if (!name) return 'unnamed';
+      // Replace invalid characters for local file systems
+      let safeName = name.replace(/[\\/:"*?<>|]/g, '_');
+      // Trim to avoid whitespace-only names and trailing dots/spaces issues on some OS
+      safeName = safeName.trim();
+      if (!safeName) return 'unnamed';
+      // . and .. are not allowed
+      if (safeName === '.' || safeName === '..') return safeName + '_';
+      return safeName;
+    };
+
     // Create subfolders and recurse
     for (const sub of data.subfolders || []) {
-      const subDirHandle = await dirHandle.getDirectoryHandle(sub.name, { create: true });
+      const safeName = sanitizeName(sub.name);
+      const subDirHandle = await dirHandle.getDirectoryHandle(safeName, { create: true });
       await get().processDownloadFolder(sub.id, subDirHandle);
     }
 
     // Download files
     for (const file of data.files || []) {
-      const fileHandle = await dirHandle.getFileHandle(file.name, { create: true });
+      const safeName = sanitizeName(file.name);
+      const fileHandle = await dirHandle.getFileHandle(safeName, { create: true });
       const writable = await fileHandle.createWritable();
       
       const fileRes = await fetch(`/api/files/${file.id}/download`);
