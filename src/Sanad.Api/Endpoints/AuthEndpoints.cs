@@ -64,7 +64,8 @@ public static class AuthEndpoints
                 TierId = 1, // Default tier (Free)
                 CreatedIpAddress = ipAddress,
                 CreatedAt = DateTime.UtcNow,
-                LastVisitAt = DateTime.UtcNow
+                LastVisitAt = DateTime.UtcNow,
+                ApiKey = await GenerateUniqueApiKeyAsync(db)
             };
 
             db.Users.Add(user);
@@ -122,11 +123,22 @@ public static class AuthEndpoints
             var user = await db.Users.FirstOrDefaultAsync(u => u.Username == username);
             if (user == null) return Results.NotFound();
 
-            user.ApiKey = Guid.NewGuid().ToString("N");
+            user.ApiKey = await GenerateUniqueApiKeyAsync(db);
             await db.SaveChangesAsync();
 
             return Results.Ok(new { apiKey = user.ApiKey });
         }).RequireAuthorization();
+    }
+
+    private static async Task<string> GenerateUniqueApiKeyAsync(AdminDbContext db)
+    {
+        string newApiKey;
+        do
+        {
+            newApiKey = Guid.NewGuid().ToString("N");
+        } while (await db.Users.AnyAsync(u => u.ApiKey == newApiKey));
+        
+        return newApiKey;
     }
 
     private static void EnsureTenantDbMigrated(string username, IServiceProvider services)
