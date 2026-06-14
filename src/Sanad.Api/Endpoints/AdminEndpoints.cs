@@ -39,6 +39,16 @@ public static class AdminEndpoints
                                              .Select(g => new { Name = g.Key, Count = g.Count() })
                                              .ToDictionaryAsync(g => g.Name, g => g.Count);
             
+            long hostTotalDiskSpace = 0;
+            long hostFreeDiskSpace = 0;
+            try
+            {
+                var driveInfo = new System.IO.DriveInfo(new System.IO.DirectoryInfo(System.IO.Directory.GetCurrentDirectory()).Root.FullName);
+                hostTotalDiskSpace = driveInfo.TotalSize;
+                hostFreeDiskSpace = driveInfo.AvailableFreeSpace;
+            }
+            catch { }
+            
             var result = users.Select(u => new
             {
                 u.Id,
@@ -58,7 +68,9 @@ public static class AdminEndpoints
                 MonthlyRevenue = monthlyRevenue,
                 UsersByTier = usersByTier,
                 Page = page,
-                PageSize = pageSize
+                PageSize = pageSize,
+                HostTotalDiskSpace = hostTotalDiskSpace,
+                HostFreeDiskSpace = hostFreeDiskSpace
             });
         });
 

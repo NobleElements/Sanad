@@ -148,8 +148,21 @@ export default function AdminDashboard() {
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-          <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wider">Total Disk Usage</h3>
-          <p className="text-2xl font-bold text-slate-800 mt-2">{formatBytes(data.totalDiskUsage || 0)}</p>
+          <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wider">Disk Space</h3>
+          <div className="mt-2 text-sm text-slate-700 space-y-1">
+            <div className="flex justify-between">
+              <span>Used (Users):</span>
+              <span className="font-semibold text-slate-800">{formatBytes(data.totalDiskUsage || 0)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Host Free:</span>
+              <span className="font-semibold text-emerald-600">{formatBytes(data.hostFreeDiskSpace || 0)}</span>
+            </div>
+            <div className="flex justify-between border-t border-slate-100 pt-1 mt-1">
+              <span>Host Total:</span>
+              <span className="font-semibold text-slate-800">{formatBytes(data.hostTotalDiskSpace || 0)}</span>
+            </div>
+          </div>
         </div>
         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
           <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wider">Total Users</h3>
