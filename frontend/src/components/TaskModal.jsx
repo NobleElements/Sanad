@@ -33,7 +33,7 @@ export default function TaskModal({ isOpen, task, onClose, onSave }) {
   const { 
     activeTaskDetails, isLoadingTaskDetails, isUploadingAttachment,
     getTaskDetails, addTaskComment, deleteTaskComment, 
-    uploadTaskAttachment, deleteTaskAttachment 
+    uploadTaskAttachment, deleteTaskAttachment, deleteTask 
   } = useTaskStore();
 
   const [newComment, setNewComment] = useState('');
@@ -133,6 +133,18 @@ export default function TaskModal({ isOpen, task, onClose, onSave }) {
 
   const handleRemoveTag = (tagToRemove) => {
     setTags(tags.filter(t => t !== tagToRemove));
+  };
+
+  const handleDeleteTask = async () => {
+    if (!activeTask?.id || activeTask.isNew) return;
+    if (confirm('Are you sure you want to delete this task?')) {
+      try {
+        await deleteTask(activeTask.id);
+        onClose(); // Close the modal
+      } catch (err) {
+        setError('Failed to delete task.');
+      }
+    }
   };
 
   const handleCloseModal = async () => {
@@ -502,7 +514,18 @@ export default function TaskModal({ isOpen, task, onClose, onSave }) {
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30">
+        <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30 flex justify-between items-center">
+          <div>
+            {!activeTask?.isNew && (
+              <button
+                onClick={handleDeleteTask}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete Task
+              </button>
+            )}
+          </div>
           <div className="flex justify-end gap-3">
             <button
               onClick={handleCloseModal}

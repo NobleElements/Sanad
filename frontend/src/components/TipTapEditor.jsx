@@ -3,7 +3,7 @@ import StarterKit from '@tiptap/starter-kit';
 import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
-import Image from '@tiptap/extension-image';
+import ImageResize from 'tiptap-extension-resize-image';
 import Link from '@tiptap/extension-link';
 import { common, createLowlight } from 'lowlight';
 import { useEffect, useRef, useCallback } from 'react';
@@ -128,7 +128,7 @@ export default function TipTapEditor({ content, onChange, onImageUpload }) {
       CodeBlockLowlight.configure({
         lowlight,
       }),
-      Image.configure({
+      ImageResize.configure({
         inline: false,
         allowBase64: false,
       }),
