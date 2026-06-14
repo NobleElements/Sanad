@@ -1,0 +1,18 @@
+sanadapp.cloud {
+    # Proxy API endpoints to the .NET backend
+    handle_path /api/* {
+        reverse_proxy sanad-api:8080
+    }
+    
+    # Proxy MCP endpoints to the .NET backend
+    handle_path /mcp* {
+        reverse_proxy sanad-api:8080
+    }
+
+    # Serve the React frontend locally
+    handle {
+        root * /srv/frontend
+        try_files {path} {path}/ /index.html
+        file_server
+    }
+}

@@ -1,0 +1,20 @@
+# Step 1: Build the React/Vite frontend
+FROM node:22-alpine AS frontend-build
+WORKDIR /app
+
+# Copy package files and install dependencies
+COPY frontend/package*.json ./
+RUN npm install
+
+# Copy source and build
+COPY frontend/ .
+RUN npm run build
+
+# Step 2: Build the Caddy image containing the built frontend
+FROM caddy:2-alpine
+
+# Copy the built frontend static files to a directory Caddy will serve from
+COPY --from=frontend-build /app/dist /srv/frontend
+
+# Copy the Caddyfile configuration
+COPY Caddyfile /etc/caddy/Caddyfile

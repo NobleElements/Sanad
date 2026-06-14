@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  caddy:
+    build:
+      context: .
+      dockerfile: Dockerfile.caddy
+    container_name: sanad-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - sanad-api
+
+  sanad-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sanad-api
+    restart: unless-stopped
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+    volumes:
+      - ./sanad-data:/app/Data
+    # Port 8080 is exposed internally
+
+volumes:
+  caddy_data:
+  caddy_config:
