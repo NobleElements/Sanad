@@ -9,7 +9,8 @@ public static class UploadEndpoints
     {
         app.MapPost("/api/upload/image", UploadImage);
         // Serve uploaded attachments dynamically based on authenticated user
-        app.MapGet("/attachments/{fileName}", DownloadAttachment);
+        app.MapGet("/api/attachments/{fileName}", DownloadAttachment);
+        app.MapDelete("/api/attachments/{fileName}", DeleteAttachment);
     }
 
     public static async Task<IResult> DownloadAttachment(
@@ -23,6 +24,31 @@ public static class UploadEndpoints
         if (!File.Exists(filePath)) return Results.NotFound();
 
         return Results.File(filePath);
+    }
+
+    public static async Task<IResult> DeleteAttachment(
+        string fileName,
+        [FromServices] ITenantProvider tenantProvider)
+    {
+        var username = tenantProvider.GetUsername();
+        if (string.IsNullOrEmpty(username)) return Results.Unauthorized();
+
+        var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Data", username, "attachments", fileName);
+        
+        if (File.Exists(filePath))
+        {
+            try
+            {
+                File.Delete(filePath);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error deleting file {filePath}: {ex.Message}");
+                return Results.Problem("Error deleting file");
+            }
+        }
+
+        return Results.NoContent();
     }
 
 

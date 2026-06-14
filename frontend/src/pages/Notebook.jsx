@@ -5,6 +5,7 @@ import { Plus, Search, FolderOpen, FileText, Trash2, Pencil, X, Check, BookOpen 
 import useNotebookStore from '../store/useNotebookStore';
 import { timeAgo } from '../utils/dateUtils';
 import usePageTitle from '../hooks/usePageTitle';
+import { extractImagesFromHtml, deleteImages } from '../utils/imageUtils';
 
 export default function Notebook() {
   usePageTitle('Notebook');
@@ -35,6 +36,8 @@ export default function Notebook() {
 
   const saveTimerRef = useRef(null);
   const newNotebookInputRef = useRef(null);
+  const uploadedSessionImagesRef = useRef([]);
+  const initialImagesRef = useRef([]);
 
 
 
@@ -65,6 +68,8 @@ export default function Notebook() {
           fetchNotes(note.notebookId);
           setNoteTitle(note.title);
           setNoteContent(note.content || '');
+          initialImagesRef.current = extractImagesFromHtml(note.content || '');
+          uploadedSessionImagesRef.current = [];
         }
       }
 
@@ -82,6 +87,8 @@ export default function Notebook() {
         if (note) {
           setNoteTitle(note.title);
           setNoteContent(note.content || '');
+          initialImagesRef.current = extractImagesFromHtml(note.content || '');
+          uploadedSessionImagesRef.current = [];
           if (note.notebookId !== selectedNotebookId) {
             setSelectedNotebookId(note.notebookId);
             fetchNotes(note.notebookId);
@@ -98,6 +105,8 @@ export default function Notebook() {
     setSelectedNote(null);
     setNoteTitle('');
     setNoteContent('');
+    initialImagesRef.current = [];
+    uploadedSessionImagesRef.current = [];
     navigate('/notebook');
     fetchNotes(notebookId);
   };
@@ -123,6 +132,16 @@ export default function Notebook() {
     const success = await updateNote(selectedNote.id, title, content);
     if (success) {
       setLastSaved(new Date());
+      
+      // Image cleanup
+      const finalImages = extractImagesFromHtml(content);
+      const toDelete = [...new Set([...initialImagesRef.current, ...uploadedSessionImagesRef.current])].filter(url => !finalImages.includes(url));
+      
+      await deleteImages(toDelete);
+      
+      // Update refs to reflect current state
+      initialImagesRef.current = finalImages;
+      uploadedSessionImagesRef.current = [];
     }
     setIsSaving(false);
   }, [selectedNote, updateNote]);
@@ -183,6 +202,8 @@ export default function Notebook() {
         if (fetchedNote) {
           setNoteTitle(fetchedNote.title);
           setNoteContent(fetchedNote.content || '');
+          initialImagesRef.current = extractImagesFromHtml(fetchedNote.content || '');
+          uploadedSessionImagesRef.current = [];
         }
       });
     }
@@ -194,6 +215,8 @@ export default function Notebook() {
       setSelectedNote(null);
       setNoteTitle('');
       setNoteContent('');
+      initialImagesRef.current = [];
+      uploadedSessionImagesRef.current = [];
       navigate('/notebook');
     }
   };
@@ -202,7 +225,9 @@ export default function Notebook() {
 
   const handleImageUpload = async (file) => {
     if (!selectedNote) return null;
-    return await uploadImage(selectedNote.id, file);
+    const url = await uploadImage(selectedNote.id, file);
+    if (url) uploadedSessionImagesRef.current.push(url);
+    return url;
   };
 
   // Focus input when creating notebook
@@ -363,6 +388,8 @@ export default function Notebook() {
                     if (fetchedNote) {
                       setNoteTitle(fetchedNote.title);
                       setNoteContent(fetchedNote.content || '');
+                      initialImagesRef.current = extractImagesFromHtml(fetchedNote.content || '');
+                      uploadedSessionImagesRef.current = [];
                     }
                   });
                   if (searchResults !== null) {

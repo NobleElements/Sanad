@@ -203,7 +203,7 @@ public class McpEndpoints
         {
             TaskItemId = taskId,
             FileName = fileName,
-            FilePath = $"/attachments/{uniqueFileName}"
+            FilePath = $"/api/attachments/{uniqueFileName}"
         };
         _db.TaskAttachments.Add(attachment);
         await _db.SaveChangesAsync();

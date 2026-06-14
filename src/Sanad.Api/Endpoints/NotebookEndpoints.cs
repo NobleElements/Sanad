@@ -51,13 +51,25 @@ public static class NotebookEndpoints
         return Results.Ok(notebook);
     }
 
-    static async Task<IResult> DeleteNotebook(SanadDbContext db, Guid id)
+    static async Task<IResult> DeleteNotebook(SanadDbContext db, Guid id, Sanad.Api.Services.ITenantProvider tenantProvider)
     {
         var notebook = await db.Notebooks.Include(n => n.Notes).FirstOrDefaultAsync(n => n.Id == id);
         if (notebook == null) return Results.NotFound();
+
+        var username = tenantProvider.GetUsername();
+        var filesToDelete = new List<string>();
+
+        foreach (var note in notebook.Notes)
+        {
+            filesToDelete.AddRange(Utils.UploadHelper.GetAttachmentPathsFromHtml(note.Content, username));
+        }
+
         db.Notes.RemoveRange(notebook.Notes);
         db.Notebooks.Remove(notebook);
         await db.SaveChangesAsync();
+
+        Utils.UploadHelper.DeleteFiles(filesToDelete);
+
         return Results.NoContent();
     }
 
@@ -102,12 +114,19 @@ public static class NotebookEndpoints
         return Results.Ok(note);
     }
 
-    static async Task<IResult> DeleteNote(SanadDbContext db, Guid id)
+    static async Task<IResult> DeleteNote(SanadDbContext db, Guid id, Sanad.Api.Services.ITenantProvider tenantProvider)
     {
         var note = await db.Notes.FindAsync(id);
         if (note == null) return Results.NotFound();
+
+        var username = tenantProvider.GetUsername();
+        var filesToDelete = Utils.UploadHelper.GetAttachmentPathsFromHtml(note.Content, username);
+
         db.Notes.Remove(note);
         await db.SaveChangesAsync();
+
+        Utils.UploadHelper.DeleteFiles(filesToDelete);
+
         return Results.NoContent();
     }
 

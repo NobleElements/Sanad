@@ -110,30 +110,24 @@ public static class TaskEndpoints
         if (task == null) return Results.NotFound();
         
         var filesToDelete = new List<string>();
+        var username = tenantProvider.GetUsername();
+        
         if (task.Attachments != null)
         {
             foreach (var attachment in task.Attachments)
             {
-                var username = tenantProvider.GetUsername();
                 var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Data", username, attachment.FilePath.TrimStart('/'));
                 filesToDelete.Add(filePath);
             }
         }
+
+        // Delete inline images
+        filesToDelete.AddRange(Utils.UploadHelper.GetAttachmentPathsFromHtml(task.Content, username));
         
         db.TaskItems.Remove(task);
         await db.SaveChangesAsync();
 
-        foreach (var filePath in filesToDelete)
-        {
-            try
-            {
-                File.Delete(filePath);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error deleting file {filePath}: {ex.Message}");
-            }
-        }
+        Utils.UploadHelper.DeleteFiles(filesToDelete);
 
         return Results.NoContent();
     }

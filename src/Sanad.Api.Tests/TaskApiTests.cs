@@ -61,7 +61,7 @@ public class TaskApiTests
         { 
             TaskItemId = task.Id, 
             FileName = "test.txt",
-            FilePath = $"/attachments/{uniqueFileName}"
+            FilePath = $"/api/attachments/{uniqueFileName}"
         };
         context.TaskAttachments.Add(attachment);
         await context.SaveChangesAsync();
@@ -108,7 +108,7 @@ public class TaskApiTests
         { 
             TaskItemId = task.Id, 
             FileName = "test.txt",
-            FilePath = $"/attachments/{uniqueFileName}"
+            FilePath = $"/api/attachments/{uniqueFileName}"
         };
         context.TaskAttachments.Add(attachment);
         await context.SaveChangesAsync();

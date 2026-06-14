@@ -4,6 +4,7 @@ import TipTapEditor from './TipTapEditor';
 import { API_BASE } from '../config';
 import ProjectSelector from './ProjectSelector';
 import useTaskStore from '../store/useTaskStore';
+import { extractImagesFromHtml, deleteImages } from '../utils/imageUtils';
 
 const TAG_COLORS = [
   'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300',
@@ -27,6 +28,7 @@ export default function TaskModal({ isOpen, task, onClose, onSave }) {
   const [minutes, setMinutes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
+  const uploadedSessionImages = useRef([]);
 
   const { 
     activeTaskDetails, isLoadingTaskDetails, isUploadingAttachment,
@@ -62,6 +64,8 @@ export default function TaskModal({ isOpen, task, onClose, onSave }) {
       } else {
         setTags([]);
       }
+
+      uploadedSessionImages.current = [];
 
       // Initialize estimated time from minutes
       if (task.estimatedMinutes && task.estimatedMinutes > 0) {
@@ -100,6 +104,15 @@ export default function TaskModal({ isOpen, task, onClose, onSave }) {
         tags: tags.length > 0 ? tags.join(',') : null,
         estimatedMinutes,
       });
+
+      // Cleanup unused images
+      const initialImages = extractImagesFromHtml(task?.content || '');
+      const finalImages = extractImagesFromHtml(content);
+      const toDelete = [...new Set([...initialImages, ...uploadedSessionImages.current])].filter(url => !finalImages.includes(url));
+      
+      await deleteImages(toDelete);
+      uploadedSessionImages.current = [];
+
     } catch (err) {
       setError(err.message || 'Failed to save task');
     } finally {
@@ -122,9 +135,16 @@ export default function TaskModal({ isOpen, task, onClose, onSave }) {
     setTags(tags.filter(t => t !== tagToRemove));
   };
 
+  const handleCloseModal = async () => {
+    // Delete session images since we are cancelling
+    await deleteImages(uploadedSessionImages.current);
+    uploadedSessionImages.current = [];
+    onClose();
+  };
+
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && isOpen) onClose();
+      if (e.key === 'Escape' && isOpen) handleCloseModal();
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -140,7 +160,9 @@ export default function TaskModal({ isOpen, task, onClose, onSave }) {
       });
       if (res.ok) {
         const data = await res.json();
-        return `${API_BASE}${data.url}`;
+        const url = `${API_BASE}${data.url}`;
+        uploadedSessionImages.current.push(url);
+        return url;
       }
     } catch (e) {
       console.error('Failed to upload image:', e);
@@ -178,7 +200,7 @@ export default function TaskModal({ isOpen, task, onClose, onSave }) {
     <>
       <div 
         className={`fixed inset-0 bg-black/30 backdrop-blur-sm z-40 transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-        onClick={onClose}
+        onClick={handleCloseModal}
         aria-hidden="true"
       />
 
@@ -191,7 +213,7 @@ export default function TaskModal({ isOpen, task, onClose, onSave }) {
             {activeTask.isNew ? 'Create Task' : 'Edit Task'}
           </h2>
           <button 
-            onClick={onClose}
+            onClick={handleCloseModal}
             className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
           >
             <X className="w-5 h-5" />
@@ -467,7 +489,7 @@ export default function TaskModal({ isOpen, task, onClose, onSave }) {
         <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30">
           <div className="flex justify-end gap-3">
             <button
-              onClick={onClose}
+              onClick={handleCloseModal}
               className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
             >
               Cancel
