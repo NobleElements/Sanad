@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Sanad.Api.Data;
 using Sanad.Api.Endpoints;
@@ -15,6 +16,11 @@ builder.Services.AddCors(options =>
               .AllowAnyHeader()
               .AllowCredentials());
 });
+
+// Configure Data Protection to persist keys across restarts
+builder.Services.AddDataProtection()
+    .PersistKeysToDbContext<AdminDbContext>()
+    .SetApplicationName("Sanad");
 
 // Add Authentication and Authorization
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

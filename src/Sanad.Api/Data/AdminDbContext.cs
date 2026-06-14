@@ -1,14 +1,16 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Sanad.Api.Models;
 
 namespace Sanad.Api.Data;
 
-public class AdminDbContext : DbContext
+public class AdminDbContext : DbContext, IDataProtectionKeyContext
 {
     public AdminDbContext(DbContextOptions<AdminDbContext> options) : base(options) { }
 
     public DbSet<AppUser> Users => Set<AppUser>();
     public DbSet<StorageTier> Tiers => Set<StorageTier>();
+    public DbSet<DataProtectionKey> DataProtectionKeys { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
