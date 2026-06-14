@@ -24,3 +24,5 @@ jobs:
             cd /opt/sanad
             git pull origin main
             docker compose up -d --build
+            docker image prune -f
+            docker builder prune -f
