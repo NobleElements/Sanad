@@ -38,6 +38,7 @@ export default function Notebook() {
   const newNotebookInputRef = useRef(null);
   const uploadedSessionImagesRef = useRef([]);
   const initialImagesRef = useRef([]);
+  const isSavingRef = useRef(false);
 
 
 
@@ -126,10 +127,12 @@ export default function Notebook() {
 
   // --- Auto-save ---
 
-  const saveNote = useCallback(async (title, content) => {
-    if (!selectedNote) return;
+  const saveNote = useCallback(async (title, content, currentNoteId) => {
+    const idToSave = currentNoteId || selectedNote?.id;
+    if (!idToSave) return;
     setIsSaving(true);
-    const success = await updateNote(selectedNote.id, title, content);
+    isSavingRef.current = true;
+    const success = await updateNote(idToSave, title, content);
     if (success) {
       setLastSaved(new Date());
       
@@ -144,21 +147,22 @@ export default function Notebook() {
       uploadedSessionImagesRef.current = [];
     }
     setIsSaving(false);
+    isSavingRef.current = false;
   }, [selectedNote, updateNote]);
 
-  const debouncedSave = useCallback((title, content) => {
+  const debouncedSave = useCallback((title, content, noteId) => {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(() => saveNote(title, content), 1000);
+    saveTimerRef.current = setTimeout(() => saveNote(title, content, noteId), 1000);
   }, [saveNote]);
 
   const handleTitleChange = (newTitle) => {
     setNoteTitle(newTitle);
-    debouncedSave(newTitle, noteContent);
+    debouncedSave(newTitle, noteContent, selectedNote?.id);
   };
 
   const handleContentChange = (newContent) => {
     setNoteContent(newContent);
-    debouncedSave(noteTitle, newContent);
+    debouncedSave(noteTitle, newContent, selectedNote?.id);
   };
 
   // --- Notebook CRUD ---
@@ -229,6 +233,28 @@ export default function Notebook() {
     if (url) uploadedSessionImagesRef.current.push(url);
     return url;
   };
+
+  // Cleanup unsaved images on unmount or page refresh/close
+  useEffect(() => {
+    const cleanupUnsavedImages = () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+      }
+      if (!isSavingRef.current && uploadedSessionImagesRef.current && uploadedSessionImagesRef.current.length > 0) {
+        deleteImages(uploadedSessionImagesRef.current, true).catch(() => {});
+      }
+      uploadedSessionImagesRef.current = [];
+      initialImagesRef.current = [];
+    };
+
+    window.addEventListener('beforeunload', cleanupUnsavedImages);
+
+    return () => {
+      window.removeEventListener('beforeunload', cleanupUnsavedImages);
+      cleanupUnsavedImages();
+    };
+  }, [selectedNote?.id]);
 
   // Focus input when creating notebook
   useEffect(() => {
@@ -383,6 +409,8 @@ export default function Notebook() {
                     : 'text-slate-700 hover:bg-slate-50'
                 }`}
                 onClick={() => {
+                  if (selectedNote?.id === note.id) return;
+                  
                   navigate(`/notebook/${note.id}`);
                   fetchNote(note.id).then(fetchedNote => {
                     if (fetchedNote) {

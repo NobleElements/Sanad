@@ -13,13 +13,14 @@ export const extractImagesFromHtml = (html) => {
 /**
  * Deletes a list of image URLs from the backend.
  * @param {string[]} urls - Array of image src URLs.
+ * @param {boolean} [keepalive=false] - Whether to use the fetch keepalive flag (useful for unmount/unload).
  */
-export const deleteImages = async (urls) => {
+export const deleteImages = async (urls, keepalive = false) => {
   for (const url of urls) {
     if (url.includes('/api/attachments/')) {
       const fileName = url.split('/api/attachments/')[1];
       try {
-        await fetch(`/api/attachments/${fileName}`, { method: 'DELETE' });
+        await fetch(`/api/attachments/${fileName}`, { method: 'DELETE', keepalive });
       } catch (e) {
         console.error('Failed to delete image:', fileName, e);
       }

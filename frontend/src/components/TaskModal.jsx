@@ -150,6 +150,22 @@ export default function TaskModal({ isOpen, task, onClose, onSave }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
+  // Cleanup unsaved images on unmount or page refresh/close
+  useEffect(() => {
+    const cleanupUnsavedImages = () => {
+      if (uploadedSessionImages.current && uploadedSessionImages.current.length > 0) {
+        deleteImages(uploadedSessionImages.current, true).catch(() => {});
+      }
+    };
+
+    window.addEventListener('beforeunload', cleanupUnsavedImages);
+
+    return () => {
+      window.removeEventListener('beforeunload', cleanupUnsavedImages);
+      cleanupUnsavedImages();
+    };
+  }, []);
+
   const handleImageUpload = async (file) => {
     const formData = new FormData();
     formData.append('file', file);
