@@ -134,12 +134,12 @@ public static class NotebookEndpoints
         return Results.Ok(results);
     }
 
-    static async Task<IResult> UploadNoteImage(HttpRequest request, SanadDbContext db, Sanad.Api.Services.ITenantProvider tenantProvider, Sanad.Api.Services.DiskQuotaService quotaService, Guid id)
+    static async Task<IResult> UploadNoteImage(HttpRequest request, SanadDbContext db, Services.ITenantProvider tenantProvider, Services.DiskQuotaService quotaService, Guid id)
     {
         var noteExists = await db.Notes.AnyAsync(n => n.Id == id);
         if (!noteExists) return Results.NotFound();
 
-        var (errorResult, _, fileUrl) = await Sanad.Api.Utils.UploadHelper.HandleUploadAsync(request, tenantProvider, quotaService);
+        var (errorResult, _, fileUrl) = await Utils.UploadHelper.HandleUploadAsync(request, tenantProvider, quotaService);
         if (errorResult != null) return errorResult;
 
         return Results.Ok(new { url = fileUrl });

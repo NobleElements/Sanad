@@ -151,12 +151,12 @@ public static class TaskEndpoints
         return Results.Created($"/api/tasks/{id}/comments/{comment.Id}", comment);
     }
 
-    public static async Task<IResult> CreateTaskAttachment(HttpRequest request, SanadDbContext db, Guid id, Sanad.Api.Services.ITenantProvider tenantProvider, Sanad.Api.Services.DiskQuotaService quotaService)
+    public static async Task<IResult> CreateTaskAttachment(HttpRequest request, SanadDbContext db, Guid id, Services.ITenantProvider tenantProvider, Services.DiskQuotaService quotaService)
     {
         var taskExists = await db.TaskItems.AnyAsync(t => t.Id == id);
         if (!taskExists) return Results.NotFound();
 
-        var (errorResult, fileName, fileUrl) = await Sanad.Api.Utils.UploadHelper.HandleUploadAsync(request, tenantProvider, quotaService);
+        var (errorResult, fileName, fileUrl) = await Utils.UploadHelper.HandleUploadAsync(request, tenantProvider, quotaService);
         if (errorResult != null) return errorResult;
 
         var attachment = new TaskAttachment
