@@ -1,6 +1,50 @@
-# Sanad
+# [Sanad](https://sanadcloud.app)
 
 Sanad is a comprehensive personal management application designed to help you organize various aspects of your life. It provides a centralized hub to track your tasks, notes, finances, reading progress, and daily thoughts, giving you a holistic view of your productivity and personal growth.
+
+## Screenshots
+
+<details>
+<summary>Dashboard</summary>
+<br>
+
+![Dashboard](frontend/public/screenshots/dashboard.png)
+</details>
+
+<details>
+<summary>Tasks</summary>
+<br>
+
+![Tasks](frontend/public/screenshots/tasks.png)
+</details>
+
+<details>
+<summary>Finance</summary>
+<br>
+
+![Finance](frontend/public/screenshots/finance.png)
+</details>
+
+<details>
+<summary>Habits</summary>
+<br>
+
+![Habits](frontend/public/screenshots/habits.png)
+</details>
+
+<details>
+<summary>Thoughts</summary>
+<br>
+
+![Thoughts](frontend/public/screenshots/thoughts.png)
+</details>
+
+<details>
+<summary>Files</summary>
+<br>
+
+![Files](frontend/public/screenshots/files.png)
+</details>
 
 ## Features
 - **Task Management**: Create, organize, and track daily tasks and goals.
