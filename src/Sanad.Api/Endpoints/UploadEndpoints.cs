@@ -31,33 +31,9 @@ public static class UploadEndpoints
         [FromServices] ITenantProvider tenantProvider,
         [FromServices] DiskQuotaService quotaService)
     {
-        if (!request.HasFormContentType) return Results.BadRequest("Invalid form data");
+        var (errorResult, _, fileUrl) = await Utils.UploadHelper.HandleUploadAsync(request, tenantProvider, quotaService);
+        if (errorResult != null) return errorResult;
 
-        var form = await request.ReadFormAsync();
-        var file = form.Files.FirstOrDefault();
-        if (file == null || file.Length == 0) return Results.BadRequest("No file uploaded");
-
-        var username = tenantProvider.GetUsername();
-
-        // Enforce quota
-        var canUpload = await quotaService.CanUploadAsync(username, file.Length);
-        if (!canUpload)
-        {
-            return Results.BadRequest("Disk quota exceeded. Please upgrade your tier or delete files.");
-        }
-
-        var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "Data", username, "attachments");
-        Directory.CreateDirectory(uploadsDir);
-
-        var (uniqueFileName, filePath) = Sanad.Api.Utils.FileUtils.GenerateUniqueFile(uploadsDir, Path.GetExtension(file.FileName));
-
-        using (var stream = new FileStream(filePath, FileMode.Create))
-        {
-            await file.CopyToAsync(stream);
-        }
-
-        await quotaService.UpdateDiskUsageAsync(username);
-
-        return Results.Ok(new { url = $"/attachments/{uniqueFileName}" });
+        return Results.Ok(new { url = fileUrl });
     }
 }

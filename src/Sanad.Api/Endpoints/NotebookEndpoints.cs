@@ -139,29 +139,9 @@ public static class NotebookEndpoints
         var noteExists = await db.Notes.AnyAsync(n => n.Id == id);
         if (!noteExists) return Results.NotFound();
 
-        if (!request.HasFormContentType) return Results.BadRequest("Invalid form data");
+        var (errorResult, _, fileUrl) = await Sanad.Api.Utils.UploadHelper.HandleUploadAsync(request, tenantProvider, quotaService);
+        if (errorResult != null) return errorResult;
 
-        var form = await request.ReadFormAsync();
-        var file = form.Files.FirstOrDefault();
-        if (file == null || file.Length == 0) return Results.BadRequest("No file uploaded");
-
-        var username = tenantProvider.GetUsername();
-        var canUpload = await quotaService.CanUploadAsync(username, file.Length);
-        if (!canUpload)
-        {
-            return Results.BadRequest("Disk quota exceeded. Please upgrade your tier or delete files.");
-        }
-        var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "Data", username, "attachments");
-        Directory.CreateDirectory(uploadsDir);
-
-        var (uniqueFileName, filePath) = Sanad.Api.Utils.FileUtils.GenerateUniqueFile(uploadsDir, Path.GetExtension(file.FileName));
-
-        using (var stream = new FileStream(filePath, FileMode.Create))
-        {
-            await file.CopyToAsync(stream);
-        }
-
-        var imageUrl = $"/attachments/{uniqueFileName}";
-        return Results.Ok(new { url = imageUrl });
+        return Results.Ok(new { url = fileUrl });
     }
 }
