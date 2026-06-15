@@ -8,14 +8,7 @@ import { formatTime } from '../utils/dateUtils';
 import usePageTitle from '../hooks/usePageTitle';
 import TaskModal from '../components/TaskModal';
 
-const TAG_COLORS = [
-  'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300',
-  'bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-300',
-  'bg-pink-100 text-pink-700 dark:bg-pink-500/20 dark:text-pink-300',
-  'bg-teal-100 text-teal-700 dark:bg-teal-500/20 dark:text-teal-300',
-  'bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-300',
-  'bg-cyan-100 text-cyan-700 dark:bg-cyan-500/20 dark:text-cyan-300',
-];
+import { getTagColor } from '../utils/colorUtils';
 
 const COLUMNS = [
   { status: 0, label: 'To Do', icon: Circle, color: 'text-slate-500 dark:text-slate-400', bgBadge: 'bg-slate-100 text-slate-600 dark:bg-slate-500/20 dark:text-slate-300', headerBorder: 'border-slate-300 dark:border-slate-600' },
@@ -227,7 +220,7 @@ export default function Tasks() {
           </button>
 
           <button
-            onClick={() => openTaskModal()}
+            onClick={() => openTaskModal({ title: '', content: '', status: 'ToDo', isNew: true, project: projectFilter || '' })}
             className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all shadow-sm hover:shadow-md dark:focus:ring-offset-gray-900 active:scale-95"
           >
             <Plus className="w-5 h-5" />
@@ -344,7 +337,7 @@ export default function Tasks() {
                                                 {taskTags.map((tag, i) => (
                                                   <span
                                                     key={tag}
-                                                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${TAG_COLORS[i % TAG_COLORS.length]}`}
+                                                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${getTagColor(tag)}`}
                                                   >
                                                     <Tag className="w-2.5 h-2.5" />
                                                     {tag}

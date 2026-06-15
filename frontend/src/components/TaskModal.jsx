@@ -6,14 +6,7 @@ import ProjectSelector from './ProjectSelector';
 import useTaskStore from '../store/useTaskStore';
 import { extractImagesFromHtml, deleteImages } from '../utils/imageUtils';
 
-const TAG_COLORS = [
-  'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300',
-  'bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-300',
-  'bg-pink-100 text-pink-700 dark:bg-pink-500/20 dark:text-pink-300',
-  'bg-teal-100 text-teal-700 dark:bg-teal-500/20 dark:text-teal-300',
-  'bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-300',
-  'bg-cyan-100 text-cyan-700 dark:bg-cyan-500/20 dark:text-cyan-300',
-];
+import { getTagColor } from '../utils/colorUtils';
 export default function TaskModal() {
   const titleInputRef = useRef(null);
   const [internalTask, setInternalTask] = useState(null);
@@ -316,7 +309,7 @@ export default function TaskModal() {
               {tags.map((tag, i) => (
                 <span
                   key={tag}
-                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${TAG_COLORS[i % TAG_COLORS.length]}`}
+                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${getTagColor(tag)}`}
                 >
                   {tag}
                   <button
