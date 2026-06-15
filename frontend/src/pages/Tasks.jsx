@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ReactDOM from 'react-dom';
-import { Plus, CheckCircle2, Circle, Clock, Tag, Loader2, GripVertical, Filter, FolderKanban, Timer, Eye, EyeOff, Search } from 'lucide-react';
+import { Plus, CheckCircle2, Circle, Clock, Tag, Loader2, GripVertical, Filter, FolderKanban, Timer, Eye, EyeOff, Search, LayoutGrid, List } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import useTaskStore from '../store/useTaskStore';
 import { formatTime } from '../utils/dateUtils';
@@ -35,6 +35,13 @@ export default function Tasks() {
     const saved = localStorage.getItem('sanad_show_completed');
     return saved !== null ? JSON.parse(saved) : true;
   });
+  const [viewMode, setViewMode] = useState(() => {
+    return localStorage.getItem('sanad_tasks_viewMode') || 'kanban';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('sanad_tasks_viewMode', viewMode);
+  }, [viewMode]);
 
   useEffect(() => {
     localStorage.setItem('sanad_show_completed', JSON.stringify(showCompleted));
@@ -154,7 +161,7 @@ export default function Tasks() {
 
 
   return (
-    <div className="flex flex-col flex-1 h-full max-w-full mx-auto p-4 md:p-6 lg:p-8 overflow-hidden">
+    <div className={`flex flex-col flex-1 max-w-full mx-auto p-4 md:p-6 lg:p-8 ${viewMode === 'kanban' ? 'h-full overflow-hidden' : 'min-h-full'}`}>
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 shrink-0">
         <div>
@@ -209,6 +216,24 @@ export default function Tasks() {
             </div>
           )}
           
+          {/* View Mode Toggle */}
+          <div className="flex bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200 dark:border-gray-700 rounded-xl p-1 shadow-sm">
+            <button
+              onClick={() => setViewMode('kanban')}
+              className={`p-1.5 rounded-lg flex items-center justify-center transition-all ${viewMode === 'kanban' ? 'bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
+              title="Kanban View"
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`p-1.5 rounded-lg flex items-center justify-center transition-all ${viewMode === 'list' ? 'bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
+              title="List View"
+            >
+              <List className="w-4 h-4" />
+            </button>
+          </div>
+
           {/* Show/Hide Completed Toggle */}
           <button
             onClick={() => setShowCompleted(!showCompleted)}
@@ -237,7 +262,7 @@ export default function Tasks() {
         </div>
       ) : (
         <DragDropContext onDragEnd={onDragEnd}>
-          <div className="kanban-board">
+          <div className={viewMode === 'kanban' ? "kanban-board" : "flex flex-col gap-6 pb-4"}>
             {(showCompleted ? COLUMNS : COLUMNS.filter(c => c.status !== 2)).map(col => {
               const colTasks = tasksByStatus(col.status);
               const ColIcon = col.icon;
@@ -248,7 +273,7 @@ export default function Tasks() {
                     <div
                       ref={provided.innerRef}
                       {...provided.droppableProps}
-                      className={`kanban-column ${snapshot.isDraggingOver ? 'drag-over' : ''}`}
+                      className={`${viewMode === 'kanban' ? 'kanban-column' : 'flex flex-col rounded-2xl bg-white/60 dark:bg-gray-800/40 backdrop-blur-xl border border-gray-200 dark:border-gray-700 overflow-hidden'} ${snapshot.isDraggingOver ? 'drag-over border-indigo-500/50 dark:border-indigo-400/50 bg-indigo-50/30 dark:bg-indigo-900/10' : ''}`}
                     >
                       {/* Column Header */}
                       <div className={`flex items-center justify-between px-4 py-3 border-b-2 ${col.headerBorder}`}>
@@ -264,7 +289,7 @@ export default function Tasks() {
                       </div>
 
                       {/* Cards */}
-                      <div className="flex-1 p-3 overflow-y-auto">
+                      <div className={viewMode === 'kanban' ? "flex-1 p-3 overflow-y-auto" : "p-0 flex flex-col"}>
                         {colTasks.length === 0 ? (
                           <div className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-gray-400 dark:text-gray-500 transition-colors">
                             <GripVertical className="w-6 h-6 mb-2 opacity-40" />
@@ -287,72 +312,114 @@ export default function Tasks() {
                                       {...provided.draggableProps}
                                       {...provided.dragHandleProps}
                                       style={provided.draggableProps.style}
-                                      className="pb-3"
+                                      className={viewMode === 'kanban' ? "pb-3" : ""}
                                     >
-                                      <div
-                                        className={`kanban-card bg-white dark:bg-gray-800/80 border border-gray-100 dark:border-gray-700/60 p-3.5 cursor-grab active:cursor-grabbing ${snapshot.isDragging ? 'shadow-2xl ring-2 ring-indigo-500' : 'hover:shadow-md'}`}
-                                      >
-                                        <div className="flex items-start gap-3">
-                                          {/* Quick Complete Checkbox */}
+                                      {viewMode === 'kanban' ? (
+                                        <div
+                                          className={`kanban-card bg-white dark:bg-gray-800/80 border border-gray-100 dark:border-gray-700/60 p-3.5 cursor-grab active:cursor-grabbing ${snapshot.isDragging ? 'shadow-2xl ring-2 ring-indigo-500' : 'hover:shadow-md'}`}
+                                        >
+                                          <div className="flex items-start gap-3">
+                                            {/* Quick Complete Checkbox */}
+                                            <button
+                                              onClick={(e) => handleQuickComplete(e, task)}
+                                              className={`mt-0.5 flex-shrink-0 transition-colors ${isDone ? 'text-emerald-500 hover:text-emerald-600' : 'text-gray-300 dark:text-gray-600 hover:text-emerald-400 dark:hover:text-emerald-500'}`}
+                                              aria-label={isDone ? 'Mark as to do' : 'Mark as done'}
+                                            >
+                                              {isDone ? (
+                                                <CheckCircle2 className="w-5 h-5" />
+                                              ) : (
+                                                <Circle className="w-5 h-5" />
+                                              )}
+                                            </button>
+
+                                            <div className="flex-1 min-w-0" onClick={() => openTaskModal(task)}>
+                                              {/* Title */}
+                                              <p className={`text-sm font-semibold leading-snug cursor-pointer ${isDone ? 'text-gray-400 dark:text-gray-500 line-through' : 'text-gray-900 dark:text-gray-100'}`}>
+                                                {task.title}
+                                              </p>
+
+                                              {/* Metadata row */}
+                                              <div className="flex flex-wrap items-center gap-2 mt-2">
+                                                {/* Project Badge */}
+                                                {task.project && (
+                                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-500/10 text-xs font-medium text-indigo-600 dark:text-indigo-400">
+                                                    <FolderKanban className="w-3 h-3" />
+                                                    {task.project}
+                                                  </span>
+                                                )}
+
+                                                {/* Estimated Time Badge */}
+                                                {estTime && (
+                                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 text-xs font-medium text-gray-500 dark:text-gray-400">
+                                                    <Timer className="w-3 h-3" />
+                                                    {estTime}
+                                                  </span>
+                                                )}
+                                              </div>
+
+                                              {/* Tags */}
+                                              {taskTags.length > 0 && (
+                                                <div className="flex flex-wrap gap-1.5 mt-2">
+                                                  {taskTags.map((tag, i) => (
+                                                    <span
+                                                      key={tag}
+                                                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${getTagColor(tag)}`}
+                                                    >
+                                                      <Tag className="w-2.5 h-2.5" />
+                                                      {tag}
+                                                    </span>
+                                                  ))}
+                                                </div>
+                                              )}
+                                            </div>
+
+                                            {/* Drag Handle Visual */}
+                                            <div className="p-1 -mr-1 rounded-md text-gray-300 dark:text-gray-600">
+                                              <GripVertical className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                                            </div>
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <div
+                                          className={`group flex items-center gap-3 px-4 py-3 bg-white/40 dark:bg-gray-800/20 hover:bg-white dark:hover:bg-gray-800 border-b border-gray-100 dark:border-gray-700/60 last:border-0 cursor-grab active:cursor-grabbing transition-colors ${snapshot.isDragging ? 'shadow-lg ring-1 ring-indigo-500 bg-white dark:bg-gray-800 z-50 rounded-lg' : ''}`}
+                                        >
                                           <button
                                             onClick={(e) => handleQuickComplete(e, task)}
-                                            className={`mt-0.5 flex-shrink-0 transition-colors ${isDone ? 'text-emerald-500 hover:text-emerald-600' : 'text-gray-300 dark:text-gray-600 hover:text-emerald-400 dark:hover:text-emerald-500'}`}
-                                            aria-label={isDone ? 'Mark as to do' : 'Mark as done'}
+                                            className={`flex-shrink-0 transition-colors ${isDone ? 'text-emerald-500 hover:text-emerald-600' : 'text-gray-300 dark:text-gray-600 hover:text-emerald-400 dark:hover:text-emerald-500'}`}
                                           >
-                                            {isDone ? (
-                                              <CheckCircle2 className="w-5 h-5" />
-                                            ) : (
-                                              <Circle className="w-5 h-5" />
-                                            )}
+                                            {isDone ? <CheckCircle2 className="w-5 h-5" /> : <Circle className="w-5 h-5" />}
                                           </button>
-
-                                          <div className="flex-1 min-w-0" onClick={() => openTaskModal(task)}>
-                                            {/* Title */}
-                                            <p className={`text-sm font-semibold leading-snug cursor-pointer ${isDone ? 'text-gray-400 dark:text-gray-500 line-through' : 'text-gray-900 dark:text-gray-100'}`}>
+                                          <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 cursor-pointer" onClick={() => openTaskModal(task)}>
+                                            <p className={`text-sm font-medium truncate flex-1 ${isDone ? 'text-gray-400 dark:text-gray-500 line-through' : 'text-gray-900 dark:text-gray-100'}`}>
                                               {task.title}
                                             </p>
-
-                                            {/* Metadata row */}
-                                            <div className="flex flex-wrap items-center gap-2 mt-2">
-                                              {/* Project Badge */}
+                                            <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
                                               {task.project && (
-                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-500/10 text-xs font-medium text-indigo-600 dark:text-indigo-400">
-                                                  <FolderKanban className="w-3 h-3" />
+                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
                                                   {task.project}
                                                 </span>
                                               )}
-
-                                              {/* Estimated Time Badge */}
                                               {estTime && (
-                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 text-xs font-medium text-gray-500 dark:text-gray-400">
+                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
                                                   <Timer className="w-3 h-3" />
                                                   {estTime}
                                                 </span>
                                               )}
+                                              {taskTags.length > 0 && taskTags.slice(0, 2).map((tag) => (
+                                                <span key={tag} className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-medium ${getTagColor(tag)} truncate max-w-[80px]`}>
+                                                  {tag}
+                                                </span>
+                                              ))}
+                                              {taskTags.length > 2 && (
+                                                <span className="text-[11px] text-gray-400">+{taskTags.length - 2}</span>
+                                              )}
                                             </div>
-
-                                            {/* Tags */}
-                                            {taskTags.length > 0 && (
-                                              <div className="flex flex-wrap gap-1.5 mt-2">
-                                                {taskTags.map((tag, i) => (
-                                                  <span
-                                                    key={tag}
-                                                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${getTagColor(tag)}`}
-                                                  >
-                                                    <Tag className="w-2.5 h-2.5" />
-                                                    {tag}
-                                                  </span>
-                                                ))}
-                                              </div>
-                                            )}
                                           </div>
-
-                                          {/* Drag Handle Visual */}
-                                          <div className="p-1 -mr-1 rounded-md text-gray-300 dark:text-gray-600">
-                                            <GripVertical className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                                          <div className="p-1 text-gray-300 dark:text-gray-600 md:opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                                            <GripVertical className="w-4 h-4" />
                                           </div>
                                         </div>
-                                      </div>
+                                      )}
                                     </div>
                                   );
 
