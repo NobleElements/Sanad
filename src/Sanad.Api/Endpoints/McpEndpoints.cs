@@ -1,8 +1,4 @@
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using ModelContextProtocol.Server;
 using Sanad.Api.Data;
@@ -15,14 +11,14 @@ namespace Sanad.Api.Endpoints;
 public class McpEndpoints
 {
     private readonly SanadDbContext _db;
-    private readonly Sanad.Api.Services.IBookSearchService _searchService;
-    private readonly Sanad.Api.Services.FileManagerService _fileManager;
+    private readonly Services.IBookSearchService _searchService;
+    private readonly Services.FileManagerService _fileManager;
 
-    private readonly Sanad.Api.Services.ITenantProvider _tenantProvider;
-    private readonly Sanad.Api.Services.DiskQuotaService _quotaService;
+    private readonly Services.ITenantProvider _tenantProvider;
+    private readonly Services.DiskQuotaService _quotaService;
     private readonly AdminDbContext _adminDb;
 
-    public McpEndpoints(SanadDbContext db, Sanad.Api.Services.IBookSearchService searchService, Sanad.Api.Services.FileManagerService fileManager, Sanad.Api.Services.ITenantProvider tenantProvider, Sanad.Api.Services.DiskQuotaService quotaService, AdminDbContext adminDb)
+    public McpEndpoints(SanadDbContext db, Services.IBookSearchService searchService, Services.FileManagerService fileManager, Services.ITenantProvider tenantProvider, Services.DiskQuotaService quotaService, AdminDbContext adminDb)
     {
         _db = db;
         _searchService = searchService;
@@ -48,9 +44,9 @@ public class McpEndpoints
         
         if (user == null) throw new Exception("User not found");
 
-        var userPath = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "Data", username);
+        var userPath = Path.Combine(Directory.GetCurrentDirectory(), "Data", username);
         var diskUsed = _quotaService.GetDirectorySize(userPath);
-        var diskLimitBytes = user.Tier?.DiskLimitBytes ?? (1L * Sanad.Api.Constants.BytesPerKb * Sanad.Api.Constants.BytesPerKb * Sanad.Api.Constants.BytesPerKb);
+        var diskLimitBytes = user.Tier?.DiskLimitBytes ?? (1L * Constants.BytesPerKb * Constants.BytesPerKb * Constants.BytesPerKb);
 
         return new 
         {
@@ -175,23 +171,23 @@ public class McpEndpoints
     public async Task<TaskAttachment?> AttachFileToTask(Guid taskId, string localFilePath)
     {
         var taskExists = await _db.TaskItems.AnyAsync(t => t.Id == taskId);
-        if (!taskExists || !System.IO.File.Exists(localFilePath)) return null;
+        if (!taskExists || !File.Exists(localFilePath)) return null;
 
         var fileInfo = new System.IO.FileInfo(localFilePath);
         var username = _tenantProvider.GetUsername();
         
         var canUpload = await _quotaService.CanUploadAsync(username, fileInfo.Length);
         if (!canUpload) return null;
-        var uploadsDir = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "Data", username, "attachments");
-        System.IO.Directory.CreateDirectory(uploadsDir);
+        var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "Data", username, "attachments");
+        Directory.CreateDirectory(uploadsDir);
 
-        var fileName = System.IO.Path.GetFileName(localFilePath);
-        var (uniqueFileName, destPath) = Sanad.Api.Utils.FileUtils.GenerateUniqueFile(uploadsDir, System.IO.Path.GetExtension(localFilePath));
+        var fileName = Path.GetFileName(localFilePath);
+        var (uniqueFileName, destPath) = Utils.FileUtils.GenerateUniqueFile(uploadsDir, Path.GetExtension(localFilePath));
 
         try
         {
-            using var sourceStream = new System.IO.FileStream(localFilePath, System.IO.FileMode.Open, System.IO.FileAccess.Read, System.IO.FileShare.Read, 4096, true);
-            using var destinationStream = new System.IO.FileStream(destPath, System.IO.FileMode.CreateNew, System.IO.FileAccess.Write, System.IO.FileShare.None, 4096, true);
+            using var sourceStream = new System.IO.FileStream(localFilePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, true);
+            using var destinationStream = new System.IO.FileStream(destPath, FileMode.CreateNew, FileAccess.Write, FileShare.None, 4096, true);
             await sourceStream.CopyToAsync(destinationStream);
         }
         catch (Exception)
@@ -217,16 +213,16 @@ public class McpEndpoints
         if (attachment == null) return false;
 
         var username = _tenantProvider.GetUsername();
-        var filePath = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "Data", username, attachment.FilePath.TrimStart('/'));
+        var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Data", username, attachment.FilePath.TrimStart('/'));
 
         _db.TaskAttachments.Remove(attachment);
         await _db.SaveChangesAsync();
 
-        if (System.IO.File.Exists(filePath))
+        if (File.Exists(filePath))
         {
             try
             {
-                System.IO.File.Delete(filePath);
+                File.Delete(filePath);
             }
             catch (Exception)
             {
