@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Lightbulb, CheckSquare, Book, DollarSign, BookOpen, Menu, LogOut, Repeat, Folder, Shield, CreditCard } from 'lucide-react';
 import useAuthStore from '../store/useAuthStore';
 
-export default function Sidebar() {
+export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }) {
   const location = useLocation();
   const logout = useAuthStore((state) => state.logout);
   const isAdmin = useAuthStore((state) => state.isAdmin);
@@ -12,9 +12,12 @@ export default function Sidebar() {
   // Auto collapse on small screens
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth < 768) {
+      if (window.innerWidth >= 768) {
+        setIsMobileMenuOpen && setIsMobileMenuOpen(false);
+      }
+      if (window.innerWidth < 1024 && window.innerWidth >= 768) {
         setIsCollapsed(true);
-      } else {
+      } else if (window.innerWidth >= 1024) {
         setIsCollapsed(false);
       }
     };
@@ -22,7 +25,7 @@ export default function Sidebar() {
     // initial check
     handleResize();
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [setIsMobileMenuOpen]);
 
   const getLinkClass = (path) => {
     const isActive = location.pathname === path;
@@ -34,77 +37,99 @@ export default function Sidebar() {
     window.location.reload();
   };
 
+  const handleLinkClick = () => {
+    if (setIsMobileMenuOpen) {
+      setIsMobileMenuOpen(false);
+    }
+  };
+
   return (
-    <div className={`bg-slate-900 text-slate-100 flex flex-col transition-all duration-300 ease-in-out border-r border-slate-800 ${isCollapsed ? 'w-20' : 'w-64'}`}>
-      <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} p-4 mb-4 border-b border-slate-800`}>
-        {!isCollapsed && <div className="text-xl font-bold tracking-wider text-indigo-400">SANAD</div>}
-        <button 
-          onClick={() => setIsCollapsed(!isCollapsed)} 
-          className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-100 transition-colors"
-        >
-          {isCollapsed ? <Menu className="w-6 h-6" /> : <Menu className="w-5 h-5" />}
-        </button>
-      </div>
+    <>
+      {/* Mobile Overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="md:hidden fixed inset-0 bg-black/50 z-40 transition-opacity" 
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+      
+      <div className={`fixed md:static inset-y-0 left-0 z-50 bg-slate-900 text-slate-100 flex flex-col transition-all duration-300 ease-in-out border-r border-slate-800 ${isCollapsed ? 'md:w-20 w-64' : 'w-64'} ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+        <div className={`flex items-center ${isCollapsed ? 'md:justify-center justify-between' : 'justify-between'} p-4 mb-4 border-b border-slate-800`}>
+          {(!isCollapsed || window.innerWidth < 768) && <div className="text-xl font-bold tracking-wider text-indigo-400">SANAD</div>}
+          <button 
+            onClick={() => setIsCollapsed(!isCollapsed)} 
+            className="hidden md:block p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-100 transition-colors"
+          >
+            {isCollapsed ? <Menu className="w-6 h-6" /> : <Menu className="w-5 h-5" />}
+          </button>
+          <button 
+            onClick={() => setIsMobileMenuOpen(false)} 
+            className="md:hidden p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-100 transition-colors"
+          >
+            <span className="text-2xl leading-none">×</span>
+          </button>
+        </div>
       
       <nav className="flex flex-col gap-2 flex-1 px-3 overflow-y-auto">
-        <Link to="/" className={getLinkClass('/')} title="Dashboard">
+        <Link to="/" className={getLinkClass('/')} title="Dashboard" onClick={handleLinkClick}>
           <LayoutDashboard className="w-5 h-5 flex-shrink-0" />
-          {!isCollapsed && <span className="font-medium">Dashboard</span>}
+          {(!isCollapsed || window.innerWidth < 768) && <span className="font-medium">Dashboard</span>}
         </Link>
-        <Link to="/thoughts" className={getLinkClass('/thoughts')} title="Thoughts">
+        <Link to="/thoughts" className={getLinkClass('/thoughts')} title="Thoughts" onClick={handleLinkClick}>
           <Lightbulb className="w-5 h-5 flex-shrink-0" />
-          {!isCollapsed && <span className="font-medium">Thoughts</span>}
+          {(!isCollapsed || window.innerWidth < 768) && <span className="font-medium">Thoughts</span>}
         </Link>
-        <Link to="/habits" className={getLinkClass('/habits')} title="Habits">
+        <Link to="/habits" className={getLinkClass('/habits')} title="Habits" onClick={handleLinkClick}>
           <Repeat className="w-5 h-5 flex-shrink-0" />
-          {!isCollapsed && <span className="font-medium">Habits</span>}
+          {(!isCollapsed || window.innerWidth < 768) && <span className="font-medium">Habits</span>}
         </Link>
-        <Link to="/tasks" className={getLinkClass('/tasks')} title="Tasks">
+        <Link to="/tasks" className={getLinkClass('/tasks')} title="Tasks" onClick={handleLinkClick}>
           <CheckSquare className="w-5 h-5 flex-shrink-0" />
-          {!isCollapsed && <span className="font-medium">Tasks</span>}
+          {(!isCollapsed || window.innerWidth < 768) && <span className="font-medium">Tasks</span>}
         </Link>
-        <Link to="/notebook" className={getLinkClass('/notebook')} title="Notebook">
+        <Link to="/notebook" className={getLinkClass('/notebook')} title="Notebook" onClick={handleLinkClick}>
           <Book className="w-5 h-5 flex-shrink-0" />
-          {!isCollapsed && <span className="font-medium">Notebook</span>}
+          {(!isCollapsed || window.innerWidth < 768) && <span className="font-medium">Notebook</span>}
         </Link>
-        <Link to="/finance" className={getLinkClass('/finance')} title="Finance">
+        <Link to="/finance" className={getLinkClass('/finance')} title="Finance" onClick={handleLinkClick}>
           <DollarSign className="w-5 h-5 flex-shrink-0" />
-          {!isCollapsed && <span className="font-medium">Finance</span>}
+          {(!isCollapsed || window.innerWidth < 768) && <span className="font-medium">Finance</span>}
         </Link>
-        <Link to="/books" className={getLinkClass('/books')} title="Reading">
+        <Link to="/books" className={getLinkClass('/books')} title="Reading" onClick={handleLinkClick}>
           <BookOpen className="w-5 h-5 flex-shrink-0" />
-          {!isCollapsed && <span className="font-medium">Reading</span>}
+          {(!isCollapsed || window.innerWidth < 768) && <span className="font-medium">Reading</span>}
         </Link>
-        <Link to="/files" className={getLinkClass('/files')} title="Files">
+        <Link to="/files" className={getLinkClass('/files')} title="Files" onClick={handleLinkClick}>
           <Folder className="w-5 h-5 flex-shrink-0" />
-          {!isCollapsed && <span className="font-medium">Files</span>}
+          {(!isCollapsed || window.innerWidth < 768) && <span className="font-medium">Files</span>}
         </Link>
 
         <div className="my-2 border-t border-slate-800"></div>
 
-        <Link to="/subscription" className={getLinkClass('/subscription')} title="Subscription & Limits">
+        <Link to="/subscription" className={getLinkClass('/subscription')} title="Subscription & Limits" onClick={handleLinkClick}>
           <CreditCard className="w-5 h-5 flex-shrink-0" />
-          {!isCollapsed && <span className="font-medium">Subscription</span>}
+          {(!isCollapsed || window.innerWidth < 768) && <span className="font-medium">Subscription</span>}
         </Link>
 
         {isAdmin && (
-          <Link to="/admin" className={getLinkClass('/admin')} title="Admin Dashboard">
+          <Link to="/admin" className={getLinkClass('/admin')} title="Admin Dashboard" onClick={handleLinkClick}>
             <Shield className="w-5 h-5 flex-shrink-0" />
-            {!isCollapsed && <span className="font-medium">Admin Dashboard</span>}
+            {(!isCollapsed || window.innerWidth < 768) && <span className="font-medium">Admin Dashboard</span>}
           </Link>
         )}
       </nav>
       
       <div className="p-3 border-t border-slate-800">
         <button 
-          onClick={handleLogout}
-          className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} p-3 rounded transition-colors text-slate-400 hover:bg-red-900/40 hover:text-red-300`}
+          onClick={() => { handleLinkClick(); handleLogout(); }}
+          className={`w-full flex items-center ${isCollapsed && window.innerWidth >= 768 ? 'justify-center' : 'gap-3'} p-3 rounded transition-colors text-slate-400 hover:bg-red-900/40 hover:text-red-300`}
           title="Log Out"
         >
           <LogOut className="w-5 h-5 flex-shrink-0" />
-          {!isCollapsed && <span className="font-medium">Log Out</span>}
+          {(!isCollapsed || window.innerWidth < 768) && <span className="font-medium">Log Out</span>}
         </button>
       </div>
     </div>
+    </>
   );
 }

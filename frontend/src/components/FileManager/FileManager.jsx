@@ -251,10 +251,10 @@ const FileManager = () => {
               </div>
             ) : (
               <div className="flex flex-col rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden">
-                <div className="grid grid-cols-[1fr_120px_150px_60px] gap-4 p-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                <div className="grid grid-cols-[1fr_60px] sm:grid-cols-[1fr_120px_150px_60px] gap-4 p-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                   <div>Name</div>
-                  <div className="text-right">Size</div>
-                  <div className="text-right">Date Modified</div>
+                  <div className="text-right hidden sm:block">Size</div>
+                  <div className="text-right hidden sm:block">Date Modified</div>
                   <div></div>
                 </div>
                 <div className="flex flex-col divide-y divide-gray-100 dark:divide-gray-800">
@@ -262,15 +262,15 @@ const FileManager = () => {
                   {sortedFolders.map(folder => (
                     <div 
                       key={`folder-${folder.id}`}
-                      className="group grid grid-cols-[1fr_120px_150px_60px] gap-4 p-3 items-center hover:bg-blue-50/50 dark:hover:bg-blue-900/10 cursor-pointer transition-colors"
+                      className="group grid grid-cols-[1fr_60px] sm:grid-cols-[1fr_120px_150px_60px] gap-4 p-3 items-center hover:bg-blue-50/50 dark:hover:bg-blue-900/10 cursor-pointer transition-colors"
                       onClick={() => navigate(`/files/${folder.id}`)}
                     >
                       <div className="flex items-center gap-3 overflow-hidden">
                         <FolderIcon size={18} className="text-blue-500 shrink-0" fill="currentColor" />
                         <span className="font-medium truncate">{folder.name}</span>
                       </div>
-                      <div className="text-right text-sm text-gray-400">-</div>
-                      <div className="text-right text-sm text-gray-400">{new Date(folder.createdAt || Date.now()).toLocaleDateString()}</div>
+                      <div className="text-right text-sm text-gray-400 hidden sm:block">-</div>
+                      <div className="text-right text-sm text-gray-400 hidden sm:block">{new Date(folder.createdAt || Date.now()).toLocaleDateString()}</div>
                       <div className="flex justify-end">
                         <button 
                           onClick={(e) => { e.stopPropagation(); deleteItem(folder.id, true); }}
@@ -287,7 +287,7 @@ const FileManager = () => {
                   {sortedFiles.map(file => (
                     <div 
                       key={`file-${file.id}`}
-                      className="group grid grid-cols-[1fr_120px_150px_60px] gap-4 p-3 items-center hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors"
+                      className="group grid grid-cols-[1fr_60px] sm:grid-cols-[1fr_120px_150px_60px] gap-4 p-3 items-center hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors"
                       onClick={() => setPreviewFile(file)}
                     >
                       <div className="flex items-center gap-3 overflow-hidden">
@@ -298,8 +298,8 @@ const FileManager = () => {
                         )}
                         <span className="font-medium truncate text-sm">{file.name}</span>
                       </div>
-                      <div className="text-right text-sm text-gray-500 dark:text-gray-400">{formatSize(file.sizeBytes)}</div>
-                      <div className="text-right text-sm text-gray-500 dark:text-gray-400">{new Date(file.uploadDate).toLocaleDateString()}</div>
+                      <div className="text-right text-sm text-gray-500 dark:text-gray-400 hidden sm:block">{formatSize(file.sizeBytes)}</div>
+                      <div className="text-right text-sm text-gray-500 dark:text-gray-400 hidden sm:block">{new Date(file.uploadDate).toLocaleDateString()}</div>
                       <div className="flex justify-end">
                         <button 
                           onClick={(e) => { e.stopPropagation(); deleteItem(file.id, false); }}

@@ -64,7 +64,7 @@ export default function BookModal({ book, onClose }) {
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Cover Image URL (Optional)</label>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
                 <input type="text" value={formData.coverUrl} onChange={e => setFormData({...formData, coverUrl: e.target.value})} className="flex-1 p-2 border rounded focus:ring focus:ring-indigo-200 focus:border-indigo-500" placeholder="https://..." />
                 <button type="button" onClick={() => {
                     if (!formData.title) return alert('Please enter a book title first!');

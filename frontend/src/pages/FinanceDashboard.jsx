@@ -158,9 +158,9 @@ export default function FinanceDashboard() {
   return (
     <div className="flex-1 p-8 overflow-y-auto bg-slate-50 text-slate-900">
       <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center gap-6">
-            <h1 className="text-3xl font-bold text-slate-800">Financial Tracking</h1>
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 w-full lg:w-auto">
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-800">Financial Tracking</h1>
             <div className="flex bg-slate-200 p-1 rounded-lg">
               <button 
                 onClick={() => setActiveTab('spending')}
@@ -178,7 +178,7 @@ export default function FinanceDashboard() {
           </div>
           
           {activeTab === 'spending' && (
-            <div className="flex items-center gap-4 bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm">
+            <div className="w-full lg:w-auto flex justify-between lg:justify-start items-center gap-4 bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm">
               <button onClick={prevMonth} className="p-1 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer" title="Previous Month">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
               </button>
@@ -197,7 +197,7 @@ export default function FinanceDashboard() {
         {activeTab === 'spending' ? (
           <>
             {/* Top Metrics */}
-            <div className="grid grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8">
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                 <p className="text-slate-500">Total Spent</p>
                 <p className="text-3xl font-semibold text-slate-800">₪{totalSpent.toFixed(2)}</p>
@@ -262,11 +262,11 @@ export default function FinanceDashboard() {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* Main Chart + Budget Breakdown */}
-              <div className="col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+              <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                 <h2 className="text-xl font-bold mb-4 text-slate-800">Budget vs Spend</h2>
-                <div className="flex gap-6">
+                <div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
                   <div className="w-48 h-48 flex-shrink-0">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>

@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { Menu } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
 import Tasks from './pages/Tasks';
@@ -20,6 +21,7 @@ import LandingPage from './pages/LandingPage';
 
 function App() {
   const { loaded, authenticated, isAdmin, checkAuthStatus } = useAuthStore();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     checkAuthStatus();
@@ -30,9 +32,26 @@ function App() {
   }
 
   const AppLayout = ({ children }) => (
-    <div className="flex h-screen w-full bg-slate-50 font-sans">
-      <Sidebar />
-      {children}
+    <div className="flex h-screen w-full bg-slate-50 font-sans overflow-hidden">
+      <Sidebar 
+        isMobileMenuOpen={isMobileMenuOpen} 
+        setIsMobileMenuOpen={setIsMobileMenuOpen} 
+      />
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Mobile Top Bar */}
+        <div className="md:hidden flex items-center justify-between bg-slate-900 text-slate-100 p-4 border-b border-slate-800">
+          <div className="text-xl font-bold tracking-wider text-indigo-400">SANAD</div>
+          <button 
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-100 transition-colors"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          {children}
+        </div>
+      </div>
       <ToastContainer />
     </div>
   );

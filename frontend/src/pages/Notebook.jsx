@@ -266,9 +266,9 @@ export default function Notebook() {
   const displayedNotes = searchResults !== null ? searchResults : notes;
 
   return (
-    <div className="flex-1 flex h-full overflow-hidden">
+    <div className="flex-1 flex flex-col md:flex-row h-full overflow-hidden">
       {/* Sidebar */}
-      <div className="w-[260px] bg-white border-r border-slate-200 flex flex-col flex-shrink-0">
+      <div className="w-full md:w-[260px] h-[40%] md:h-full bg-white border-b md:border-b-0 md:border-r border-slate-200 flex flex-col flex-shrink-0">
         {/* Search */}
         <div className="p-3 border-b border-slate-200">
           <div className="relative">

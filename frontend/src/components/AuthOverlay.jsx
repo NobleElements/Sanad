@@ -32,7 +32,7 @@ export default function AuthOverlay({ onAuthenticated }) {
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/80 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/80 backdrop-blur-sm">
             <div className="w-full max-w-md p-8 bg-white rounded-2xl shadow-2xl dark:bg-gray-800">
                 <div className="text-center mb-8">
                     <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{title}</h2>

@@ -151,9 +151,9 @@ export default function Books() {
         
         {activeTab === 'shelf' && (
           <div>
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                 <h2 className="text-xl font-semibold text-slate-800">My Library</h2>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
                     <div className="relative">
                         <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                         <input
@@ -198,7 +198,7 @@ export default function Books() {
                     <button onClick={() => handleTabChange('search')} className="text-indigo-600 font-medium hover:underline">Go to Find Books →</button>
                 </div>
             ) : (
-                <div className={viewMode === 'grid' ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6" : "flex flex-col gap-4"}>
+                <div className={viewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6" : "flex flex-col gap-4"}>
                     {(() => {
                         let displayedBooks = books.filter(b => b.title.toLowerCase().includes(shelfSearch.toLowerCase()) || (b.author && b.author.toLowerCase().includes(shelfSearch.toLowerCase())));
                         if (shelfSort === 'titleAsc') displayedBooks.sort((a,b) => a.title.localeCompare(b.title));
@@ -305,7 +305,7 @@ export default function Books() {
             <div>
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8">
                     <h2 className="text-lg font-semibold mb-4 text-slate-800">Find a Book</h2>
-                    <form onSubmit={handleSearch} className="flex gap-4">
+                    <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-4">
                         <div className="relative flex-1">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <SearchIcon className="h-5 w-5 text-slate-400" />
@@ -326,7 +326,7 @@ export default function Books() {
                 {searchResults.length > 0 && (
                     <div>
                         <h2 className="text-xl font-semibold mb-6 text-slate-800">Search Results</h2>
-                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
                             {searchResults.map((b, i) => (
                             <div key={i} className="bg-white border border-slate-200 p-4 rounded-2xl flex flex-col items-center hover:shadow-md transition relative">
                                 {b.source && (

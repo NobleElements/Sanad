@@ -137,10 +137,10 @@ export default function Dashboard() {
   );
 
   return (
-    <div className="flex-1 flex flex-col p-8 overflow-y-auto">
-      <h2 className="text-3xl font-bold mb-6">Dashboard</h2>
+    <div className="flex-1 flex flex-col p-4 md:p-8 overflow-y-auto">
+      <h2 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6">Dashboard</h2>
       
-      <div className="grid grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
         <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
           <h3 className="text-sm text-slate-500 font-semibold uppercase">Spent Today</h3>
           <p className="text-2xl font-bold">₪{totalSpentToday.toFixed(2)}</p>
@@ -212,8 +212,8 @@ export default function Dashboard() {
         </div>
       </div>
       
-      <div className="flex gap-8">
-        <div className="flex-2 w-2/3 flex flex-col gap-6">
+      <div className="flex flex-col lg:flex-row gap-6 md:gap-8">
+        <div className="w-full lg:w-2/3 flex flex-col gap-6">
           {/* Thoughts Input */}
           <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
             <h3 className="text-lg font-semibold mb-4 text-slate-700">What's on your mind?</h3>
@@ -239,7 +239,7 @@ export default function Dashboard() {
 
 
         </div>
-        <div className="w-1/3">
+        <div className="w-full lg:w-1/3 flex flex-col gap-6">
            {/* Current Read Widget */}
            {currentRead && (
              <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
@@ -274,7 +274,7 @@ export default function Dashboard() {
              </div>
            )}
 
-           <div className={"bg-white p-6 rounded-lg shadow-sm border border-slate-200" + (currentRead ? " mt-6" : "")}>
+           <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
               <div className="flex items-center justify-between mb-4">
                 <a href="/finance" className="text-lg font-semibold text-slate-700 hover:text-indigo-600 transition-colors cursor-pointer">Recent Spending →</a>
                 <button

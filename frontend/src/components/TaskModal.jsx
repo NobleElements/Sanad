@@ -243,7 +243,7 @@ export default function TaskModal() {
       />
 
       <div 
-        className={`fixed inset-0 m-auto z-50 w-full max-w-2xl h-fit max-h-[90vh] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl transform transition-all duration-200 flex flex-col overflow-hidden ${isOpen ? 'scale-100 opacity-100 pointer-events-auto' : 'scale-95 opacity-0 pointer-events-none'}`}
+        className={`fixed inset-0 m-auto z-50 w-[95%] sm:w-full max-w-2xl h-fit max-h-[90vh] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl transform transition-all duration-200 flex flex-col overflow-hidden ${isOpen ? 'scale-100 opacity-100 pointer-events-auto' : 'scale-95 opacity-0 pointer-events-none'}`}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 dark:border-gray-800">
