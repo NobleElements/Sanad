@@ -68,9 +68,9 @@ export default function Habits() {
           </div>
           <button
             onClick={() => setIsAddModalOpen(true)}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors font-medium shadow-sm"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm sm:text-base px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg flex items-center gap-1.5 sm:gap-2 transition-colors font-medium shadow-sm"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
             Add Habit
           </button>
         </div>
