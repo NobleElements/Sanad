@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { API_BASE } from '../config';
+import { API_URL } from '../config';
 
 export default function CachedImage({ src, alt, className }) {
     const [imgSrc, setImgSrc] = useState(null);
@@ -8,7 +8,7 @@ export default function CachedImage({ src, alt, className }) {
         if (!src) return;
 
         let isMounted = true;
-        const proxyUrl = `${API_BASE}/books/cover?url=${encodeURIComponent(src)}`;
+        const proxyUrl = `${API_URL}/books/cover?url=${encodeURIComponent(src)}`;
 
         const loadImage = async () => {
             try {

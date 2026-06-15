@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { API_BASE } from '../config';
+import { API_BASE, API_URL } from '../config';
 import useUIStore from './useUIStore';
 
 const useAuthStore = create((set, get) => ({
@@ -12,7 +12,7 @@ const useAuthStore = create((set, get) => ({
 
   checkAuthStatus: async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/auth/status`);
+      const res = await fetch(`${API_URL}/auth/status`);
       const data = await res.json();
       set({
         loaded: true,
@@ -58,7 +58,7 @@ const useAuthStore = create((set, get) => ({
 
   logout: async () => {
     try {
-      await fetch(`${API_BASE}/api/auth/logout`, { method: 'POST' });
+      await fetch(`${API_URL}/auth/logout`, { method: 'POST' });
       set({ authenticated: false, username: null, isAdmin: false, tierId: 1, apiKey: null });
     } catch (err) {
       console.error('Logout failed', err);
@@ -68,13 +68,36 @@ const useAuthStore = create((set, get) => ({
 
   rerollApiKey: async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/auth/api-key/reroll`, { method: 'POST' });
+      const res = await fetch(`${API_URL}/auth/api-key/reroll`, { method: 'POST' });
       if (res.ok) {
         const data = await res.json();
         set({ apiKey: data.apiKey });
         return { success: true };
       }
       return { success: false, error: 'Failed to reroll API key' };
+    } catch (err) {
+      return { success: false, error: 'Network error' };
+    }
+  },
+
+  changePassword: async (currentPassword, newPassword) => {
+    try {
+      const res = await fetch(`${API_URL}/auth/change-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword, newPassword })
+      });
+      if (res.ok) {
+        return { success: true };
+      }
+      const errText = await res.text();
+      // the api returns a string like "Incorrect current password."
+      let errorMsg = errText;
+      try {
+        const json = JSON.parse(errText);
+        errorMsg = json.message || errText;
+      } catch (e) {}
+      return { success: false, error: errorMsg || 'Failed to change password' };
     } catch (err) {
       return { success: false, error: 'Network error' };
     }

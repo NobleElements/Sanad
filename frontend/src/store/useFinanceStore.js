@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { API_BASE } from '../config';
+import { API_BASE, API_URL } from '../config';
 import useUIStore from './useUIStore';
 
 const useFinanceStore = create((set, get) => ({
@@ -21,9 +21,9 @@ const useFinanceStore = create((set, get) => ({
     const { currentMonth, currentYear } = get();
     try {
       const [sumRes, catRes, txRes] = await Promise.all([
-        fetch(`${API_BASE}/api/finances/summary?month=${currentMonth}&year=${currentYear}`),
-        fetch(`${API_BASE}/api/finances/categories`),
-        fetch(`${API_BASE}/api/finances/transactions?month=${currentMonth}&year=${currentYear}`)
+        fetch(`${API_URL}/finances/summary?month=${currentMonth}&year=${currentYear}`),
+        fetch(`${API_URL}/finances/categories`),
+        fetch(`${API_URL}/finances/transactions?month=${currentMonth}&year=${currentYear}`)
       ]);
 
       if (sumRes.ok && catRes.ok && txRes.ok) {
@@ -45,8 +45,8 @@ const useFinanceStore = create((set, get) => ({
   fetchAssets: async () => {
     try {
       const [assetsRes, histRes] = await Promise.all([
-        fetch(`${API_BASE}/api/finances/assets`),
-        fetch(`${API_BASE}/api/finances/assets/history`)
+        fetch(`${API_URL}/finances/assets`),
+        fetch(`${API_URL}/finances/assets/history`)
       ]);
       if (assetsRes.ok && histRes.ok) {
         const assetsData = await assetsRes.json();
@@ -86,7 +86,7 @@ const useFinanceStore = create((set, get) => ({
 
   addAsset: async (name, type, amount) => {
     try {
-      const res = await fetch(`${API_BASE}/api/finances/assets`, {
+      const res = await fetch(`${API_URL}/finances/assets`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, type, currentAmount: amount })
@@ -105,7 +105,7 @@ const useFinanceStore = create((set, get) => ({
 
   updateAsset: async (asset, newAmount) => {
     try {
-      const res = await fetch(`${API_BASE}/api/finances/assets/${asset.id}`, {
+      const res = await fetch(`${API_URL}/finances/assets/${asset.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...asset, currentAmount: newAmount })
@@ -124,7 +124,7 @@ const useFinanceStore = create((set, get) => ({
 
   deleteAsset: async (id) => {
     try {
-      const res = await fetch(`${API_BASE}/api/finances/assets/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${API_URL}/finances/assets/${id}`, { method: 'DELETE' });
       if (res.ok) {
         useUIStore.getState().showSuccess('Asset deleted');
         await get().fetchAssets();
@@ -140,7 +140,7 @@ const useFinanceStore = create((set, get) => ({
   addTransaction: async (amount, categoryId, description, type = 'Expense', date = null) => {
     try {
       const txDate = date ? new Date(date).toISOString() : new Date().toISOString();
-      const res = await fetch(`${API_BASE}/api/finances/transactions`, {
+      const res = await fetch(`${API_URL}/finances/transactions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount, categoryId, description, type, date: txDate })
@@ -159,7 +159,7 @@ const useFinanceStore = create((set, get) => ({
 
   deleteTransaction: async (id) => {
     try {
-      const res = await fetch(`${API_BASE}/api/finances/transactions/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${API_URL}/finances/transactions/${id}`, { method: 'DELETE' });
       if (res.ok) {
         useUIStore.getState().showSuccess('Transaction deleted');
         await get().fetchFinanceData();
@@ -173,7 +173,7 @@ const useFinanceStore = create((set, get) => ({
 
   createCategory: async (name, colorHex) => {
     try {
-      const res = await fetch(`${API_BASE}/api/finances/categories`, {
+      const res = await fetch(`${API_URL}/finances/categories`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, monthlyBudget: 0, colorHex })
@@ -192,7 +192,7 @@ const useFinanceStore = create((set, get) => ({
 
   updateCategory: async (id, name, colorHex, monthlyBudget) => {
     try {
-      const res = await fetch(`${API_BASE}/api/finances/categories/${id}`, {
+      const res = await fetch(`${API_URL}/finances/categories/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, colorHex, monthlyBudget })
@@ -212,7 +212,7 @@ const useFinanceStore = create((set, get) => ({
   updateBudget: async (amount) => {
     const { currentMonth, currentYear } = get();
     try {
-      const res = await fetch(`${API_BASE}/api/finances/budget`, {
+      const res = await fetch(`${API_URL}/finances/budget`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount, month: currentMonth, year: currentYear })

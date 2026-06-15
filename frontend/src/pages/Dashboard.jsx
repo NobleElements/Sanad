@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { API_BASE } from '../config';
+import { API_BASE, API_URL } from '../config';
 import useFinanceStore from '../store/useFinanceStore';
 import useThoughtsStore from '../store/useThoughtsStore';
 import useBookStore from '../store/useBookStore';
@@ -48,7 +48,7 @@ export default function Dashboard() {
   const loadDailyGoal = async () => {
     try {
       const today = new Date().toISOString().split('T')[0];
-      const res = await fetch(`${API_BASE}/api/goals/${today}`);
+      const res = await fetch(`${API_URL}/goals/${today}`);
       if (res.status === 204 || !res.ok) {
         setDailyGoal('');
         return;
@@ -64,7 +64,7 @@ export default function Dashboard() {
     try {
       setIsSavingGoal(true);
       const today = new Date().toISOString().split('T')[0];
-      const res = await fetch(`${API_BASE}/api/goals/${today}`, {
+      const res = await fetch(`${API_URL}/goals/${today}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ goal: editGoalValue })

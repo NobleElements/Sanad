@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { API_BASE } from '../config';
+import { API_BASE, API_URL } from '../config';
 import { formatBytes } from '../utils/formatUtils';
 import usePageTitle from '../hooks/usePageTitle';
 import useAuthStore from '../store/useAuthStore';
@@ -39,8 +39,8 @@ export default function AdminDashboard() {
       if (tierFilter) query.set('tierFilter', tierFilter);
 
       const [usersRes, tiersRes] = await Promise.all([
-        fetch(`${API_BASE}/api/admin/users?${query.toString()}`),
-        fetch(`${API_BASE}/api/storage/tiers`)
+        fetch(`${API_URL}/admin/users?${query.toString()}`),
+        fetch(`${API_URL}/storage/tiers`)
       ]);
       
       const usersData = await usersRes.json();
@@ -60,7 +60,7 @@ export default function AdminDashboard() {
 
   const updateUser = async (id, updates) => {
     try {
-      const res = await fetch(`${API_BASE}/api/admin/users/${id}`, {
+      const res = await fetch(`${API_URL}/admin/users/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates)
@@ -76,7 +76,7 @@ export default function AdminDashboard() {
   const deleteUser = async (id) => {
     if (!window.confirm("Are you sure you want to delete this user and ALL their data?")) return;
     try {
-      const res = await fetch(`${API_BASE}/api/admin/users/${id}`, {
+      const res = await fetch(`${API_URL}/admin/users/${id}`, {
         method: 'DELETE'
       });
       if (res.ok) {
@@ -84,6 +84,27 @@ export default function AdminDashboard() {
       }
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const resetPassword = async (id) => {
+    const newPassword = window.prompt("Enter new password for this user:");
+    if (!newPassword) return;
+
+    try {
+      const res = await fetch(`${API_URL}/admin/users/${id}/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newPassword })
+      });
+      if (res.ok) {
+        alert("Password reset successfully.");
+      } else {
+        alert("Failed to reset password.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error resetting password.");
     }
   };
 
@@ -275,7 +296,13 @@ export default function AdminDashboard() {
                       <span>Blocked</span>
                     </label>
                   </td>
-                  <td className="p-3 text-right">
+                  <td className="p-3 text-right space-y-2 sm:space-y-0 sm:space-x-2 flex flex-col sm:flex-row justify-end items-end">
+                    <button 
+                      onClick={() => resetPassword(u.id)}
+                      className="text-indigo-600 hover:text-indigo-800 px-3 py-1 border border-indigo-200 rounded hover:bg-indigo-50 transition-colors"
+                    >
+                      Reset Password
+                    </button>
                     {u.username !== currentUsername && (
                       <button 
                         onClick={() => deleteUser(u.id)}

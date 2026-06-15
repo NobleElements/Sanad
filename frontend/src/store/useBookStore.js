@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { API_BASE } from '../config';
+import { API_URL } from '../config';
 
 const useBookStore = create((set, get) => ({
     books: [],
@@ -9,7 +9,7 @@ const useBookStore = create((set, get) => ({
     
     searchBooks: async (query) => {
         try {
-            const res = await fetch(`${API_BASE}/books/search?query=${encodeURIComponent(query)}`);
+            const res = await fetch(`${API_URL}/books/search?query=${encodeURIComponent(query)}`);
             const data = await res.json();
             set({ searchResults: data });
         } catch (error) {
@@ -18,7 +18,7 @@ const useBookStore = create((set, get) => ({
     },
     
     addBook: async (book) => {
-        const res = await fetch(`${API_BASE}/books`, {
+        const res = await fetch(`${API_URL}/books`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(book)
@@ -30,7 +30,7 @@ const useBookStore = create((set, get) => ({
     
     fetchCurrentRead: async () => {
         try {
-            const res = await fetch(`${API_BASE}/reading/current`);
+            const res = await fetch(`${API_URL}/reading/current`);
             if (res.ok) {
                 const data = await res.json();
                 set({ currentRead: data });
@@ -51,7 +51,7 @@ const useBookStore = create((set, get) => ({
             return { periods: [tempPeriod, ...updatedPeriods] };
         });
 
-        await fetch(`${API_BASE}/reading/periods`, {
+        await fetch(`${API_URL}/reading/periods`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ bookId, plans })
@@ -61,7 +61,7 @@ const useBookStore = create((set, get) => ({
     },
     
     logProgress: async (periodId, startPage, endPage) => {
-        await fetch(`${API_BASE}/reading/logs`, {
+        await fetch(`${API_URL}/reading/logs`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ readingPeriodId: periodId, startPage, endPage })
@@ -72,7 +72,7 @@ const useBookStore = create((set, get) => ({
 
     fetchBooks: async () => {
         try {
-            const res = await fetch(`${API_BASE}/books`);
+            const res = await fetch(`${API_URL}/books`);
             const data = await res.json();
             set({ books: data });
         } catch (error) {
@@ -82,7 +82,7 @@ const useBookStore = create((set, get) => ({
 
     fetchPeriods: async () => {
         try {
-            const res = await fetch(`${API_BASE}/reading/periods`);
+            const res = await fetch(`${API_URL}/reading/periods`);
             const data = await res.json();
             set({ periods: data });
         } catch (error) {
@@ -91,7 +91,7 @@ const useBookStore = create((set, get) => ({
     },
 
     updateBook: async (id, book) => {
-        await fetch(`${API_BASE}/books/${id}`, {
+        await fetch(`${API_URL}/books/${id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(book)
@@ -102,7 +102,7 @@ const useBookStore = create((set, get) => ({
     },
 
     deleteBook: async (id) => {
-        await fetch(`${API_BASE}/books/${id}`, {
+        await fetch(`${API_URL}/books/${id}`, {
             method: 'DELETE'
         });
         await get().fetchBooks();
@@ -116,7 +116,7 @@ const useBookStore = create((set, get) => ({
             periods: state.periods.map(p => p.id === periodId ? { ...p, plans } : p)
         }));
 
-        await fetch(`${API_BASE}/reading/periods/${periodId}/plans`, {
+        await fetch(`${API_URL}/reading/periods/${periodId}/plans`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(plans)
@@ -136,7 +136,7 @@ const useBookStore = create((set, get) => ({
             return { periods: updatedPeriods };
         });
 
-        await fetch(`${API_BASE}/reading/periods/${periodId}/status`, {
+        await fetch(`${API_URL}/reading/periods/${periodId}/status`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status })
@@ -149,7 +149,7 @@ const useBookStore = create((set, get) => ({
         // Optimistic UI Update
         set(state => ({ periods: state.periods.filter(p => p.id !== periodId) }));
 
-        await fetch(`${API_BASE}/reading/periods/${periodId}`, {
+        await fetch(`${API_URL}/reading/periods/${periodId}`, {
             method: 'DELETE'
         });
         await get().fetchPeriods();

@@ -115,6 +115,28 @@ public static class AuthEndpoints
         });
 
 
+        group.MapPost("/change-password", async (AdminDbContext db, HttpContext context, ChangePasswordRequest request) =>
+        {
+            var username = context.User.Identity?.Name;
+            if (string.IsNullOrEmpty(username)) return Results.Unauthorized();
+
+            if (string.IsNullOrWhiteSpace(request.CurrentPassword) || string.IsNullOrWhiteSpace(request.NewPassword))
+                return Results.BadRequest("Current password and new password are required.");
+
+            var user = await db.Users.FirstOrDefaultAsync(u => u.Username == username);
+            if (user == null) return Results.NotFound();
+
+            if (!BCryptLib.Verify(request.CurrentPassword, user.PasswordHash))
+            {
+                return Results.BadRequest("Incorrect current password.");
+            }
+
+            user.PasswordHash = BCryptLib.HashPassword(request.NewPassword);
+            await db.SaveChangesAsync();
+
+            return Results.Ok(new { message = "Password changed successfully" });
+        }).RequireAuthorization();
+
         group.MapPost("/api-key/reroll", async (AdminDbContext db, HttpContext context) =>
         {
             var username = context.User.Identity?.Name;
@@ -179,3 +201,4 @@ public static class AuthEndpoints
 
 public record SetupRequest(string Username, string Password);
 public record LoginRequest(string Username, string Password);
+public record ChangePasswordRequest(string CurrentPassword, string NewPassword);

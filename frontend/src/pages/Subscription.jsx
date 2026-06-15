@@ -8,8 +8,28 @@ import usePageTitle from '../hooks/usePageTitle';
 export default function Subscription() {
   usePageTitle('Subscription');
   const { tiers, storageData, loading, fetchSubscriptionData } = useSubscriptionStore();
-  const { tierId, apiKey, rerollApiKey } = useAuthStore();
+  const { tierId, apiKey, rerollApiKey, changePassword } = useAuthStore();
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [passwordData, setPasswordData] = useState({ current: '', new: '', confirm: '' });
+  const [passwordStatus, setPasswordStatus] = useState({ type: '', msg: '' });
+
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    setPasswordStatus({ type: '', msg: '' });
+    if (passwordData.new !== passwordData.confirm) {
+      return setPasswordStatus({ type: 'error', msg: 'New passwords do not match' });
+    }
+    if (passwordData.new.length < 6) {
+      return setPasswordStatus({ type: 'error', msg: 'New password must be at least 6 characters' });
+    }
+    const res = await changePassword(passwordData.current, passwordData.new);
+    if (res.success) {
+      setPasswordStatus({ type: 'success', msg: 'Password changed successfully' });
+      setPasswordData({ current: '', new: '', confirm: '' });
+    } else {
+      setPasswordStatus({ type: 'error', msg: res.error });
+    }
+  };
 
   useEffect(() => {
     fetchSubscriptionData();
@@ -53,6 +73,53 @@ export default function Subscription() {
             Reroll Key
           </button>
         </div>
+      </div>
+
+      <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-6 mb-8">
+        <h2 className="text-xl font-semibold text-slate-800 mb-4">Change Password</h2>
+        <form onSubmit={handlePasswordChange} className="max-w-md space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Current Password</label>
+            <input 
+              type="password" 
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
+              value={passwordData.current}
+              onChange={e => setPasswordData({...passwordData, current: e.target.value})}
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">New Password</label>
+            <input 
+              type="password" 
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
+              value={passwordData.new}
+              onChange={e => setPasswordData({...passwordData, new: e.target.value})}
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Confirm New Password</label>
+            <input 
+              type="password" 
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
+              value={passwordData.confirm}
+              onChange={e => setPasswordData({...passwordData, confirm: e.target.value})}
+              required
+            />
+          </div>
+          {passwordStatus.msg && (
+            <div className={`p-3 rounded-lg text-sm ${passwordStatus.type === 'error' ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'}`}>
+              {passwordStatus.msg}
+            </div>
+          )}
+          <button 
+            type="submit"
+            className="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors"
+          >
+            Update Password
+          </button>
+        </form>
       </div>
 
       <h2 className="text-xl font-semibold mb-4 text-slate-700">Available Tiers</h2>

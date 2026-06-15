@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { API_BASE } from '../config';
+import { API_BASE, API_URL } from '../config';
 import useUIStore from './useUIStore';
 
 const useHabitStore = create((set, get) => ({
@@ -8,7 +8,7 @@ const useHabitStore = create((set, get) => ({
 
   fetchHabits: async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/habits`);
+      const res = await fetch(`${API_URL}/habits`);
       if (res.ok) {
         const data = await res.json();
         set({ habits: data, isLoaded: true });
@@ -21,7 +21,7 @@ const useHabitStore = create((set, get) => ({
 
   createHabit: async (habitData) => {
     try {
-      const res = await fetch(`${API_BASE}/api/habits`, {
+      const res = await fetch(`${API_URL}/habits`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(habitData)
@@ -40,7 +40,7 @@ const useHabitStore = create((set, get) => ({
 
   updateHabit: async (id, habitData) => {
     try {
-      const res = await fetch(`${API_BASE}/api/habits/${id}`, {
+      const res = await fetch(`${API_URL}/habits/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(habitData)
@@ -59,7 +59,7 @@ const useHabitStore = create((set, get) => ({
 
   deleteHabit: async (id) => {
     try {
-      const res = await fetch(`${API_BASE}/api/habits/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${API_URL}/habits/${id}`, { method: 'DELETE' });
       if (res.ok) {
         useUIStore.getState().showSuccess('Habit deleted');
         await get().fetchHabits();
@@ -74,7 +74,7 @@ const useHabitStore = create((set, get) => ({
 
   toggleHabitLog: async (id, dateStr) => {
     try {
-      const res = await fetch(`${API_BASE}/api/habits/${id}/toggle`, {
+      const res = await fetch(`${API_URL}/habits/${id}/toggle`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ date: dateStr })
@@ -101,7 +101,7 @@ const useHabitStore = create((set, get) => ({
 
     try {
       const habitIds = newHabits.map(h => h.id);
-      const res = await fetch(`${API_BASE}/api/habits/reorder`, {
+      const res = await fetch(`${API_URL}/habits/reorder`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ habitIds })

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Sanad.Api.Data;
+using BCryptLib = BCrypt.Net.BCrypt;
 
 namespace Sanad.Api.Endpoints;
 
@@ -111,6 +112,19 @@ public static class AdminEndpoints
             return Results.Ok();
         });
 
+        group.MapPost("/users/{id}/reset-password", async (Guid id, AdminDbContext db, AdminResetPasswordRequest req) =>
+        {
+            if (string.IsNullOrWhiteSpace(req.NewPassword)) return Results.BadRequest("New password cannot be empty.");
+            
+            var user = await db.Users.FindAsync(id);
+            if (user == null) return Results.NotFound();
+
+            user.PasswordHash = BCryptLib.HashPassword(req.NewPassword);
+            await db.SaveChangesAsync();
+            
+            return Results.Ok(new { message = "Password reset successfully" });
+        });
+
         group.MapPut("/tiers/{id}", async (int id, AdminDbContext db, AdminTierUpdateRequest req) =>
         {
             var tier = await db.Tiers.FindAsync(id);
@@ -128,3 +142,4 @@ public static class AdminEndpoints
 
 public record AdminUserUpdateRequest(bool? IsAdmin, bool? IsBlocked, int? TierId);
 public record AdminTierUpdateRequest(decimal? Price, long? DiskLimitBytes);
+public record AdminResetPasswordRequest(string NewPassword);

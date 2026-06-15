@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { API_BASE } from '../config';
+import { API_BASE, API_URL } from '../config';
 import useUIStore from './useUIStore';
 
 const useTaskStore = create((set, get) => ({
@@ -13,7 +13,7 @@ const useTaskStore = create((set, get) => ({
 
   fetchTasks: async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/tasks`);
+      const res = await fetch(`${API_URL}/tasks`);
       if (res.ok) {
         const data = await res.json();
         set({ tasks: data, isLoaded: true });
@@ -25,7 +25,7 @@ const useTaskStore = create((set, get) => ({
 
   createTask: async (taskData) => {
     try {
-      const res = await fetch(`${API_BASE}/api/tasks`, {
+      const res = await fetch(`${API_URL}/tasks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(taskData)
@@ -44,7 +44,7 @@ const useTaskStore = create((set, get) => ({
 
   updateTask: async (id, taskData) => {
     try {
-      const res = await fetch(`${API_BASE}/api/tasks/${id}`, {
+      const res = await fetch(`${API_URL}/tasks/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(taskData)
@@ -63,7 +63,7 @@ const useTaskStore = create((set, get) => ({
 
   deleteTask: async (id) => {
     try {
-      const res = await fetch(`${API_BASE}/api/tasks/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${API_URL}/tasks/${id}`, { method: 'DELETE' });
       if (res.ok) {
         await get().fetchTasks();
         useUIStore.getState().showSuccess('Task deleted');
@@ -78,7 +78,7 @@ const useTaskStore = create((set, get) => ({
 
   updateTaskStatus: async (id, newStatus) => {
     try {
-      const res = await fetch(`${API_BASE}/api/tasks/${id}/status`, {
+      const res = await fetch(`${API_URL}/tasks/${id}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newStatus)
@@ -115,7 +115,7 @@ const useTaskStore = create((set, get) => ({
       
       set({ tasks: newTasks });
 
-      const res = await fetch(`${API_BASE}/api/tasks/reorder`, {
+      const res = await fetch(`${API_URL}/tasks/reorder`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tasks: tasksToUpdate })
@@ -134,7 +134,7 @@ const useTaskStore = create((set, get) => ({
   getTaskDetails: async (id) => {
     set({ isLoadingTaskDetails: true });
     try {
-      const res = await fetch(`${API_BASE}/api/tasks/${id}`);
+      const res = await fetch(`${API_URL}/tasks/${id}`);
       if (!res.ok) throw new Error('Failed to load task details');
       const data = await res.json();
       set({ activeTaskDetails: data });
@@ -149,7 +149,7 @@ const useTaskStore = create((set, get) => ({
 
   addTaskComment: async (taskId, text) => {
     try {
-      const res = await fetch(`${API_BASE}/api/tasks/${taskId}/comments`, {
+      const res = await fetch(`${API_URL}/tasks/${taskId}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text })
@@ -172,7 +172,7 @@ const useTaskStore = create((set, get) => ({
 
   deleteTaskComment: async (taskId, commentId) => {
     try {
-      const res = await fetch(`${API_BASE}/api/tasks/${taskId}/comments/${commentId}`, { method: 'DELETE' });
+      const res = await fetch(`${API_URL}/tasks/${taskId}/comments/${commentId}`, { method: 'DELETE' });
       if (res.ok) {
         set(state => ({
           activeTaskDetails: state.activeTaskDetails
@@ -193,7 +193,7 @@ const useTaskStore = create((set, get) => ({
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const res = await fetch(`${API_BASE}/api/tasks/${taskId}/attachments`, {
+      const res = await fetch(`${API_URL}/tasks/${taskId}/attachments`, {
         method: 'POST',
         body: formData
       });
@@ -217,7 +217,7 @@ const useTaskStore = create((set, get) => ({
 
   deleteTaskAttachment: async (taskId, attachmentId) => {
     try {
-      const res = await fetch(`${API_BASE}/api/tasks/${taskId}/attachments/${attachmentId}`, { method: 'DELETE' });
+      const res = await fetch(`${API_URL}/tasks/${taskId}/attachments/${attachmentId}`, { method: 'DELETE' });
       if (res.ok) {
         set(state => ({
           activeTaskDetails: state.activeTaskDetails

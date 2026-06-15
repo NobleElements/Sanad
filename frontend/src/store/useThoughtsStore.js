@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { API_BASE } from '../config';
+import { API_BASE, API_URL } from '../config';
 import useUIStore from './useUIStore';
 
 const useThoughtsStore = create((set, get) => ({
@@ -8,7 +8,7 @@ const useThoughtsStore = create((set, get) => ({
 
   fetchThoughts: async (page = 1, search = '') => {
     try {
-      let url = `${API_BASE}/api/thoughts?page=${page}&pageSize=20`;
+      let url = `${API_URL}/thoughts?page=${page}&pageSize=20`;
       if (search) {
         url += `&search=${encodeURIComponent(search)}`;
       }
@@ -30,7 +30,7 @@ const useThoughtsStore = create((set, get) => ({
 
   addThought: async (content, tags) => {
     try {
-      const res = await fetch(`${API_BASE}/api/thoughts`, {
+      const res = await fetch(`${API_URL}/thoughts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content, tags: tags || null })
@@ -49,7 +49,7 @@ const useThoughtsStore = create((set, get) => ({
 
   deleteThought: async (id) => {
     try {
-      const res = await fetch(`${API_BASE}/api/thoughts/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${API_URL}/thoughts/${id}`, { method: 'DELETE' });
       if (res.ok) {
         useUIStore.getState().showSuccess('Thought deleted');
         await get().fetchThoughts(1);
@@ -64,7 +64,7 @@ const useThoughtsStore = create((set, get) => ({
 
   updateThought: async (id, content) => {
     try {
-      const res = await fetch(`${API_BASE}/api/thoughts/${id}`, {
+      const res = await fetch(`${API_URL}/thoughts/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content })

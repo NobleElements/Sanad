@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { API_BASE } from '../config';
+import { API_BASE, API_URL } from '../config';
 
 const useSubscriptionStore = create((set, get) => ({
   tiers: [],
@@ -11,8 +11,8 @@ const useSubscriptionStore = create((set, get) => ({
     set({ loading: true, error: null });
     try {
       const [tiersRes, storageRes] = await Promise.all([
-        fetch(`${API_BASE}/api/storage/tiers`),
-        fetch(`${API_BASE}/api/storage`)
+        fetch(`${API_URL}/storage/tiers`),
+        fetch(`${API_URL}/storage`)
       ]);
       
       let newTiers = get().tiers;

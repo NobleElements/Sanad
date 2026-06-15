@@ -8,7 +8,7 @@ public static class ReadingEndpoints
 {
     public static void MapReadingEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/reading");
+        var group = app.MapGroup("/api/reading");
 
         group.MapGet("/periods", async (SanadDbContext db) =>
         {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { API_BASE, BYTES_PER_KB } from '../config';
+import { API_BASE, BYTES_PER_KB, API_URL } from '../config';
 import { formatBytes } from '../utils/formatUtils';
 import usePageTitle from '../hooks/usePageTitle';
 
@@ -17,7 +17,7 @@ export default function StorageTiers() {
   const fetchTiers = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/storage/tiers`);
+      const res = await fetch(`${API_URL}/storage/tiers`);
       if (!res.ok) throw new Error('Failed to load tiers');
       const data = await res.json();
       setTiers(data);
@@ -41,7 +41,7 @@ export default function StorageTiers() {
         diskLimitBytes: Math.floor(parseFloat(editingTier.limitGb) * BYTES_PER_KB * BYTES_PER_KB * BYTES_PER_KB)
       };
       
-      const res = await fetch(`${API_BASE}/api/admin/tiers/${editingTier.id}`, {
+      const res = await fetch(`${API_URL}/admin/tiers/${editingTier.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates)
