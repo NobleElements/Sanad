@@ -305,12 +305,6 @@ export const useFileManagerStore = create((set, get) => ({
   },
 
   processDownloadFolder: async (folderId, dirHandle) => {
-    // Fetch folder contents
-    const url = folderId ? `/api/folders/${folderId}` : '/api/folders';
-    const response = await fetch(url);
-    if (!response.ok) return;
-    const data = await response.json();
-
     const sanitizeName = (name) => {
       if (!name) return 'unnamed';
       // Replace invalid characters for local file systems
@@ -323,26 +317,42 @@ export const useFileManagerStore = create((set, get) => ({
       return safeName;
     };
 
-    // Create subfolders and recurse
-    for (const sub of data.subfolders || []) {
-      const safeName = sanitizeName(sub.name);
-      const subDirHandle = await dirHandle.getDirectoryHandle(safeName, { create: true });
-      await get().processDownloadFolder(sub.id, subDirHandle);
-    }
+    let currentPage = 1;
+    let totalPages = 1;
 
-    // Download files
-    for (const file of data.files || []) {
-      const safeName = sanitizeName(file.name);
-      const fileHandle = await dirHandle.getFileHandle(safeName, { create: true });
-      const writable = await fileHandle.createWritable();
+    do {
+      const url = folderId 
+        ? `/api/folders/${folderId}?page=${currentPage}&pageSize=100` 
+        : `/api/folders?page=${currentPage}&pageSize=100`;
       
-      const fileRes = await fetch(`/api/files/${file.id}/download`);
-      if (fileRes.ok && fileRes.body) {
-        // Stream to file
-        await fileRes.body.pipeTo(writable);
-      } else {
-        await writable.close();
+      const response = await fetch(url);
+      if (!response.ok) return;
+      const data = await response.json();
+
+      // Create subfolders and recurse
+      for (const sub of data.subfolders || []) {
+        const safeName = sanitizeName(sub.name);
+        const subDirHandle = await dirHandle.getDirectoryHandle(safeName, { create: true });
+        await get().processDownloadFolder(sub.id, subDirHandle);
       }
-    }
+
+      // Download files
+      for (const file of data.files || []) {
+        const safeName = sanitizeName(file.name);
+        const fileHandle = await dirHandle.getFileHandle(safeName, { create: true });
+        const writable = await fileHandle.createWritable();
+        
+        const fileRes = await fetch(`/api/files/${file.id}/download`);
+        if (fileRes.ok && fileRes.body) {
+          // Stream to file
+          await fileRes.body.pipeTo(writable);
+        } else {
+          await writable.close();
+        }
+      }
+
+      totalPages = data.pagination?.totalPages || 1;
+      currentPage++;
+    } while (currentPage <= totalPages);
   }
 }));
