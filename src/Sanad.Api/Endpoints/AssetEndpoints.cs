@@ -12,17 +12,19 @@ public static class AssetEndpoints
         app.MapPost("/api/finances/assets", CreateAsset);
         app.MapPut("/api/finances/assets/{id}", UpdateAsset);
         app.MapDelete("/api/finances/assets/{id}", DeleteAsset);
+        app.MapPut("/api/finances/assets/reorder", ReorderAssets);
         app.MapGet("/api/finances/assets/history", GetAssetsHistory);
     }
 
     public static async Task<IResult> GetAssets(SanadDbContext db) => 
-        Results.Ok(await db.Assets.Include(a => a.Currency).OrderByDescending(a => a.CreatedAt).ToListAsync());
+        Results.Ok(await db.Assets.Include(a => a.Currency).OrderBy(a => a.Order).ThenByDescending(a => a.CreatedAt).ToListAsync());
 
     public static async Task<IResult> CreateAsset(SanadDbContext db, Asset asset)
     {
         asset.Id = Guid.NewGuid();
         asset.CreatedAt = DateTime.UtcNow;
         asset.UpdatedAt = DateTime.UtcNow;
+        asset.Order = (await db.Assets.MaxAsync(a => (int?)a.Order) ?? 0) + 1;
         
         db.Assets.Add(asset);
         
@@ -75,6 +77,21 @@ public static class AssetEndpoints
         db.Assets.Remove(asset);
         await db.SaveChangesAsync();
         return Results.NoContent();
+    }
+
+    public static async Task<IResult> ReorderAssets(SanadDbContext db, List<Guid> orderedIds)
+    {
+        var assets = await db.Assets.Where(a => orderedIds.Contains(a.Id)).ToListAsync();
+        for (int i = 0; i < orderedIds.Count; i++)
+        {
+            var asset = assets.FirstOrDefault(a => a.Id == orderedIds[i]);
+            if (asset != null)
+            {
+                asset.Order = i;
+            }
+        }
+        await db.SaveChangesAsync();
+        return Results.Ok();
     }
 
     public static async Task<IResult> GetAssetsHistory(SanadDbContext db)

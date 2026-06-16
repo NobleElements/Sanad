@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Trash2 } from 'lucide-react';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import { Trash2, GripVertical } from 'lucide-react';
 import useFinanceStore from '../store/useFinanceStore';
 import CurrencyManager from '../components/CurrencyManager';
 
@@ -18,17 +19,60 @@ export default function AssetsTab() {
   const [currencyId, setCurrencyId] = useState('');
   const [icon, setIcon] = useState('');
 
-  // Editing state
+  // Editing state (inline amount)
   const [editingId, setEditingId] = useState(null);
   const [editingAmount, setEditingAmount] = useState('');
 
+  // Editing full asset state (in widget)
+  const [editingFullAsset, setEditingFullAsset] = useState(null);
 
+  const handleEditFullAsset = (asset) => {
+    setEditingFullAsset(asset.id);
+    setName(asset.name);
+    setType(asset.type);
+    setAmount(String(asset.currentAmount));
+    setCurrencyId(asset.currencyId || '');
+    setIcon(asset.icon || '');
+  };
 
-  const handleAdd = async (e) => {
+  const clearForm = () => {
+    setEditingFullAsset(null);
+    setName(''); setType('Cash'); setAmount(''); setCurrencyId(''); setIcon('');
+  };
+
+  const handleDragEnd = (result) => {
+    if (!result.destination) return;
+    
+    const sourceIndex = result.source.index;
+    const destIndex = result.destination.index;
+    
+    if (sourceIndex === destIndex) return;
+    
+    const orderedIds = Array.from(assets.map(a => a.id));
+    const [movedId] = orderedIds.splice(sourceIndex, 1);
+    orderedIds.splice(destIndex, 0, movedId);
+    
+    useFinanceStore.getState().reorderAssets(orderedIds);
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const success = await addAsset(name, type, parseFloat(amount), currencyId || null, icon || null);
-    if (success) {
-      setName(''); setType('Cash'); setAmount(''); setCurrencyId(''); setIcon('');
+    if (editingFullAsset) {
+      const assetToUpdate = assets.find(a => a.id === editingFullAsset);
+      if (assetToUpdate) {
+        const updatedAssetObj = {
+            ...assetToUpdate,
+            name,
+            type,
+            currencyId: currencyId || null,
+            icon: icon || null
+        };
+        const success = await updateAsset(updatedAssetObj, parseFloat(amount));
+        if (success) clearForm();
+      }
+    } else {
+      const success = await addAsset(name, type, parseFloat(amount), currencyId || null, icon || null);
+      if (success) clearForm();
     }
   };
 
@@ -98,18 +142,36 @@ export default function AssetsTab() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
             <h2 className="text-xl font-bold mb-4 text-slate-800">Your Assets</h2>
-            <div className="flex flex-col gap-3">
-                {assets.map(asset => {
-                    const isEditing = editingId === asset.id;
-                    return (
-                        <div key={asset.id} className="group flex justify-between items-center p-4 bg-slate-50 rounded-lg border border-slate-100 hover:border-slate-200 transition-colors">
-                            <div className="flex items-center gap-3">
-                                {asset.icon && <span className="text-2xl">{asset.icon}</span>}
-                                <div>
-                                    <h3 className="font-semibold text-slate-800 text-lg">{asset.name}</h3>
-                                    <p className="text-sm text-slate-500">{asset.type}</p>
+            <DragDropContext onDragEnd={handleDragEnd}>
+              <Droppable droppableId="assets">
+                {(provided) => (
+                  <div className="flex flex-col gap-3" {...provided.droppableProps} ref={provided.innerRef}>
+                    {assets.map((asset, index) => {
+                        const isEditing = editingId === asset.id;
+                        return (
+                          <Draggable key={asset.id} draggableId={asset.id} index={index}>
+                            {(provided, snapshot) => (
+                              <div 
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                className={`group flex justify-between items-center p-4 rounded-lg border transition-all ${snapshot.isDragging ? 'bg-indigo-50 border-indigo-200 shadow-md scale-[1.01]' : 'bg-slate-50 border-slate-100 hover:border-slate-200'}`}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div {...provided.dragHandleProps} className="text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing">
+                                    <GripVertical size={20} />
+                                  </div>
+                                  <div 
+                                      className="flex items-center gap-3 cursor-pointer group-hover:opacity-80" 
+                                      onClick={() => handleEditFullAsset(asset)}
+                                      title="Click to edit asset details"
+                                  >
+                                      {asset.icon && <span className="text-2xl">{asset.icon}</span>}
+                                      <div>
+                                          <h3 className="font-semibold text-slate-800 text-lg group-hover:text-indigo-600 transition-colors">{asset.name}</h3>
+                                          <p className="text-sm text-slate-500">{asset.type}</p>
+                                      </div>
+                                  </div>
                                 </div>
-                            </div>
                             <div className="flex items-center gap-4">
                                 {isEditing ? (
                                     <div className="flex items-center gap-2">
@@ -147,15 +209,21 @@ export default function AssetsTab() {
                                 </button>
                             </div>
                         </div>
-                    );
+                      )}
+                    </Draggable>
+                  );
                 })}
+                {provided.placeholder}
                 {assets.length === 0 && <p className="text-slate-500 italic text-center py-4">You have not added any assets yet.</p>}
-            </div>
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
         </div>
 
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm h-fit">
-            <h2 className="text-xl font-bold mb-4 text-slate-800">Add Asset</h2>
-            <form onSubmit={handleAdd} className="flex flex-col gap-4">
+            <h2 className="text-xl font-bold mb-4 text-slate-800">{editingFullAsset ? 'Update Asset' : 'Add Asset'}</h2>
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                 <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Name</label>
                     <input type="text" value={name} onChange={e=>setName(e.target.value)} placeholder="e.g. Chase Checking" className="w-full bg-white border border-slate-300 rounded p-2 text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none" required />
@@ -185,11 +253,22 @@ export default function AssetsTab() {
                       <input type="text" value={icon} onChange={e=>setIcon(e.target.value)} placeholder="💰" className="w-full bg-white border border-slate-300 rounded p-2 text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none" maxLength={10} />
                   </div>
                 </div>
-                <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Initial Amount</label>
-                    <input type="number" step="0.01" value={amount} onChange={e=>setAmount(e.target.value)} placeholder="0.00" className="w-full bg-white border border-slate-300 rounded p-2 text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none" required />
+                {!editingFullAsset && (
+                  <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Initial Amount</label>
+                      <input type="number" step="0.01" value={amount} onChange={e=>setAmount(e.target.value)} placeholder="0.00" className="w-full bg-white border border-slate-300 rounded p-2 text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none" required />
+                  </div>
+                )}
+                <div className="flex gap-2 mt-2">
+                  <button type="submit" className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded font-semibold transition-colors">
+                    {editingFullAsset ? 'Update Asset' : 'Add Asset'}
+                  </button>
+                  {editingFullAsset && (
+                    <button type="button" onClick={clearForm} className="px-4 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded font-semibold transition-colors">
+                      Cancel
+                    </button>
+                  )}
                 </div>
-                <button type="submit" className="mt-2 bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded font-semibold transition-colors">Add Asset</button>
             </form>
         </div>
       </div>

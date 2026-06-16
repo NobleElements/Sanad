@@ -136,6 +136,29 @@ const useFinanceStore = create((set, get) => ({
     }
   },
 
+  reorderAssets: async (orderedIds) => {
+    // Optimistic UI update
+    const currentAssets = [...get().assets];
+    const newAssets = orderedIds.map(id => currentAssets.find(a => a.id === id)).filter(Boolean);
+    set({ assets: newAssets });
+    
+    try {
+      const res = await fetch(`${API_URL}/finances/assets/reorder`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderedIds)
+      });
+      if (!res.ok) {
+        throw new Error('Failed to reorder assets');
+      }
+    } catch (err) {
+      console.error(err);
+      // Revert on failure
+      set({ assets: currentAssets });
+      useUIStore.getState().showError('Failed to save asset order');
+    }
+  },
+
   deleteAsset: async (id) => {
     try {
       const res = await fetch(`${API_URL}/finances/assets/${id}`, { method: 'DELETE' });
