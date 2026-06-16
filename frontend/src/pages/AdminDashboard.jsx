@@ -414,7 +414,7 @@ export default function AdminDashboard() {
               <tr className="border-b border-slate-200 text-sm text-slate-500 uppercase tracking-wider">
                 <th className="p-3">Name</th>
                 <th className="p-3">Path</th>
-                <th className="p-3">Disk Usage (Total / Free)</th>
+                <th className="p-3">Disk Usage</th>
                 <th className="p-3">Status</th>
                 <th className="p-3 text-right">Actions</th>
               </tr>
@@ -467,11 +467,19 @@ export default function AdminDashboard() {
                     <>
                       <td className="p-3 font-medium text-slate-800">{ds.name}</td>
                       <td className="p-3 text-slate-500 font-mono text-xs">{ds.path}</td>
-                      <td className="p-3 text-slate-600">
+                      <td className="p-3 text-slate-600 w-48">
                         {ds.totalDiskSpace > 0 ? (
-                          <span>{formatBytes(ds.totalDiskSpace - ds.freeDiskSpace)} / {formatBytes(ds.totalDiskSpace)} ({formatBytes(ds.freeDiskSpace)} free)</span>
+                          <div 
+                            className="w-full bg-slate-200 rounded-full h-2.5 dark:bg-slate-700 overflow-hidden cursor-help flex items-center"
+                            title={`${formatBytes(ds.totalDiskSpace - ds.freeDiskSpace)} / ${formatBytes(ds.totalDiskSpace)} (${formatBytes(ds.freeDiskSpace)} free)`}
+                          >
+                            <div 
+                              className={`h-full rounded-full ${((ds.totalDiskSpace - ds.freeDiskSpace) / ds.totalDiskSpace) > 0.9 ? 'bg-red-500' : ((ds.totalDiskSpace - ds.freeDiskSpace) / ds.totalDiskSpace) > 0.75 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                              style={{ width: `${Math.min(100, Math.max(0, ((ds.totalDiskSpace - ds.freeDiskSpace) / ds.totalDiskSpace) * 100))}%` }}
+                            ></div>
+                          </div>
                         ) : (
-                          <span className="text-red-500">Path not accessible</span>
+                          <span className="text-red-500 text-xs">Path not accessible</span>
                         )}
                       </td>
                       <td className="p-3">
