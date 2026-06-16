@@ -26,6 +26,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=Production
     volumes:
       - ./sanad-data:/app/Data
+      - /mnt:/mnt
     # Port 8080 is exposed internally
 
 volumes:
