@@ -120,7 +120,7 @@ export default function Habits() {
                               
                               <div className="flex items-center justify-between md:justify-end w-full md:w-auto gap-4">
                                 {/* 7-Day Streak */}
-                                <div className="flex items-center justify-start gap-1.5 sm:gap-2 overflow-x-auto pb-1 sm:pb-0 pr-2 pt-1 scrollbar-hide flex-1 md:flex-none">
+                                <div className="flex items-center justify-start gap-1.5 sm:gap-2 overflow-x-auto pb-1 pr-2 pt-1 scrollbar-hide flex-1 md:flex-none">
                                   {last7Days.map(date => {
                                     const completed = isCompleted(habit, date);
                                     const isToday = isSameDay(date, new Date());
