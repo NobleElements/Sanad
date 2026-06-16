@@ -18,17 +18,27 @@ import StorageTiers from './pages/StorageTiers';
 import Subscription from './pages/Subscription';
 import ProtectedRoute from './components/ProtectedRoute';
 import LandingPage from './pages/LandingPage';
+import MaintenancePage from './pages/MaintenancePage';
 
 function App() {
   const { loaded, authenticated, isAdmin, checkAuthStatus } = useAuthStore();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMigrating, setIsMigrating] = useState(false);
 
   useEffect(() => {
     checkAuthStatus();
+    
+    const handleMigrating = () => setIsMigrating(true);
+    window.addEventListener('account_migrating', handleMigrating);
+    return () => window.removeEventListener('account_migrating', handleMigrating);
   }, [checkAuthStatus]);
 
   if (!loaded) {
     return <div className="flex h-screen items-center justify-center bg-slate-50">Loading...</div>;
+  }
+
+  if (isMigrating) {
+    return <MaintenancePage />;
   }
 
   const AppLayout = ({ children }) => (

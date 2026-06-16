@@ -4,6 +4,7 @@ import { API_BASE, API_URL } from '../config';
 import { formatBytes } from '../utils/formatUtils';
 import usePageTitle from '../hooks/usePageTitle';
 import useAuthStore from '../store/useAuthStore';
+import { Edit2, Trash2, Key, RefreshCw, CheckCircle, Save, X, HardDrive } from 'lucide-react';
 
 export default function AdminDashboard() {
   usePageTitle('Admin');
@@ -23,8 +24,19 @@ export default function AdminDashboard() {
     usersByTier: {}
   });
   const [tiers, setTiers] = useState([]);
+  const [datastores, setDatastores] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Datastore form state
+  const [newDsName, setNewDsName] = useState('');
+  const [newDsPath, setNewDsPath] = useState('');
+  const [newDsDefault, setNewDsDefault] = useState(false);
+  
+  // Datastore inline edit state
+  const [editingDsId, setEditingDsId] = useState(null);
+  const [editDsName, setEditDsName] = useState('');
+  const [editDsPath, setEditDsPath] = useState('');
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -38,16 +50,19 @@ export default function AdminDashboard() {
       if (statusFilter) query.set('statusFilter', statusFilter);
       if (tierFilter) query.set('tierFilter', tierFilter);
 
-      const [usersRes, tiersRes] = await Promise.all([
+      const [usersRes, tiersRes, dsRes] = await Promise.all([
         fetch(`${API_URL}/admin/users?${query.toString()}`),
-        fetch(`${API_URL}/storage/tiers`)
+        fetch(`${API_URL}/storage/tiers`),
+        fetch(`${API_URL}/admin/datastores`)
       ]);
       
       const usersData = await usersRes.json();
       const tiersData = await tiersRes.json();
+      const dsData = await dsRes.json();
       
       setData(usersData);
       setTiers(tiersData);
+      setDatastores(dsData);
     } catch {
       setError('Failed to load admin data');
     }
@@ -143,6 +158,103 @@ export default function AdminDashboard() {
     }
   };
 
+  const migrateUser = async (userId, targetDsId) => {
+    if (!targetDsId) return;
+    if (!window.confirm("Are you sure you want to migrate this user to a new datastore? They won't be able to log in during the process.")) return;
+    try {
+      const res = await fetch(`${API_URL}/admin/users/${userId}/migrate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetDatastoreId: parseInt(targetDsId) })
+      });
+      if (res.ok) {
+        alert("Migration started successfully. It will run in the background.");
+        fetchData();
+      } else {
+        const error = await res.text();
+        alert("Migration failed: " + error);
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error triggering migration.");
+    }
+  };
+
+  const createDatastore = async (e) => {
+    e.preventDefault();
+    if (!newDsName || !newDsPath) return;
+    try {
+      const res = await fetch(`${API_URL}/admin/datastores`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newDsName, path: newDsPath, isDefault: newDsDefault })
+      });
+      if (res.ok) {
+        setNewDsName('');
+        setNewDsPath('');
+        setNewDsDefault(false);
+        fetchData();
+      } else {
+        const error = await res.text();
+        alert("Failed to create datastore: " + error);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const setDatastoreDefault = async (id) => {
+    try {
+      const res = await fetch(`${API_URL}/admin/datastores/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isDefault: true })
+      });
+      if (res.ok) fetchData();
+    } catch (e) { console.error(e); }
+  };
+
+  const startEditDatastore = (ds) => {
+    setEditingDsId(ds.id);
+    setEditDsName(ds.name);
+    setEditDsPath(ds.path);
+  };
+
+  const cancelEditDatastore = () => {
+    setEditingDsId(null);
+    setEditDsName('');
+    setEditDsPath('');
+  };
+
+  const saveDatastoreEdit = async (id) => {
+    try {
+      const res = await fetch(`${API_URL}/admin/datastores/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: editDsName, path: editDsPath })
+      });
+      if (res.ok) {
+        fetchData();
+        cancelEditDatastore();
+      } else {
+        const error = await res.text();
+        alert("Failed to update datastore: " + error);
+      }
+    } catch (e) { console.error(e); }
+  };
+
+  const deleteDatastore = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this datastore? Make sure no users are left on it.")) return;
+    try {
+      const res = await fetch(`${API_URL}/admin/datastores/${id}`, { method: 'DELETE' });
+      if (res.ok) fetchData();
+      else {
+        const error = await res.text();
+        alert(error);
+      }
+    } catch (e) { console.error(e); }
+  };
+
   const handleSort = (column) => {
     if (sortBy === column) {
       setSearchParams(prev => {
@@ -189,6 +301,9 @@ export default function AdminDashboard() {
     return <span className="ml-1">{sortDesc ? '▼' : '▲'}</span>;
   };
 
+  const totalDsSpace = datastores.reduce((acc, ds) => acc + ds.totalDiskSpace, 0);
+  const totalDsFree = datastores.reduce((acc, ds) => acc + ds.freeDiskSpace, 0);
+
   return (
     <div className="flex-1 p-8 overflow-y-auto bg-slate-50">
       <div className="flex justify-between items-center mb-8">
@@ -212,19 +327,19 @@ export default function AdminDashboard() {
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-          <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wider">Disk Space</h3>
+          <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wider">Storage Total</h3>
           <div className="mt-2 text-sm text-slate-700 space-y-1">
-            <div className="flex justify-between">
-              <span>Used (Users):</span>
-              <span className="font-semibold text-slate-800">{formatBytes(data.totalDiskUsage || 0)}</span>
+            <div className="flex justify-between border-b border-slate-100 pb-1 mb-1">
+              <span>System Total:</span>
+              <span className="font-semibold text-slate-800">{formatBytes(totalDsSpace || 0)}</span>
             </div>
             <div className="flex justify-between">
-              <span>Host Free:</span>
-              <span className="font-semibold text-emerald-600">{formatBytes(data.hostFreeDiskSpace || 0)}</span>
+              <span>System Free:</span>
+              <span className="font-semibold text-emerald-600">{formatBytes(totalDsFree || 0)}</span>
             </div>
-            <div className="flex justify-between border-t border-slate-100 pt-1 mt-1">
-              <span>Host Total:</span>
-              <span className="font-semibold text-slate-800">{formatBytes(data.hostTotalDiskSpace || 0)}</span>
+            <div className="flex justify-between mt-2 pt-2 border-t border-slate-100">
+              <span className="text-slate-500 text-xs">Used By Users:</span>
+              <span className="font-semibold text-slate-800 text-xs">{formatBytes(data.totalDiskUsage || 0)}</span>
             </div>
           </div>
         </div>
@@ -251,7 +366,158 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
+      <div className="bg-white rounded-xl shadow-sm p-6 mb-8 border border-slate-200">
+        <h2 className="text-xl font-semibold text-slate-700 mb-6">Datastores Management</h2>
+        
+        <form onSubmit={createDatastore} className="flex flex-col sm:flex-row gap-4 mb-6 items-end bg-slate-50 p-4 rounded-lg border border-slate-100">
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-slate-700 mb-1">Name</label>
+            <input 
+              type="text" 
+              required
+              placeholder="e.g. HDD Array 1"
+              value={newDsName}
+              onChange={e => setNewDsName(e.target.value)}
+              className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+            />
+          </div>
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-slate-700 mb-1">Absolute Path</label>
+            <input 
+              type="text" 
+              required
+              placeholder="e.g. /mnt/hdd1/sanad-data"
+              value={newDsPath}
+              onChange={e => setNewDsPath(e.target.value)}
+              className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+            />
+          </div>
+          <div className="flex items-center h-10">
+            <label className="flex items-center space-x-2 text-sm cursor-pointer">
+              <input 
+                type="checkbox" 
+                checked={newDsDefault}
+                onChange={e => setNewDsDefault(e.target.checked)}
+                className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+              />
+              <span className="font-medium text-slate-700">Set Default</span>
+            </label>
+          </div>
+          <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors shadow-sm text-sm font-medium h-10">
+            Add Datastore
+          </button>
+        </form>
 
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-slate-200 text-sm text-slate-500 uppercase tracking-wider">
+                <th className="p-3">Name</th>
+                <th className="p-3">Path</th>
+                <th className="p-3">Disk Usage (Total / Free)</th>
+                <th className="p-3">Status</th>
+                <th className="p-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="text-sm">
+              {datastores.map(ds => (
+                <tr key={ds.id} className="border-b border-slate-100 hover:bg-slate-50">
+                  {editingDsId === ds.id ? (
+                    <>
+                      <td className="p-3">
+                        <input 
+                          type="text" 
+                          value={editDsName} 
+                          onChange={e => setEditDsName(e.target.value)}
+                          className="w-full border border-slate-300 rounded px-2 py-1 text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
+                        />
+                      </td>
+                      <td className="p-3">
+                        <input 
+                          type="text" 
+                          value={editDsPath} 
+                          onChange={e => setEditDsPath(e.target.value)}
+                          className="w-full border border-slate-300 rounded px-2 py-1 text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
+                        />
+                      </td>
+                      <td className="p-3 text-slate-600">
+                        <span className="text-xs italic text-slate-400">Editing...</span>
+                      </td>
+                      <td className="p-3">
+                        {ds.isDefault ? <span className="px-2 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-semibold">Default</span> : null}
+                      </td>
+                      <td className="p-3 text-right space-x-2">
+                        <button 
+                          onClick={() => saveDatastoreEdit(ds.id)}
+                          title="Save Changes"
+                          className="text-emerald-600 hover:text-emerald-800 p-1.5 border border-emerald-200 rounded hover:bg-emerald-50 transition-colors inline-flex"
+                        >
+                          <Save className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={cancelEditDatastore}
+                          title="Cancel"
+                          className="text-slate-500 hover:text-slate-700 p-1.5 border border-slate-200 rounded hover:bg-slate-50 transition-colors inline-flex"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="p-3 font-medium text-slate-800">{ds.name}</td>
+                      <td className="p-3 text-slate-500 font-mono text-xs">{ds.path}</td>
+                      <td className="p-3 text-slate-600">
+                        {ds.totalDiskSpace > 0 ? (
+                          <span>{formatBytes(ds.totalDiskSpace - ds.freeDiskSpace)} / {formatBytes(ds.totalDiskSpace)} ({formatBytes(ds.freeDiskSpace)} free)</span>
+                        ) : (
+                          <span className="text-red-500">Path not accessible</span>
+                        )}
+                      </td>
+                      <td className="p-3">
+                        {ds.isDefault ? (
+                          <span className="px-2 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-semibold">Default</span>
+                        ) : null}
+                      </td>
+                      <td className="p-3 text-right space-x-2">
+                        <button 
+                          onClick={() => startEditDatastore(ds)}
+                          title="Edit Datastore"
+                          className="text-indigo-600 hover:text-indigo-800 p-1.5 border border-indigo-200 rounded hover:bg-indigo-50 transition-colors inline-flex"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        {!ds.isDefault && (
+                          <button 
+                            onClick={() => setDatastoreDefault(ds.id)}
+                            title="Make Default"
+                            className="text-emerald-600 hover:text-emerald-800 p-1.5 border border-emerald-200 rounded hover:bg-emerald-50 transition-colors inline-flex"
+                          >
+                            <CheckCircle className="w-4 h-4" />
+                          </button>
+                        )}
+                        <button 
+                          onClick={() => deleteDatastore(ds.id)}
+                          disabled={ds.isDefault || ds.usersCount > 0}
+                          title={ds.isDefault ? "Cannot delete default datastore" : (ds.usersCount > 0 ? "Cannot delete datastore with assigned users" : "Delete Datastore")}
+                          className="text-red-500 hover:text-red-700 p-1.5 border border-red-200 rounded hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </>
+                  )}
+                </tr>
+              ))}
+              {datastores.length === 0 && (
+                <tr>
+                  <td colSpan="5" className="p-6 text-center text-slate-500">No datastores defined.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
       <div className="bg-white rounded-xl shadow-sm p-6 mb-8 border border-slate-200">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
           <h2 className="text-xl font-semibold text-slate-700">User Management</h2>
@@ -296,6 +562,7 @@ export default function AdminDashboard() {
                   Last Visit {getSortIndicator('LastVisitAt')}
                 </th>
                 <th className="p-3">Status</th>
+                <th className="p-3">Datastore & Migrations</th>
                 <th className="p-3 text-right">Actions</th>
               </tr>
             </thead>
@@ -326,6 +593,7 @@ export default function AdminDashboard() {
                         checked={u.isAdmin} 
                         onChange={(e) => updateUser(u.id, { isAdmin: e.target.checked })}
                         className="rounded border-slate-300"
+                        disabled={u.isMigrating}
                       />
                       <span>Admin</span>
                     </label>
@@ -335,29 +603,61 @@ export default function AdminDashboard() {
                         checked={u.isBlocked} 
                         onChange={(e) => updateUser(u.id, { isBlocked: e.target.checked })}
                         className="rounded border-slate-300"
+                        disabled={u.isMigrating}
                       />
                       <span>Blocked</span>
                     </label>
+                    {u.isMigrating && (
+                      <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-50 border border-amber-200 text-amber-700 text-xs font-medium">
+                        <svg className="animate-spin h-3 w-3 text-amber-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Migrating...
+                      </div>
+                    )}
                   </td>
-                  <td className="p-3 text-right space-y-2 sm:space-y-0 sm:space-x-2 flex flex-col sm:flex-row justify-end items-end">
+                  <td className="p-3">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Current: {u.datastoreName || 'Unknown'}</span>
+                      <select
+                        className="border border-slate-200 rounded p-1 text-xs bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        value=""
+                        disabled={u.isMigrating}
+                        onChange={(e) => migrateUser(u.id, e.target.value)}
+                      >
+                        <option value="">{u.isMigrating ? "Migrating..." : "Move to..."}</option>
+                        {datastores.filter(d => d.id !== u.datastoreId).map(d => (
+                          <option key={d.id} value={d.id}>{d.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </td>
+                  <td className="p-3 text-right space-x-2 whitespace-nowrap">
                     <button 
                       onClick={() => recalculateStorage(u.username)}
-                      className="text-emerald-600 hover:text-emerald-800 px-3 py-1 border border-emerald-200 rounded hover:bg-emerald-50 transition-colors"
+                      disabled={u.isMigrating}
+                      title="Recalculate Storage"
+                      className="text-emerald-600 hover:text-emerald-800 p-1.5 border border-emerald-200 rounded hover:bg-emerald-50 transition-colors disabled:opacity-50 inline-flex"
                     >
-                      Recalculate
+                      <RefreshCw className="w-4 h-4" />
                     </button>
                     <button 
                       onClick={() => resetPassword(u.id)}
-                      className="text-indigo-600 hover:text-indigo-800 px-3 py-1 border border-indigo-200 rounded hover:bg-indigo-50 transition-colors"
+                      disabled={u.isMigrating}
+                      title="Reset Password"
+                      className="text-indigo-600 hover:text-indigo-800 p-1.5 border border-indigo-200 rounded hover:bg-indigo-50 transition-colors disabled:opacity-50 inline-flex"
                     >
-                      Reset Password
+                      <Key className="w-4 h-4" />
                     </button>
                     {u.username !== currentUsername && (
                       <button 
                         onClick={() => deleteUser(u.id)}
-                        className="text-red-500 hover:text-red-700 px-3 py-1 border border-red-200 rounded hover:bg-red-50 transition-colors"
+                        disabled={u.isMigrating}
+                        title="Delete User"
+                        className="text-red-500 hover:text-red-700 p-1.5 border border-red-200 rounded hover:bg-red-50 transition-colors disabled:opacity-50 inline-flex"
                       >
-                        Delete
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     )}
                   </td>

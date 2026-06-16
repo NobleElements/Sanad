@@ -92,14 +92,16 @@ builder.Services.AddMcpServer()
 // Change to Scoped since it needs ITenantProvider
 builder.Services.AddScoped<FileStorageService>();
 builder.Services.AddScoped<FileManagerService>();
+builder.Services.AddSingleton<MigrationService>();
 builder.Services.AddHostedService<DiskUsageSyncService>();
-
+builder.Services.AddMemoryCache();
 var app = builder.Build();
 
 app.UseCors("AllowAll");
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<Sanad.Api.Middleware.MigrationCheckMiddleware>();
 
 // Create Admin DB if not exists
 using (var scope = app.Services.CreateScope())
@@ -107,6 +109,15 @@ using (var scope = app.Services.CreateScope())
     var adminDb = scope.ServiceProvider.GetRequiredService<AdminDbContext>();
     adminDb.Database.Migrate();
     adminDb.Database.ExecuteSqlRaw("PRAGMA journal_mode=WAL;");
+
+    // Resume any interrupted background migrations
+    var migrationService = scope.ServiceProvider.GetRequiredService<MigrationService>();
+    var stuckUsers = adminDb.Users.Where(u => u.IsMigrating && u.TargetDatastoreId != null).ToList();
+    foreach (var user in stuckUsers)
+    {
+        Console.WriteLine($"Resuming background migration for user {user.Username} to datastore {user.TargetDatastoreId}");
+        migrationService.StartMigration(user.Id, user.TargetDatastoreId.Value);
+    }
 }
 
 app.MapGet("/", () => "Sanad API Running");

@@ -1,0 +1,3 @@
+export const ERROR_CODES = {
+  ACCOUNT_MIGRATING: 'ACCOUNT_MIGRATING',
+};

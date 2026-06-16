@@ -18,6 +18,12 @@ public class AppUser
     public int TierId { get; set; }
     public StorageTier? Tier { get; set; }
     
+    public int DatastoreId { get; set; } = 1;
+    public Datastore? Datastore { get; set; }
+    
+    public bool IsMigrating { get; set; }
+    public int? TargetDatastoreId { get; set; }
+    
     public long DiskUsed { get; set; }
     
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

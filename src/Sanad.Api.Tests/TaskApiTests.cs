@@ -20,6 +20,7 @@ public class TaskApiTests
         public string GetUsername() => "testuser";
         public Guid GetTenantId() => Guid.Empty;
         public string GetConnectionString() => "";
+        public string GetTenantBasePath() => "/tmp/dummy_tenant";
     }
     [Fact]
     public async Task CanDeleteTaskComment()

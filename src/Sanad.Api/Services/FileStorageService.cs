@@ -6,8 +6,8 @@ public class FileStorageService
 
     public FileStorageService(IWebHostEnvironment env, ITenantProvider tenantProvider)
     {
-        var username = tenantProvider.GetUsername();
-        _storagePath = Path.Combine(env.ContentRootPath, "Data", username, "files");
+        var basePath = tenantProvider.GetTenantBasePath();
+        _storagePath = Path.Combine(basePath, "files");
         EnsureDirectoryExists(_storagePath);
     }
 

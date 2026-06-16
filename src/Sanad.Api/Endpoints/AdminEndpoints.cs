@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Sanad.Api.Data;
 using BCryptLib = BCrypt.Net.BCrypt;
 
@@ -14,7 +15,7 @@ public static class AdminEndpoints
 
         group.MapGet("/users", async (AdminDbContext db, int page = 1, int pageSize = 10, string? sortBy = null, bool sortDesc = false, string? statusFilter = null, int? tierFilter = null) =>
         {
-            var query = db.Users.Include(u => u.Tier).AsQueryable();
+            var query = db.Users.Include(u => u.Tier).Include(u => u.Datastore).AsQueryable();
             
             if (statusFilter == "Active") query = query.Where(u => !u.IsBlocked);
             if (statusFilter == "Blocked") query = query.Where(u => u.IsBlocked);
@@ -60,6 +61,9 @@ public static class AdminEndpoints
                 u.LastVisitAt,
                 u.TierId,
                 TierName = u.Tier?.Name,
+                u.DatastoreId,
+                DatastoreName = u.Datastore?.Name,
+                u.IsMigrating,
                 DiskUsed = u.DiskUsed
             });
             return Results.Ok(new {
@@ -96,17 +100,23 @@ public static class AdminEndpoints
                 return Results.BadRequest("Cannot delete your own account.");
             }
 
-            var user = await db.Users.FindAsync(id);
+            var user = await db.Users.Include(u => u.Datastore).FirstOrDefaultAsync(u => u.Id == id);
             if (user == null) return Results.NotFound();
 
             db.Users.Remove(user);
             await db.SaveChangesAsync();
 
             // Delete user data from disk
-            var userPath = Path.Combine(Directory.GetCurrentDirectory(), "Data", user.Username);
-            if (Directory.Exists(userPath))
+            if (user.Datastore != null)
             {
-                Directory.Delete(userPath, true);
+                var dsPath = user.Datastore.Path;
+                if (!Path.IsPathRooted(dsPath)) dsPath = Path.Combine(Directory.GetCurrentDirectory(), dsPath);
+
+                var userPath = Path.Combine(dsPath, user.Username);
+                if (Directory.Exists(userPath))
+                {
+                    Directory.Delete(userPath, true);
+                }
             }
 
             return Results.Ok();
@@ -137,6 +147,151 @@ public static class AdminEndpoints
             return Results.Ok(tier);
         });
 
+        group.MapGet("/datastores", async (AdminDbContext db) =>
+        {
+            var datastores = await db.Datastores.ToListAsync();
+            var userCounts = await db.Users.GroupBy(u => u.DatastoreId)
+                                           .Select(g => new { DatastoreId = g.Key, Count = g.Count() })
+                                           .ToListAsync();
+            var countsDict = userCounts.ToDictionary(x => x.DatastoreId, x => x.Count);
+
+            var result = datastores.Select(d =>
+            {
+                long totalDiskSpace = 0;
+                long freeDiskSpace = 0;
+                try
+                {
+                    var dsPath = d.Path;
+                    if (!Path.IsPathRooted(dsPath)) dsPath = Path.Combine(Directory.GetCurrentDirectory(), dsPath);
+
+                    if (Directory.Exists(dsPath))
+                    {
+                        var driveInfo = new System.IO.DriveInfo(new System.IO.DirectoryInfo(dsPath).Root.FullName);
+                        totalDiskSpace = driveInfo.TotalSize;
+                        freeDiskSpace = driveInfo.AvailableFreeSpace;
+                    }
+                }
+                catch { }
+
+                return new
+                {
+                    d.Id,
+                    d.Name,
+                    d.Path,
+                    d.IsDefault,
+                    d.CreatedAt,
+                    TotalDiskSpace = totalDiskSpace,
+                    FreeDiskSpace = freeDiskSpace,
+                    UsersCount = countsDict.TryGetValue(d.Id, out var count) ? count : 0
+                };
+            });
+
+            return Results.Ok(result);
+        });
+
+        group.MapPost("/datastores", async (AdminDbContext db, AdminDatastoreCreateRequest req) =>
+        {
+            if (string.IsNullOrWhiteSpace(req.Name) || string.IsNullOrWhiteSpace(req.Path))
+                return Results.BadRequest("Name and Path are required.");
+
+            if (!Directory.Exists(req.Path))
+            {
+                try
+                {
+                    Directory.CreateDirectory(req.Path);
+                }
+                catch
+                {
+                    return Results.BadRequest("Invalid path or missing permissions to create the directory.");
+                }
+            }
+
+            var datastore = new Models.Datastore
+            {
+                Name = req.Name,
+                Path = req.Path,
+                IsDefault = req.IsDefault
+            };
+
+            if (req.IsDefault)
+            {
+                var defaults = await db.Datastores.Where(d => d.IsDefault).ToListAsync();
+                foreach (var d in defaults) d.IsDefault = false;
+            }
+
+            db.Datastores.Add(datastore);
+            await db.SaveChangesAsync();
+            return Results.Ok(datastore);
+        });
+
+        group.MapPut("/datastores/{id}", async (int id, AdminDbContext db, AdminDatastoreUpdateRequest req) =>
+        {
+            var datastore = await db.Datastores.FindAsync(id);
+            if (datastore == null) return Results.NotFound();
+
+            if (!string.IsNullOrWhiteSpace(req.Name)) datastore.Name = req.Name;
+            
+            if (!string.IsNullOrWhiteSpace(req.Path) && req.Path != datastore.Path)
+            {
+                var hasUsers = await db.Users.AnyAsync(u => u.DatastoreId == id);
+                if (hasUsers) return Results.BadRequest("Cannot change the path of a datastore that has users assigned.");
+
+                if (!Directory.Exists(req.Path))
+                {
+                    try { Directory.CreateDirectory(req.Path); }
+                    catch { return Results.BadRequest("Invalid path or missing permissions to create the directory."); }
+                }
+                datastore.Path = req.Path;
+            }
+
+            if (req.IsDefault.HasValue && req.IsDefault.Value)
+            {
+                var defaults = await db.Datastores.Where(d => d.IsDefault && d.Id != id).ToListAsync();
+                foreach (var d in defaults) d.IsDefault = false;
+                datastore.IsDefault = true;
+            }
+
+            await db.SaveChangesAsync();
+            return Results.Ok(datastore);
+        });
+
+        group.MapDelete("/datastores/{id}", async (int id, AdminDbContext db) =>
+        {
+            var datastore = await db.Datastores.FindAsync(id);
+            if (datastore == null) return Results.NotFound();
+
+            var hasUsers = await db.Users.AnyAsync(u => u.DatastoreId == id);
+            if (hasUsers) return Results.BadRequest("Cannot delete a datastore that has users assigned.");
+
+            if (datastore.IsDefault) return Results.BadRequest("Cannot delete the default datastore.");
+
+            db.Datastores.Remove(datastore);
+            await db.SaveChangesAsync();
+            return Results.Ok();
+        });
+
+        group.MapPost("/users/{id}/migrate", async (Guid id, AdminDbContext db, Services.MigrationService migrationService, Microsoft.Extensions.Caching.Memory.IMemoryCache cache, AdminMigrateUserRequest req) =>
+        {
+            var user = await db.Users.FindAsync(id);
+            if (user == null) return Results.NotFound();
+
+            if (user.IsMigrating) return Results.BadRequest("User is already migrating.");
+            if (user.DatastoreId == req.TargetDatastoreId) return Results.BadRequest("User is already in this datastore.");
+
+            var targetDs = await db.Datastores.FindAsync(req.TargetDatastoreId);
+            if (targetDs == null) return Results.BadRequest("Target datastore not found.");
+
+            user.IsMigrating = true;
+            user.TargetDatastoreId = req.TargetDatastoreId;
+            await db.SaveChangesAsync();
+
+            cache.Set($"migrating_{user.Username}", true, TimeSpan.FromMinutes(5));
+
+            migrationService.StartMigration(id, req.TargetDatastoreId);
+
+            return Results.Ok(new { message = "Migration started" });
+        });
+
         group.MapPost("/users/{username}/recalculate-storage", async (string username, Services.DiskQuotaService quotaService) =>
         {
             await quotaService.UpdateDiskUsageAsync(username);
@@ -158,3 +313,6 @@ public static class AdminEndpoints
 public record AdminUserUpdateRequest(bool? IsAdmin, bool? IsBlocked, int? TierId);
 public record AdminTierUpdateRequest(decimal? Price, long? DiskLimitBytes);
 public record AdminResetPasswordRequest(string NewPassword);
+public record AdminDatastoreCreateRequest(string Name, string Path, bool IsDefault);
+public record AdminDatastoreUpdateRequest(string? Name, string? Path, bool? IsDefault);
+public record AdminMigrateUserRequest(int TargetDatastoreId);

@@ -56,12 +56,16 @@ public static class AuthEndpoints
 
             var ipAddress = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 
+            var defaultDatastore = await db.Datastores.FirstOrDefaultAsync(d => d.IsDefault);
+            var datastoreId = defaultDatastore?.Id ?? 1;
+
             var user = new AppUser
             {
                 Username = request.Username,
                 PasswordHash = BCryptLib.HashPassword(request.Password),
                 IsAdmin = isAdmin,
                 TierId = 1, // Default tier (Free)
+                DatastoreId = datastoreId,
                 CreatedIpAddress = ipAddress,
                 CreatedAt = DateTime.UtcNow,
                 LastVisitAt = DateTime.UtcNow,
@@ -95,6 +99,11 @@ public static class AuthEndpoints
             if (user.IsBlocked)
             {
                 return Results.BadRequest("Account is blocked.");
+            }
+
+            if (user.IsMigrating)
+            {
+                return Results.BadRequest("Account is currently being migrated to a new datastore. Please try again later.");
             }
 
             user.LastVisitAt = DateTime.UtcNow;

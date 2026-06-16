@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Sanad.Api.Data;
 
@@ -10,9 +11,11 @@ using Sanad.Api.Data;
 namespace Sanad.Api.Migrations.Admin
 {
     [DbContext(typeof(AdminDbContext))]
-    partial class AdminDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260616113832_AddDatastores")]
+    partial class AddDatastores
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.8");
@@ -120,10 +123,10 @@ namespace Sanad.Api.Migrations.Admin
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedAt = new DateTime(2026, 6, 16, 11, 38, 32, 19, DateTimeKind.Utc).AddTicks(7070),
                             IsDefault = true,
                             Name = "Default",
-                            Path = "Data"
+                            Path = "/Users/yousefbalout/dev/yousef/sanad/src/Sanad.Api/Data"
                         });
                 });
 

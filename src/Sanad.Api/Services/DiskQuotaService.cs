@@ -38,10 +38,10 @@ public class DiskQuotaService
 
     public async Task UpdateDiskUsageAsync(string username)
     {
-        var user = await _adminDb.Users.FirstOrDefaultAsync(u => u.Username == username);
-        if (user == null) return;
+        var user = await _adminDb.Users.Include(u => u.Datastore).FirstOrDefaultAsync(u => u.Username == username);
+        if (user == null || user.Datastore == null) return;
         
-        var userPath = Path.Combine(Directory.GetCurrentDirectory(), "Data", username);
+        var userPath = Path.Combine(user.Datastore.Path, username);
         user.DiskUsed = GetDirectorySize(userPath);
         await _adminDb.SaveChangesAsync();
     }
