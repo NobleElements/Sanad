@@ -1,12 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useFileManagerStore } from '../../store/fileManagerStore';
-import { Folder as FolderIcon, File as FileIcon, ChevronRight, Home, FolderPlus, Download, Trash2, MoreVertical, Search, Grid, List, ArrowUp, ArrowDown, Clock, Type, HardDrive } from 'lucide-react';
+import { Folder as FolderIcon, File as FileIcon, ChevronRight, Home, FolderPlus, Download, Trash2, MoreVertical, Search, Grid, List, ArrowUp, ArrowDown, Clock, Type, HardDrive, FileText, Video, Music, Archive, Code } from 'lucide-react';
 import FileUploader from './FileUploader';
 import FilePreview from './FilePreview';
 import TransferProgress from './TransferProgress';
 import { BYTES_PER_KB } from '../../config';
 import usePageTitle from '../../hooks/usePageTitle';
+
+const getFileIconComponent = (mimeType, size = 20, className = '') => {
+  if (!mimeType) return <FileIcon size={size} className={className} />;
+  if (mimeType.startsWith('video/')) return <Video size={size} className={className} />;
+  if (mimeType.startsWith('audio/')) return <Music size={size} className={className} />;
+  if (mimeType.startsWith('text/') || mimeType === 'application/pdf') return <FileText size={size} className={className} />;
+  if (mimeType.includes('zip') || mimeType.includes('tar') || mimeType.includes('rar') || mimeType.includes('compressed') || mimeType.includes('archive')) return <Archive size={size} className={className} />;
+  if (mimeType.includes('javascript') || mimeType.includes('json') || mimeType.includes('html') || mimeType.includes('css')) return <Code size={size} className={className} />;
+  return <FileIcon size={size} className={className} />;
+};
 
 const FileManager = () => {
   usePageTitle('Files');
@@ -231,7 +241,7 @@ const FileManager = () => {
                         {file.mimeType.startsWith('image/') ? (
                           <img src={`/api/files/${file.id}/download?inline=true`} alt="" className="w-5 h-5 object-cover rounded-sm" />
                         ) : (
-                          <FileIcon size={20} />
+                          getFileIconComponent(file.mimeType, 20)
                         )}
                       </div>
                       <div className="flex flex-col overflow-hidden">
@@ -294,7 +304,7 @@ const FileManager = () => {
                         {file.mimeType.startsWith('image/') ? (
                           <img src={`/api/files/${file.id}/download?inline=true`} alt="" className="w-5 h-5 object-cover rounded-sm shrink-0" />
                         ) : (
-                          <FileIcon size={18} className="text-gray-400 shrink-0" />
+                          getFileIconComponent(file.mimeType, 18, "text-gray-400 shrink-0")
                         )}
                         <span className="font-medium truncate text-sm">{file.name}</span>
                       </div>

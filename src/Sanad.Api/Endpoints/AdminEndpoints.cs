@@ -137,6 +137,21 @@ public static class AdminEndpoints
             return Results.Ok(tier);
         });
 
+        group.MapPost("/users/{username}/recalculate-storage", async (string username, Services.DiskQuotaService quotaService) =>
+        {
+            await quotaService.UpdateDiskUsageAsync(username);
+            return Results.Ok(new { message = "Storage recalculated" });
+        });
+
+        group.MapPost("/recalculate-storage", async (AdminDbContext db, Services.DiskQuotaService quotaService) =>
+        {
+            var usernames = await db.Users.Select(u => u.Username).ToListAsync();
+            foreach(var u in usernames)
+            {
+                await quotaService.UpdateDiskUsageAsync(u);
+            }
+            return Results.Ok(new { message = "Storage recalculated for all users" });
+        });
     }
 }
 

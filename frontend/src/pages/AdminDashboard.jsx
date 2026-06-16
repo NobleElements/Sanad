@@ -108,6 +108,41 @@ export default function AdminDashboard() {
     }
   };
 
+  const recalculateStorage = async (username) => {
+    try {
+      const res = await fetch(`${API_URL}/admin/users/${username}/recalculate-storage`, {
+        method: 'POST'
+      });
+      if (res.ok) {
+        fetchData();
+        alert(`Storage recalculated for ${username}.`);
+      } else {
+        alert("Failed to recalculate storage.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error recalculating storage.");
+    }
+  };
+
+  const recalculateAllStorage = async () => {
+    if (!window.confirm("Are you sure you want to recalculate storage for all users? This might take a while.")) return;
+    try {
+      const res = await fetch(`${API_URL}/admin/recalculate-storage`, {
+        method: 'POST'
+      });
+      if (res.ok) {
+        fetchData();
+        alert("Storage recalculated for all users.");
+      } else {
+        alert("Failed to recalculate storage for all users.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error recalculating storage.");
+    }
+  };
+
   const handleSort = (column) => {
     if (sortBy === column) {
       setSearchParams(prev => {
@@ -158,12 +193,20 @@ export default function AdminDashboard() {
     <div className="flex-1 p-8 overflow-y-auto bg-slate-50">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-slate-800">Admin Dashboard</h1>
-        <Link 
-          to="/admin/tiers" 
-          className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors shadow-sm"
-        >
-          Manage Storage Tiers
-        </Link>
+        <div className="flex gap-4 items-center">
+          <button 
+            onClick={recalculateAllStorage}
+            className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors shadow-sm"
+          >
+            Recalculate All Storage
+          </button>
+          <Link 
+            to="/admin/tiers" 
+            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors shadow-sm"
+          >
+            Manage Storage Tiers
+          </Link>
+        </div>
       </div>
 
       {/* Summary Cards */}
@@ -297,6 +340,12 @@ export default function AdminDashboard() {
                     </label>
                   </td>
                   <td className="p-3 text-right space-y-2 sm:space-y-0 sm:space-x-2 flex flex-col sm:flex-row justify-end items-end">
+                    <button 
+                      onClick={() => recalculateStorage(u.username)}
+                      className="text-emerald-600 hover:text-emerald-800 px-3 py-1 border border-emerald-200 rounded hover:bg-emerald-50 transition-colors"
+                    >
+                      Recalculate
+                    </button>
                     <button 
                       onClick={() => resetPassword(u.id)}
                       className="text-indigo-600 hover:text-indigo-800 px-3 py-1 border border-indigo-200 rounded hover:bg-indigo-50 transition-colors"
