@@ -293,8 +293,82 @@ export const useFileManagerStore = create((set, get) => ({
       
       set(state => ({ transfers: [...state.transfers, transfer] }));
 
-      await get().processDownloadFolder(folderId, dirHandle);
-      
+      const filesToDownload = [];
+
+      const sanitizeName = (name) => {
+        if (!name) return 'unnamed';
+        // Replace invalid characters for local file systems
+        let safeName = name.replace(/[\\/:"*?<>|]/g, '_');
+        // Trim to avoid whitespace-only names and trailing dots/spaces issues on some OS
+        safeName = safeName.trim();
+        if (!safeName) return 'unnamed';
+        // . and .. are not allowed
+        if (safeName === '.' || safeName === '..') return safeName + '_';
+        return safeName;
+      };
+
+      const gatherFiles = async (currentFolderId, currentDirHandle) => {
+        let currentPage = 1;
+        let totalPages = 1;
+
+        do {
+          const url = currentFolderId 
+            ? `/api/folders/${currentFolderId}?page=${currentPage}&pageSize=100` 
+            : `/api/folders?page=${currentPage}&pageSize=100`;
+          
+          const response = await fetch(url);
+          if (!response.ok) return;
+          const data = await response.json();
+
+          // Create subfolders and recurse
+          for (const sub of data.subfolders || []) {
+            const safeName = sanitizeName(sub.name);
+            const subDirHandle = await currentDirHandle.getDirectoryHandle(safeName, { create: true });
+            await gatherFiles(sub.id, subDirHandle);
+          }
+
+          // Gather files
+          for (const file of data.files || []) {
+            const safeName = sanitizeName(file.name);
+            const fileHandle = await currentDirHandle.getFileHandle(safeName, { create: true });
+            filesToDownload.push({ fileId: file.id, fileHandle });
+          }
+
+          totalPages = data.pagination?.totalPages || 1;
+          currentPage++;
+        } while (currentPage <= totalPages);
+      };
+
+      // 1. Gather all files in the tree
+      await gatherFiles(folderId, dirHandle);
+
+      const totalFiles = filesToDownload.length;
+      if (totalFiles === 0) {
+        set(state => ({
+          transfers: state.transfers.map(t => t.id === id ? { ...t, status: 'done', progress: 100 } : t)
+        }));
+        return;
+      }
+
+      // 2. Download files and update progress
+      let downloaded = 0;
+      for (const item of filesToDownload) {
+        const writable = await item.fileHandle.createWritable();
+        const fileRes = await fetch(`/api/files/${item.fileId}/download`);
+        if (fileRes.ok && fileRes.body) {
+          // Stream to file
+          await fileRes.body.pipeTo(writable);
+        } else {
+          await writable.close();
+        }
+        
+        downloaded++;
+        const progress = Math.round((downloaded / totalFiles) * 100);
+        set(state => ({
+          transfers: state.transfers.map(t => t.id === id ? { ...t, progress } : t)
+        }));
+      }
+
       set(state => ({
         transfers: state.transfers.map(t => t.id === id ? { ...t, status: 'done', progress: 100 } : t)
       }));
@@ -302,57 +376,5 @@ export const useFileManagerStore = create((set, get) => ({
     } catch (err) {
       if (err.name !== 'AbortError') console.error(err);
     }
-  },
-
-  processDownloadFolder: async (folderId, dirHandle) => {
-    const sanitizeName = (name) => {
-      if (!name) return 'unnamed';
-      // Replace invalid characters for local file systems
-      let safeName = name.replace(/[\\/:"*?<>|]/g, '_');
-      // Trim to avoid whitespace-only names and trailing dots/spaces issues on some OS
-      safeName = safeName.trim();
-      if (!safeName) return 'unnamed';
-      // . and .. are not allowed
-      if (safeName === '.' || safeName === '..') return safeName + '_';
-      return safeName;
-    };
-
-    let currentPage = 1;
-    let totalPages = 1;
-
-    do {
-      const url = folderId 
-        ? `/api/folders/${folderId}?page=${currentPage}&pageSize=100` 
-        : `/api/folders?page=${currentPage}&pageSize=100`;
-      
-      const response = await fetch(url);
-      if (!response.ok) return;
-      const data = await response.json();
-
-      // Create subfolders and recurse
-      for (const sub of data.subfolders || []) {
-        const safeName = sanitizeName(sub.name);
-        const subDirHandle = await dirHandle.getDirectoryHandle(safeName, { create: true });
-        await get().processDownloadFolder(sub.id, subDirHandle);
-      }
-
-      // Download files
-      for (const file of data.files || []) {
-        const safeName = sanitizeName(file.name);
-        const fileHandle = await dirHandle.getFileHandle(safeName, { create: true });
-        const writable = await fileHandle.createWritable();
-        
-        const fileRes = await fetch(`/api/files/${file.id}/download`);
-        if (fileRes.ok && fileRes.body) {
-          // Stream to file
-          await fileRes.body.pipeTo(writable);
-        } else {
-          await writable.close();
-        }
-      }
-
-      totalPages = data.pagination?.totalPages || 1;
-      currentPage++;
-    } while (currentPage <= totalPages);
   }
 }));
