@@ -9,18 +9,18 @@ public static class AdminEndpoints
 {
     public static void MapAdminEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/admin").RequireAuthorization(policy => 
-            policy.RequireAssertion(context => 
+        var group = app.MapGroup("/api/admin").RequireAuthorization(policy =>
+            policy.RequireAssertion(context =>
                 context.User.HasClaim(c => c.Type == "IsAdmin" && c.Value == "True")));
 
         group.MapGet("/users", async (AdminDbContext db, int page = 1, int pageSize = 10, string? sortBy = null, bool sortDesc = false, string? statusFilter = null, int? tierFilter = null) =>
         {
             var query = db.Users.Include(u => u.Tier).Include(u => u.Datastore).AsQueryable();
-            
+
             if (statusFilter == "Active") query = query.Where(u => !u.IsBlocked);
             if (statusFilter == "Blocked") query = query.Where(u => u.IsBlocked);
             if (tierFilter.HasValue) query = query.Where(u => u.TierId == tierFilter.Value);
-            
+
             query = sortBy switch
             {
                 "Username" => sortDesc ? query.OrderByDescending(u => u.Username) : query.OrderBy(u => u.Username),
@@ -30,30 +30,27 @@ public static class AdminEndpoints
                 "LastVisitAt" => sortDesc ? query.OrderByDescending(u => u.LastVisitAt) : query.OrderBy(u => u.LastVisitAt),
                 _ => query.OrderByDescending(u => u.CreatedAt)
             };
-            
+
             var totalUsers = await query.CountAsync();
             var users = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
-            
+
             // Calculate Summaries
             var totalDiskUsage = await db.Users.SumAsync(u => (long?)u.DiskUsed) ?? 0;
             var monthlyRevenue = await db.Users.Where(u => !u.IsAdmin).SumAsync(u => u.Tier != null ? (decimal?)u.Tier.Price : 0m) ?? 0m;
             var usersByTier = await db.Users.GroupBy(u => u.Tier != null ? u.Tier.Name : "Free")
                                              .Select(g => new { Name = g.Key, Count = g.Count() })
                                              .ToDictionaryAsync(g => g.Name, g => g.Count);
-            
+
             long hostTotalDiskSpace = 0;
             long hostFreeDiskSpace = 0;
             try
             {
-                var driveInfo = GetDriveInfoForPath(Directory.GetCurrentDirectory());
-                if (driveInfo != null)
-                {
-                    hostTotalDiskSpace = driveInfo.TotalSize;
-                    hostFreeDiskSpace = driveInfo.AvailableFreeSpace;
-                }
+                var driveInfo = new DriveInfo(new DirectoryInfo(Directory.GetCurrentDirectory()).Root.FullName);
+                hostTotalDiskSpace = driveInfo.TotalSize;
+                hostFreeDiskSpace = driveInfo.AvailableFreeSpace;
             }
             catch { }
-            
+
             var result = users.Select(u => new
             {
                 u.Id,
@@ -69,7 +66,8 @@ public static class AdminEndpoints
                 u.IsMigrating,
                 DiskUsed = u.DiskUsed
             });
-            return Results.Ok(new {
+            return Results.Ok(new
+            {
                 Users = result,
                 TotalCount = totalUsers,
                 TotalDiskUsage = totalDiskUsage,
@@ -128,13 +126,13 @@ public static class AdminEndpoints
         group.MapPost("/users/{id}/reset-password", async (Guid id, AdminDbContext db, AdminResetPasswordRequest req) =>
         {
             if (string.IsNullOrWhiteSpace(req.NewPassword)) return Results.BadRequest("New password cannot be empty.");
-            
+
             var user = await db.Users.FindAsync(id);
             if (user == null) return Results.NotFound();
 
             user.PasswordHash = BCryptLib.HashPassword(req.NewPassword);
             await db.SaveChangesAsync();
-            
+
             return Results.Ok(new { message = "Password reset successfully" });
         });
 
@@ -169,12 +167,9 @@ public static class AdminEndpoints
 
                     if (Directory.Exists(dsPath))
                     {
-                        var driveInfo = GetDriveInfoForPath(dsPath);
-                        if (driveInfo != null)
-                        {
-                            totalDiskSpace = driveInfo.TotalSize;
-                            freeDiskSpace = driveInfo.AvailableFreeSpace;
-                        }
+                        var driveInfo = new DriveInfo(new DirectoryInfo(Directory.GetCurrentDirectory()).Root.FullName);
+                        totalDiskSpace = driveInfo.TotalSize;
+                        freeDiskSpace = driveInfo.AvailableFreeSpace;
                     }
                 }
                 catch { }
@@ -236,7 +231,7 @@ public static class AdminEndpoints
             if (datastore == null) return Results.NotFound();
 
             if (!string.IsNullOrWhiteSpace(req.Name)) datastore.Name = req.Name;
-            
+
             if (!string.IsNullOrWhiteSpace(req.Path) && req.Path != datastore.Path)
             {
                 var hasUsers = await db.Users.AnyAsync(u => u.DatastoreId == id);
@@ -307,26 +302,12 @@ public static class AdminEndpoints
         group.MapPost("/recalculate-storage", async (AdminDbContext db, Services.DiskQuotaService quotaService) =>
         {
             var usernames = await db.Users.Select(u => u.Username).ToListAsync();
-            foreach(var u in usernames)
+            foreach (var u in usernames)
             {
                 await quotaService.UpdateDiskUsageAsync(u);
             }
             return Results.Ok(new { message = "Storage recalculated for all users" });
         });
-    }
-
-    private static DriveInfo? GetDriveInfoForPath(string path)
-    {
-        var fullPath = Path.GetFullPath(path);
-        if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-        {
-            return new DriveInfo(Path.GetPathRoot(fullPath) ?? fullPath);
-        }
-
-        return DriveInfo.GetDrives()
-            .Where(d => d.IsReady && fullPath.StartsWith(d.RootDirectory.FullName, StringComparison.InvariantCultureIgnoreCase))
-            .OrderByDescending(d => d.RootDirectory.FullName.Length)
-            .FirstOrDefault();
     }
 }
 
