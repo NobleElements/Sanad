@@ -253,21 +253,22 @@ export default function Books() {
                             </div>
                         </div>
                         ) : (
-                        <div key={b.id} className="bg-white border border-slate-200 rounded-xl overflow-hidden flex items-center p-4 gap-4 hover:shadow-sm transition group">
-                            <div className="w-16 h-24 bg-slate-100 shrink-0 rounded overflow-hidden">
-                                {b.coverUrl ? (
-                                    <CachedImage src={b.coverUrl} className="w-full h-full object-cover" alt="cover"/>
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-slate-400 text-[10px]">No Cover</div>
-                                )}
+                        <div key={b.id} className="bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col sm:flex-row sm:items-center p-4 gap-4 hover:shadow-sm transition group">
+                            <div className="flex items-center gap-4 flex-1 w-full min-w-0">
+                                <div className="w-16 h-24 bg-slate-100 shrink-0 rounded overflow-hidden">
+                                    {b.coverUrl ? (
+                                        <CachedImage src={b.coverUrl} className="w-full h-full object-cover" alt="cover"/>
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-slate-400 text-[10px]">No Cover</div>
+                                    )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <button onClick={() => openEditBook(b)} className="font-semibold text-slate-800 truncate hover:text-indigo-600 hover:underline transition block text-left w-full">{b.title}</button>
+                                    <p className="text-sm text-slate-500 truncate mb-1">{b.author}</p>
+                                    <p className="text-xs text-slate-400">{b.totalPages} pages</p>
+                                </div>
                             </div>
-                            <div className="flex-1 min-w-0">
-                                <button onClick={() => openEditBook(b)} className="font-semibold text-slate-800 truncate hover:text-indigo-600 hover:underline transition block text-left w-full">{b.title}</button>
-                                <p className="text-sm text-slate-500 truncate mb-1">{b.author}</p>
-                                <p className="text-xs text-slate-400">{b.totalPages} pages</p>
-                            </div>
-                            <div className="flex items-center gap-4">
-                                <div className="w-64 hidden sm:block">
+                            <div className="w-full sm:w-64 shrink-0">
                                     {activePeriod ? (
                                         <div className="flex gap-2">
                                             {activePeriod.status === 'Reading' ? (
@@ -291,7 +292,6 @@ export default function Books() {
                                             <Play className="w-3 h-3"/> Start Reading
                                         </button>
                                     )}
-                                </div>
                             </div>
                         </div>
                         );
