@@ -45,9 +45,12 @@ public static class AdminEndpoints
             long hostFreeDiskSpace = 0;
             try
             {
-                var driveInfo = new System.IO.DriveInfo(new System.IO.DirectoryInfo(System.IO.Directory.GetCurrentDirectory()).Root.FullName);
-                hostTotalDiskSpace = driveInfo.TotalSize;
-                hostFreeDiskSpace = driveInfo.AvailableFreeSpace;
+                var driveInfo = GetDriveInfoForPath(Directory.GetCurrentDirectory());
+                if (driveInfo != null)
+                {
+                    hostTotalDiskSpace = driveInfo.TotalSize;
+                    hostFreeDiskSpace = driveInfo.AvailableFreeSpace;
+                }
             }
             catch { }
             
@@ -166,9 +169,12 @@ public static class AdminEndpoints
 
                     if (Directory.Exists(dsPath))
                     {
-                        var driveInfo = new System.IO.DriveInfo(new System.IO.DirectoryInfo(dsPath).Root.FullName);
-                        totalDiskSpace = driveInfo.TotalSize;
-                        freeDiskSpace = driveInfo.AvailableFreeSpace;
+                        var driveInfo = GetDriveInfoForPath(dsPath);
+                        if (driveInfo != null)
+                        {
+                            totalDiskSpace = driveInfo.TotalSize;
+                            freeDiskSpace = driveInfo.AvailableFreeSpace;
+                        }
                     }
                 }
                 catch { }
@@ -307,6 +313,20 @@ public static class AdminEndpoints
             }
             return Results.Ok(new { message = "Storage recalculated for all users" });
         });
+    }
+
+    private static DriveInfo? GetDriveInfoForPath(string path)
+    {
+        var fullPath = Path.GetFullPath(path);
+        if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+        {
+            return new DriveInfo(Path.GetPathRoot(fullPath) ?? fullPath);
+        }
+
+        return DriveInfo.GetDrives()
+            .Where(d => d.IsReady && fullPath.StartsWith(d.RootDirectory.FullName, StringComparison.InvariantCultureIgnoreCase))
+            .OrderByDescending(d => d.RootDirectory.FullName.Length)
+            .FirstOrDefault();
     }
 }
 
