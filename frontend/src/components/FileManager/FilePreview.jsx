@@ -43,7 +43,11 @@ const FilePreview = ({ file, files = [], onClose, onNavigate }) => {
 
   const renderContent = () => {
     if (file.mimeType.startsWith('image/')) {
-      return <img src={inlineUrl} alt={file.name} className="max-w-full max-h-full object-contain rounded" />;
+      return (
+        <div className="relative w-full h-full flex items-center justify-center">
+          <img src={inlineUrl} alt={file.name} className="absolute inset-0 w-full h-full object-contain rounded" />
+        </div>
+      );
     }
     if (file.mimeType.startsWith('video/')) {
       return <VideoPlayer src={inlineUrl} className="w-full h-full rounded" />;
