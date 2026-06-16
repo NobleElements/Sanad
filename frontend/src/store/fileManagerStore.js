@@ -245,9 +245,17 @@ export const useFileManagerStore = create((set, get) => ({
   },
 
   cancelTransfer: (id) => {
+    const transfer = get().transfers.find(t => t.id === id);
+    
     set(state => ({
       transfers: state.transfers.filter(t => t.id !== id)
     }));
+
+    if (transfer && transfer.type === 'upload' && transfer.uploadId) {
+      fetch(`/api/files/upload/${transfer.uploadId}`, { method: 'DELETE' }).catch(err => {
+        console.error('Failed to cancel upload on server:', err);
+      });
+    }
   },
 
   clearTransfers: () => {

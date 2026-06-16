@@ -88,6 +88,15 @@ public static class FileEndpoints
             return Results.Ok(fileItem);
         });
 
+        group.MapDelete("/upload/{uploadId}", (string uploadId, FileStorageService storage) =>
+        {
+            if (UploadSessions.TryRemove(uploadId, out var session))
+            {
+                storage.DeleteFile(session.PhysicalName);
+            }
+            return Results.NoContent();
+        });
+
         group.MapGet("/{id}/download", async (int id, [FromQuery] bool? inline, SanadDbContext db, FileStorageService storage, HttpContext ctx) =>
         {
             var file = await db.FileItems.FindAsync(id);
