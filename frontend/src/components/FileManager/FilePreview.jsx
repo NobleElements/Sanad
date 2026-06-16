@@ -1,5 +1,6 @@
 import React, { useEffect, useCallback } from 'react';
 import { X, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import VideoPlayer from './VideoPlayer';
 
 const FilePreview = ({ file, files = [], onClose, onNavigate }) => {
   if (!file) return null;
@@ -42,16 +43,16 @@ const FilePreview = ({ file, files = [], onClose, onNavigate }) => {
 
   const renderContent = () => {
     if (file.mimeType.startsWith('image/')) {
-      return <img src={inlineUrl} alt={file.name} className="max-w-full max-h-[70vh] object-contain rounded" />;
+      return <img src={inlineUrl} alt={file.name} className="max-w-full max-h-full object-contain rounded" />;
     }
     if (file.mimeType.startsWith('video/')) {
-      return <video src={inlineUrl} controls className="max-w-full max-h-[70vh] object-contain rounded" />;
+      return <VideoPlayer src={inlineUrl} className="w-full h-full rounded" />;
     }
     if (file.mimeType.startsWith('audio/')) {
       return <audio src={inlineUrl} controls className="w-full mt-4" />;
     }
     if (file.mimeType === 'application/pdf') {
-      return <iframe src={inlineUrl} title={file.name} className="w-full h-[70vh] rounded" />;
+      return <iframe src={inlineUrl} title={file.name} className="w-full h-full rounded" />;
     }
     
     return (
@@ -82,7 +83,7 @@ const FilePreview = ({ file, files = [], onClose, onNavigate }) => {
             <X size={20} />
           </button>
         </div>
-        <div className="p-4 flex-1 overflow-auto flex items-center justify-center bg-gray-50 dark:bg-black/50 relative group">
+        <div className="p-4 flex-1 min-h-0 overflow-hidden flex items-center justify-center bg-gray-50 dark:bg-black/50 relative group">
           {targetFiles.length > 1 && onNavigate && (
             <>
               <button 
