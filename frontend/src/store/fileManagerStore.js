@@ -11,6 +11,7 @@ export const useFileManagerStore = create((set, get) => ({
   folders: [],
   files: [],
   isLoading: false,
+  isFetchingMore: false,
   error: null,
   transfers: [], // upload/download queue
 
@@ -53,8 +54,12 @@ export const useFileManagerStore = create((set, get) => ({
     get().fetchContents();
   },
 
-  fetchContents: async () => {
-    set({ isLoading: true, error: null });
+  fetchContents: async (append = false) => {
+    if (append) {
+      set({ isFetchingMore: true, error: null });
+    } else {
+      set({ isLoading: true, error: null });
+    }
     try {
       const { currentFolderId, page, pageSize, searchQuery, sortBy, sortOrder } = get();
       
@@ -81,15 +86,25 @@ export const useFileManagerStore = create((set, get) => ({
         }
         return { 
           folderChain: newChain,
-          folders: data.subfolders || [], 
-          files: data.files || [],
+          folders: append ? [...state.folders, ...(data.subfolders || [])] : (data.subfolders || []), 
+          files: append ? [...state.files, ...(data.files || [])] : (data.files || []),
           pagination: data.pagination,
-          isLoading: false 
+          isLoading: false,
+          isFetchingMore: false
         };
       });
     } catch (err) {
-      set({ error: err.message, isLoading: false });
+      set({ error: err.message, isLoading: false, isFetchingMore: false });
     }
+  },
+
+  loadMoreContents: async () => {
+    const { pagination, isFetchingMore, isLoading, page } = get();
+    if (isFetchingMore || isLoading || !pagination) return;
+    if (page >= pagination.totalPages) return;
+
+    set({ page: page + 1 });
+    await get().fetchContents(true);
   },
 
   createFolder: async (name) => {

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useFileManagerStore } from '../../store/fileManagerStore';
-import { Folder as FolderIcon, File as FileIcon, ChevronRight, Home, FolderPlus, Download, Trash2, MoreVertical, Search, Grid, List, ArrowUp, ArrowDown, Clock, Type, HardDrive, FileText, Video, Music, Archive, Code } from 'lucide-react';
+import { Folder as FolderIcon, File as FileIcon, ChevronRight, Home, FolderPlus, Download, Trash2, MoreVertical, Search, Grid, List, ArrowUp, ArrowDown, Clock, Type, HardDrive, FileText, Video, Music, Archive, Code, Image as ImageIcon, Loader2 } from 'lucide-react';
 import FileUploader from './FileUploader';
 import FilePreview from './FilePreview';
 import TransferProgress from './TransferProgress';
@@ -10,6 +10,7 @@ import usePageTitle from '../../hooks/usePageTitle';
 
 const getFileIconComponent = (mimeType, size = 20, className = '') => {
   if (!mimeType) return <FileIcon size={size} className={className} />;
+  if (mimeType.startsWith('image/')) return <ImageIcon size={size} className={className} />;
   if (mimeType.startsWith('video/')) return <Video size={size} className={className} />;
   if (mimeType.startsWith('audio/')) return <Music size={size} className={className} />;
   if (mimeType.startsWith('text/') || mimeType === 'application/pdf') return <FileText size={size} className={className} />;
@@ -24,8 +25,8 @@ const FileManager = () => {
   const navigate = useNavigate();
 
   const { 
-    currentFolderId, folderChain, folders, files, isLoading, pagination,
-    fetchContents, setCurrentFolder, createFolder, deleteItem, downloadFolder,
+    currentFolderId, folderChain, folders, files, isLoading, isFetchingMore, pagination,
+    fetchContents, loadMoreContents, setCurrentFolder, createFolder, deleteItem, downloadFolder,
     searchQuery, setSearchQuery, sortBy, setSortBy, sortOrder, setSortOrder, setPage
   } = useFileManagerStore();
 
@@ -192,7 +193,15 @@ const FileManager = () => {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-auto p-4 flex flex-col gap-6">
+      <div 
+        className="flex-1 overflow-auto p-4 flex flex-col gap-6"
+        onScroll={(e) => {
+          const { scrollTop, scrollHeight, clientHeight } = e.target;
+          if (scrollHeight - scrollTop <= clientHeight + 100) {
+            loadMoreContents();
+          }
+        }}
+      >
         <FileUploader />
 
         {isLoading ? (
@@ -238,11 +247,7 @@ const FileManager = () => {
                   >
                     <div className="flex items-center gap-3 overflow-hidden">
                       <div className="p-2 bg-gray-100 dark:bg-gray-700 text-gray-500 rounded shrink-0">
-                        {file.mimeType.startsWith('image/') ? (
-                          <img src={`/api/files/${file.id}/download?inline=true`} alt="" className="w-5 h-5 object-cover rounded-sm" />
-                        ) : (
-                          getFileIconComponent(file.mimeType, 20)
-                        )}
+                        {getFileIconComponent(file.mimeType, 20)}
                       </div>
                       <div className="flex flex-col overflow-hidden">
                         <span className="font-medium text-sm truncate">{file.name}</span>
@@ -260,27 +265,29 @@ const FileManager = () => {
                 ))}
               </div>
             ) : (
-              <div className="flex flex-col rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden">
-                <div className="grid grid-cols-[1fr_60px] sm:grid-cols-[1fr_120px_150px_60px] gap-4 p-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  <div>Name</div>
-                  <div className="text-right hidden sm:block">Size</div>
-                  <div className="text-right hidden sm:block">Date Modified</div>
-                  <div></div>
-                </div>
-                <div className="flex flex-col divide-y divide-gray-100 dark:divide-gray-800">
+              <div className="flex flex-col rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden flex-1">
+                <div className="w-full overflow-x-auto">
+                  <div className="min-w-[600px] flex flex-col">
+                    <div className="grid grid-cols-[1fr_120px_150px_60px] gap-4 p-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      <div>Name</div>
+                      <div className="text-right">Size</div>
+                      <div className="text-right">Date Modified</div>
+                      <div></div>
+                    </div>
+                    <div className="flex flex-col divide-y divide-gray-100 dark:divide-gray-800">
                   {/* Folders List */}
                   {sortedFolders.map(folder => (
                     <div 
                       key={`folder-${folder.id}`}
-                      className="group grid grid-cols-[1fr_60px] sm:grid-cols-[1fr_120px_150px_60px] gap-4 p-3 items-center hover:bg-blue-50/50 dark:hover:bg-blue-900/10 cursor-pointer transition-colors"
+                      className="group grid grid-cols-[1fr_120px_150px_60px] gap-4 p-3 items-center hover:bg-blue-50/50 dark:hover:bg-blue-900/10 cursor-pointer transition-colors"
                       onClick={() => navigate(`/files/${folder.id}`)}
                     >
                       <div className="flex items-center gap-3 overflow-hidden">
                         <FolderIcon size={18} className="text-blue-500 shrink-0" fill="currentColor" />
                         <span className="font-medium truncate">{folder.name}</span>
                       </div>
-                      <div className="text-right text-sm text-gray-400 hidden sm:block">-</div>
-                      <div className="text-right text-sm text-gray-400 hidden sm:block">{new Date(folder.createdAt || Date.now()).toLocaleDateString()}</div>
+                      <div className="text-right text-sm text-gray-400">-</div>
+                      <div className="text-right text-sm text-gray-400">{new Date(folder.createdAt || Date.now()).toLocaleDateString()}</div>
                       <div className="flex justify-end">
                         <button 
                           onClick={(e) => { e.stopPropagation(); deleteItem(folder.id, true); }}
@@ -297,19 +304,15 @@ const FileManager = () => {
                   {sortedFiles.map(file => (
                     <div 
                       key={`file-${file.id}`}
-                      className="group grid grid-cols-[1fr_60px] sm:grid-cols-[1fr_120px_150px_60px] gap-4 p-3 items-center hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors"
+                      className="group grid grid-cols-[1fr_120px_150px_60px] gap-4 p-3 items-center hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors"
                       onClick={() => setPreviewFile(file)}
                     >
                       <div className="flex items-center gap-3 overflow-hidden">
-                        {file.mimeType.startsWith('image/') ? (
-                          <img src={`/api/files/${file.id}/download?inline=true`} alt="" className="w-5 h-5 object-cover rounded-sm shrink-0" />
-                        ) : (
-                          getFileIconComponent(file.mimeType, 18, "text-gray-400 shrink-0")
-                        )}
+                        {getFileIconComponent(file.mimeType, 18, "text-gray-400 shrink-0")}
                         <span className="font-medium truncate text-sm">{file.name}</span>
                       </div>
-                      <div className="text-right text-sm text-gray-500 dark:text-gray-400 hidden sm:block">{formatSize(file.sizeBytes)}</div>
-                      <div className="text-right text-sm text-gray-500 dark:text-gray-400 hidden sm:block">{new Date(file.uploadDate).toLocaleDateString()}</div>
+                      <div className="text-right text-sm text-gray-500 dark:text-gray-400">{formatSize(file.sizeBytes)}</div>
+                      <div className="text-right text-sm text-gray-500 dark:text-gray-400">{new Date(file.uploadDate).toLocaleDateString()}</div>
                       <div className="flex justify-end">
                         <button 
                           onClick={(e) => { e.stopPropagation(); deleteItem(file.id, false); }}
@@ -321,35 +324,18 @@ const FileManager = () => {
                       </div>
                     </div>
                   ))}
+                  </div>
                 </div>
               </div>
+            </div>
             )}
           </>
         )}
         
-        {/* Pagination Controls */}
-        {pagination && pagination.TotalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg mt-auto">
-            <div className="text-sm text-gray-500 dark:text-gray-400">
-              Showing page <span className="font-medium text-gray-900 dark:text-white">{pagination.CurrentPage}</span> of <span className="font-medium text-gray-900 dark:text-white">{pagination.TotalPages}</span>
-              {' '}(<span className="font-medium text-gray-900 dark:text-white">{pagination.TotalItems}</span> total items)
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setPage(pagination.CurrentPage - 1)}
-                disabled={pagination.CurrentPage === 1}
-                className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                Previous
-              </button>
-              <button
-                onClick={() => setPage(pagination.CurrentPage + 1)}
-                disabled={pagination.CurrentPage === pagination.TotalPages}
-                className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                Next
-              </button>
-            </div>
+        {/* Loading More Indicator */}
+        {isFetchingMore && (
+          <div className="flex justify-center items-center py-4 text-gray-500">
+            <Loader2 className="animate-spin mr-2" size={20} /> Loading more...
           </div>
         )}
       </div>
