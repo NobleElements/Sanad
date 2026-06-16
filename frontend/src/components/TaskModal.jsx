@@ -124,7 +124,7 @@ export default function TaskModal() {
   };
 
   const handleAddTag = (e) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' || e.key === ' ' || e.key === ',') {
       e.preventDefault();
       const newTag = tagInput.trim();
       if (newTag && !tags.includes(newTag)) {
@@ -327,7 +327,7 @@ export default function TaskModal() {
                 value={tagInput}
                 onChange={(e) => setTagInput(e.target.value)}
                 onKeyDown={handleAddTag}
-                placeholder={tags.length === 0 ? "Type a tag and press Enter" : "Add more..."}
+                placeholder={tags.length === 0 ? "Type a tag and press Space or Enter" : "Add more..."}
                 className="flex-1 min-w-[120px] bg-transparent border-0 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:ring-0 focus:outline-none p-0"
               />
             </div>
