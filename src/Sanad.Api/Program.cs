@@ -102,6 +102,7 @@ app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseMiddleware<Sanad.Api.Middleware.MigrationCheckMiddleware>();
+app.UseMiddleware<Sanad.Api.Middleware.TenantDbMigrationMiddleware>();
 
 // Create Admin DB if not exists
 using (var scope = app.Services.CreateScope())

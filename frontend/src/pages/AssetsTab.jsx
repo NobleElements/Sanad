@@ -113,7 +113,7 @@ export default function AssetsTab() {
                             <div className="flex items-center gap-4">
                                 {isEditing ? (
                                     <div className="flex items-center gap-2">
-                                        <span className="text-slate-400">{asset.currency?.symbol || '$'}</span>
+                                        <span className="text-slate-400">{asset.currency?.symbol || defaultCurrency.symbol}</span>
                                         <input
                                             type="number"
                                             value={editingAmount}
@@ -131,7 +131,7 @@ export default function AssetsTab() {
                                         className="text-xl font-semibold text-slate-800 hover:text-indigo-600 transition-colors cursor-pointer flex flex-col items-end"
                                         title="Click to update amount"
                                     >
-                                        <span>{asset.currency?.symbol || '$'}{asset.currentAmount.toFixed(2)}</span>
+                                        <span>{asset.currency?.symbol || defaultCurrency.symbol}{asset.currentAmount.toFixed(2)}</span>
                                         {!asset.currency?.isDefault && asset.currency?.exchangeRateToDefault && (
                                           <span className="text-xs text-slate-400 font-normal">
                                             ≈ {defaultCurrency.symbol}{(asset.currentAmount * asset.currency.exchangeRateToDefault).toFixed(2)}
@@ -176,8 +176,8 @@ export default function AssetsTab() {
                   <div className="flex-1">
                       <label className="block text-sm font-medium text-slate-700 mb-1">Currency</label>
                       <select value={currencyId} onChange={e=>setCurrencyId(e.target.value)} className="w-full bg-white border border-slate-300 rounded p-2 text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                          <option value="">Default ({defaultCurrency.code})</option>
-                          {currencies.map(c => <option key={c.id} value={c.id}>{c.name} ({c.code})</option>)}
+                          <option value="">{defaultCurrency.name || 'Default'} ({defaultCurrency.code})</option>
+                          {currencies.filter(c => !c.isDefault).map(c => <option key={c.id} value={c.id}>{c.name} ({c.code})</option>)}
                       </select>
                   </div>
                   <div className="flex-1">

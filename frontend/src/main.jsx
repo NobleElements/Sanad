@@ -24,7 +24,7 @@ window.fetch = async (...args) => {
 };
 
 ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
+  
     <App />
-  </React.StrictMode>,
+
 )

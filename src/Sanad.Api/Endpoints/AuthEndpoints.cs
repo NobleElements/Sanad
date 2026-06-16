@@ -75,8 +75,7 @@ public static class AuthEndpoints
             db.Users.Add(user);
             await db.SaveChangesAsync();
 
-            // Run migrations for the new user's tenant database
-            EnsureTenantDbMigrated(request.Username, context.RequestServices);
+            // Migrations for the new user's tenant database will be handled by TenantDbMigrationMiddleware
 
             await SignInUser(context, user);
 
@@ -109,8 +108,7 @@ public static class AuthEndpoints
             user.LastVisitAt = DateTime.UtcNow;
             await db.SaveChangesAsync();
 
-            // Ensure tenant db is migrated in case of updates
-            EnsureTenantDbMigrated(request.Username, context.RequestServices);
+            // Migrations are handled by TenantDbMigrationMiddleware on the first authenticated request
 
             await SignInUser(context, user);
 
@@ -170,21 +168,6 @@ public static class AuthEndpoints
         } while (await db.Users.AnyAsync(u => u.ApiKey == newApiKey));
         
         return newApiKey;
-    }
-
-    private static void EnsureTenantDbMigrated(string username, IServiceProvider services)
-    {
-        // We override the username in the scoped TenantProvider to ensure SanadDbContext connects to the right DB
-        using var scope = services.CreateScope();
-        var tenantProvider = scope.ServiceProvider.GetRequiredService<Services.ITenantProvider>() as Services.TenantProvider;
-        if (tenantProvider != null)
-        {
-            tenantProvider.SetOverrideUsername(username);
-        }
-        
-        var tenantDb = scope.ServiceProvider.GetRequiredService<SanadDbContext>();
-        tenantDb.Database.Migrate();
-        tenantDb.Database.ExecuteSqlRaw("PRAGMA journal_mode=WAL;");
     }
 
     private static async Task SignInUser(HttpContext context, AppUser user)
