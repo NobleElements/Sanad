@@ -14,6 +14,12 @@ public class Asset
     [MaxLength(50)]
     public string Type { get; set; } = "Cash"; 
     
+    public Guid? CurrencyId { get; set; }
+    public Currency? Currency { get; set; }
+
+    [MaxLength(50)]
+    public string? Icon { get; set; }
+
     [Required]
     public decimal CurrentAmount { get; set; }
     

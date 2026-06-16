@@ -17,6 +17,12 @@ public static class FinanceEndpoints
         app.MapGet("/api/finances/summary", GetSummary);
         app.MapGet("/api/finances/budget", GetMonthlyBudget);
         app.MapPut("/api/finances/budget", SetMonthlyBudget);
+
+        app.MapGet("/api/finances/currencies", GetCurrencies);
+        app.MapPost("/api/finances/currencies", CreateCurrency);
+        app.MapPut("/api/finances/currencies/{id}", UpdateCurrency);
+        app.MapDelete("/api/finances/currencies/{id}", DeleteCurrency);
+        app.MapPut("/api/finances/currencies/{id}/set-default", SetDefaultCurrency);
     }
 
     public static async Task<IResult> GetCategories(SanadDbContext db) => 
@@ -154,6 +160,100 @@ public static class FinanceEndpoints
 
         await db.SaveChangesAsync();
         return Results.Ok(budget);
+    }
+
+    public static async Task<IResult> GetCurrencies(SanadDbContext db) =>
+        Results.Ok(await db.Currencies.ToListAsync());
+
+    public static async Task<IResult> CreateCurrency(SanadDbContext db, Currency currency)
+    {
+        // If it's the first currency, make it default regardless of input.
+        // If it's set to default, we must unset other defaults and flip exchange rates.
+        // To simplify, CreateCurrency will NOT flip exchange rates. If they want to set it as default, they should use SetDefaultCurrency.
+        var hasCurrencies = await db.Currencies.AnyAsync();
+        currency.IsDefault = !hasCurrencies;
+        
+        currency.CreatedAt = DateTime.UtcNow;
+        currency.UpdatedAt = DateTime.UtcNow;
+        
+        db.Currencies.Add(currency);
+        await db.SaveChangesAsync();
+        return Results.Created($"/api/finances/currencies/{currency.Id}", currency);
+    }
+
+    public static async Task<IResult> UpdateCurrency(SanadDbContext db, Guid id, Currency updated)
+    {
+        var currency = await db.Currencies.FindAsync(id);
+        if (currency is null) return Results.NotFound();
+
+        currency.Name = updated.Name;
+        currency.Code = updated.Code;
+        currency.Symbol = updated.Symbol;
+        
+        // We only allow updating ExchangeRate if it's not the default currency
+        if (!currency.IsDefault)
+        {
+            currency.ExchangeRateToDefault = updated.ExchangeRateToDefault;
+        }
+
+        currency.UpdatedAt = DateTime.UtcNow;
+
+        await db.SaveChangesAsync();
+        return Results.Ok(currency);
+    }
+
+    public static async Task<IResult> DeleteCurrency(SanadDbContext db, Guid id)
+    {
+        var currency = await db.Currencies.FindAsync(id);
+        if (currency is null) return Results.NotFound();
+
+        if (currency.IsDefault)
+            return Results.BadRequest("Cannot delete the default currency.");
+
+        var hasAssets = await db.Assets.AnyAsync(a => a.CurrencyId == id);
+        if (hasAssets)
+            return Results.BadRequest("Cannot delete currency because it is used by assets.");
+
+        db.Currencies.Remove(currency);
+        await db.SaveChangesAsync();
+        return Results.NoContent();
+    }
+
+    public static async Task<IResult> SetDefaultCurrency(SanadDbContext db, Guid id)
+    {
+        var newDefault = await db.Currencies.FindAsync(id);
+        if (newDefault is null) return Results.NotFound();
+        
+        if (newDefault.IsDefault) return Results.Ok(newDefault);
+
+        var currentDefault = await db.Currencies.FirstOrDefaultAsync(c => c.IsDefault);
+        
+        var allCurrencies = await db.Currencies.ToListAsync();
+        var newDefaultRate = newDefault.ExchangeRateToDefault;
+
+        if (newDefaultRate <= 0) 
+            return Results.BadRequest("Invalid exchange rate for the new default currency.");
+
+        foreach (var currency in allCurrencies)
+        {
+            if (currency.Id == newDefault.Id)
+            {
+                currency.IsDefault = true;
+                currency.ExchangeRateToDefault = 1.0m;
+            }
+            else
+            {
+                currency.IsDefault = false;
+                // If JOD was 1.41 USD, and JOD becomes default:
+                // USD rate becomes 1 / 1.41
+                // EUR rate (which was say 1.10 USD) becomes 1.10 / 1.41
+                currency.ExchangeRateToDefault = Math.Round(currency.ExchangeRateToDefault / newDefaultRate, 6);
+            }
+            currency.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await db.SaveChangesAsync();
+        return Results.Ok(newDefault);
     }
 }
 

@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Trash2 } from 'lucide-react';
 import useFinanceStore from '../store/useFinanceStore';
+import CurrencyManager from '../components/CurrencyManager';
 
 export default function AssetsTab() {
-  const { assets, assetHistory: history, assetChartLines: chartLines, fetchAssets, addAsset, updateAsset, deleteAsset: storeDeleteAsset, isLoaded } = useFinanceStore();
+  const { assets, currencies, assetHistory: history, assetChartLines: chartLines, fetchAssets, addAsset, updateAsset, deleteAsset: storeDeleteAsset, isLoaded } = useFinanceStore();
   
   useEffect(() => {
     fetchAssets();
@@ -14,6 +15,8 @@ export default function AssetsTab() {
   const [name, setName] = useState('');
   const [type, setType] = useState('Cash');
   const [amount, setAmount] = useState('');
+  const [currencyId, setCurrencyId] = useState('');
+  const [icon, setIcon] = useState('');
 
   // Editing state
   const [editingId, setEditingId] = useState(null);
@@ -23,9 +26,9 @@ export default function AssetsTab() {
 
   const handleAdd = async (e) => {
     e.preventDefault();
-    const success = await addAsset(name, type, parseFloat(amount));
+    const success = await addAsset(name, type, parseFloat(amount), currencyId || null, icon || null);
     if (success) {
-      setName(''); setType('Cash'); setAmount('');
+      setName(''); setType('Cash'); setAmount(''); setCurrencyId(''); setIcon('');
     }
   };
 
@@ -44,7 +47,8 @@ export default function AssetsTab() {
     await storeDeleteAsset(id);
   };
 
-  const totalAssetsValue = assets.reduce((sum, a) => sum + a.currentAmount, 0);
+  const defaultCurrency = currencies.find(c => c.isDefault) || { symbol: '$' };
+  const totalAssetsValue = assets.reduce((sum, a) => sum + (a.currentAmount * (a.currency?.exchangeRateToDefault || 1)), 0);
 
   return (
     <div className="flex flex-col gap-8">
@@ -53,7 +57,7 @@ export default function AssetsTab() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm md:col-span-1">
           <p className="text-slate-500">Total Net Worth</p>
-          <p className="text-4xl font-bold text-slate-800 mt-2">₪{totalAssetsValue.toFixed(2)}</p>
+          <p className="text-4xl font-bold text-slate-800 mt-2">{defaultCurrency.symbol}{totalAssetsValue.toFixed(2)}</p>
           <p className="text-sm text-slate-400 mt-2">Across {assets.length} active assets</p>
         </div>
         
@@ -65,8 +69,8 @@ export default function AssetsTab() {
                     <LineChart data={history}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                         <XAxis dataKey="date" stroke="#94A3B8" fontSize={12} tickMargin={10} minTickGap={30} />
-                        <YAxis stroke="#94A3B8" fontSize={12} tickFormatter={(value) => `₪${value}`} width={80} />
-                        <Tooltip formatter={(value, name) => [`₪${value}`, name === 'netWorth' ? 'Net Worth' : name]} labelStyle={{ color: '#1E293B' }} />
+                        <YAxis stroke="#94A3B8" fontSize={12} tickFormatter={(value) => `${defaultCurrency.symbol}${value}`} width={80} />
+                        <Tooltip formatter={(value, name) => [`${defaultCurrency.symbol}${value}`, name === 'netWorth' ? 'Net Worth' : name]} labelStyle={{ color: '#1E293B' }} />
                         <Line type="monotone" dataKey="netWorth" stroke="#6366F1" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
                         {chartLines.map((name, index) => {
                             const colors = ['#10B981', '#F59E0B', '#3B82F6', '#EC4899', '#8B5CF6', '#14B8A6', '#F43F5E'];
@@ -99,14 +103,17 @@ export default function AssetsTab() {
                     const isEditing = editingId === asset.id;
                     return (
                         <div key={asset.id} className="group flex justify-between items-center p-4 bg-slate-50 rounded-lg border border-slate-100 hover:border-slate-200 transition-colors">
-                            <div>
-                                <h3 className="font-semibold text-slate-800 text-lg">{asset.name}</h3>
-                                <p className="text-sm text-slate-500">{asset.type}</p>
+                            <div className="flex items-center gap-3">
+                                {asset.icon && <span className="text-2xl">{asset.icon}</span>}
+                                <div>
+                                    <h3 className="font-semibold text-slate-800 text-lg">{asset.name}</h3>
+                                    <p className="text-sm text-slate-500">{asset.type}</p>
+                                </div>
                             </div>
                             <div className="flex items-center gap-4">
                                 {isEditing ? (
                                     <div className="flex items-center gap-2">
-                                        <span className="text-slate-400">₪</span>
+                                        <span className="text-slate-400">{asset.currency?.symbol || '$'}</span>
                                         <input
                                             type="number"
                                             value={editingAmount}
@@ -121,10 +128,15 @@ export default function AssetsTab() {
                                 ) : (
                                     <button 
                                         onClick={() => { setEditingId(asset.id); setEditingAmount(String(asset.currentAmount)); }}
-                                        className="text-xl font-semibold text-slate-800 hover:text-indigo-600 transition-colors cursor-pointer"
+                                        className="text-xl font-semibold text-slate-800 hover:text-indigo-600 transition-colors cursor-pointer flex flex-col items-end"
                                         title="Click to update amount"
                                     >
-                                        ₪{asset.currentAmount.toFixed(2)}
+                                        <span>{asset.currency?.symbol || '$'}{asset.currentAmount.toFixed(2)}</span>
+                                        {!asset.currency?.isDefault && asset.currency?.exchangeRateToDefault && (
+                                          <span className="text-xs text-slate-400 font-normal">
+                                            ≈ {defaultCurrency.symbol}{(asset.currentAmount * asset.currency.exchangeRateToDefault).toFixed(2)}
+                                          </span>
+                                        )}
                                     </button>
                                 )}
                                 <button
@@ -160,14 +172,29 @@ export default function AssetsTab() {
                         <option value="Other">Other</option>
                     </select>
                 </div>
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Currency</label>
+                      <select value={currencyId} onChange={e=>setCurrencyId(e.target.value)} className="w-full bg-white border border-slate-300 rounded p-2 text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                          <option value="">Default ({defaultCurrency.code})</option>
+                          {currencies.map(c => <option key={c.id} value={c.id}>{c.name} ({c.code})</option>)}
+                      </select>
+                  </div>
+                  <div className="flex-1">
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Icon (Emoji)</label>
+                      <input type="text" value={icon} onChange={e=>setIcon(e.target.value)} placeholder="💰" className="w-full bg-white border border-slate-300 rounded p-2 text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none" maxLength={10} />
+                  </div>
+                </div>
                 <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Initial Amount (₪)</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Initial Amount</label>
                     <input type="number" step="0.01" value={amount} onChange={e=>setAmount(e.target.value)} placeholder="0.00" className="w-full bg-white border border-slate-300 rounded p-2 text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none" required />
                 </div>
                 <button type="submit" className="mt-2 bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded font-semibold transition-colors">Add Asset</button>
             </form>
         </div>
       </div>
+      
+      <CurrencyManager />
     </div>
   );
 }

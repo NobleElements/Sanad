@@ -16,10 +16,12 @@ export default function FinanceDashboard() {
   const urlYear = searchParams.get('year') ? parseInt(searchParams.get('year'), 10) : new Date().getFullYear();
 
   const { 
-    categories, transactions, budgetSummary: summary, 
-    currentMonth, currentYear, setDate, fetchFinanceData,
+    currencies, categories, transactions, budgetSummary: summary, 
+    currentMonth, currentYear, setDate, fetchFinanceData, isLoaded, addCurrency,
     addTransaction, deleteTransaction, createCategory, updateCategory, updateBudget 
   } = useFinanceStore();
+
+  const defaultCurrency = currencies.find(c => c.isDefault) || { symbol: '$' };
 
   useEffect(() => {
     if (urlMonth !== currentMonth || urlYear !== currentYear) {
@@ -32,6 +34,20 @@ export default function FinanceDashboard() {
   const getLocalDateStr = () => {
     const d = new Date();
     return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+  };
+
+  // setup state
+  const [setupCode, setSetupCode] = useState('');
+  const [setupName, setSetupName] = useState('');
+  const [setupSymbol, setSetupSymbol] = useState('');
+
+  const handleSetup = async (e) => {
+    e.preventDefault();
+    const success = await addCurrency(setupCode.toUpperCase(), setupName, setupSymbol, 1.0);
+    if (success) {
+      setSetupCode(''); setSetupName(''); setSetupSymbol('');
+      // After this finishes, currencies will be updated and setup screen will disappear
+    }
   };
 
   // form state
@@ -155,6 +171,32 @@ export default function FinanceDashboard() {
 
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
+  if (isLoaded && currencies.length === 0) {
+    return (
+      <div className="flex-1 p-8 overflow-y-auto bg-slate-50 text-slate-900 flex items-center justify-center">
+        <div className="max-w-md w-full bg-white p-8 rounded-xl border border-slate-200 shadow-sm">
+          <h2 className="text-2xl font-bold mb-2 text-slate-800">Welcome to Finance</h2>
+          <p className="text-slate-500 mb-6">Before you start tracking your finances, please configure your primary default currency.</p>
+          <form onSubmit={handleSetup} className="flex flex-col gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Code (e.g. USD)</label>
+              <input type="text" value={setupCode} onChange={e=>setSetupCode(e.target.value)} className="w-full border border-slate-300 rounded p-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none" required maxLength={10} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Name (e.g. US Dollar)</label>
+              <input type="text" value={setupName} onChange={e=>setSetupName(e.target.value)} className="w-full border border-slate-300 rounded p-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none" required maxLength={50} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Symbol (e.g. $)</label>
+              <input type="text" value={setupSymbol} onChange={e=>setSetupSymbol(e.target.value)} className="w-full border border-slate-300 rounded p-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none" required maxLength={10} />
+            </div>
+            <button type="submit" className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white p-3 rounded font-semibold transition-colors">Set Default Currency</button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 p-8 overflow-y-auto bg-slate-50 text-slate-900">
       <div className="max-w-6xl mx-auto">
@@ -200,13 +242,13 @@ export default function FinanceDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8">
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                 <p className="text-slate-500">Total Spent</p>
-                <p className="text-3xl font-semibold text-slate-800">₪{totalSpent.toFixed(2)}</p>
+                <p className="text-3xl font-semibold text-slate-800">{defaultCurrency.symbol}{totalSpent.toFixed(2)}</p>
               </div>
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                 <p className="text-slate-500 mb-1">Monthly Budget</p>
                 {editingMonthlyBudget ? (
                   <div className="flex items-center gap-2">
-                    <span className="text-xl text-slate-400">₪</span>
+                    <span className="text-xl text-slate-400">{defaultCurrency.symbol}</span>
                     <input
                       type="number"
                       min="0"
@@ -238,13 +280,13 @@ export default function FinanceDashboard() {
                     className="text-3xl font-semibold text-slate-800 hover:text-indigo-600 transition-colors cursor-pointer text-left"
                     title="Click to edit monthly budget"
                   >
-                    ₪{totalBudget.toFixed(2)}
+                    {defaultCurrency.symbol}{totalBudget.toFixed(2)}
                   </button>
                 )}
               </div>
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                 <p className="text-slate-500">Remaining</p>
-                <p className={`text-3xl font-semibold ${remaining < 0 ? 'text-red-500' : 'text-slate-800'}`}>₪{remaining.toFixed(2)}</p>
+                <p className={`text-3xl font-semibold ${remaining < 0 ? 'text-red-500' : 'text-slate-800'}`}>{defaultCurrency.symbol}{remaining.toFixed(2)}</p>
                 {totalBudget > 0 && (
                   <div className="mt-3">
                     <div className="w-full bg-slate-100 rounded-full h-2">
@@ -275,7 +317,7 @@ export default function FinanceDashboard() {
                             <Cell key={`cell-${index}`} fill={entry.category.colorHex || '#CBD5E1'} />
                           ))}
                         </Pie>
-                        <Tooltip formatter={(value) => `₪${value}`} />
+                        <Tooltip formatter={(value) => `${defaultCurrency.symbol}${value}`} />
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
@@ -308,7 +350,7 @@ export default function FinanceDashboard() {
                                 autoFocus
                               />
                               <div className="flex items-center gap-1">
-                                <span className="text-slate-400 text-sm">₪</span>
+                                <span className="text-slate-400 text-sm">{defaultCurrency.symbol}</span>
                                 <input
                                   type="number"
                                   min="0"
@@ -352,7 +394,7 @@ export default function FinanceDashboard() {
                             </button>
                             <div className="flex items-center gap-1 text-sm">
                               <span className={`font-semibold ${isOver ? 'text-red-500' : 'text-slate-700'}`}>
-                                ₪{item.spent.toFixed(0)}
+                                {defaultCurrency.symbol}{item.spent.toFixed(0)}
                               </span>
                               <span className="text-slate-400">/</span>
                               <button
@@ -360,7 +402,7 @@ export default function FinanceDashboard() {
                                 className="text-slate-500 hover:text-indigo-600 transition-colors cursor-pointer"
                                 title="Click to edit category"
                               >
-                                ₪{item.category.monthlyBudget.toFixed(0)}
+                                {defaultCurrency.symbol}{item.category.monthlyBudget.toFixed(0)}
                               </button>
                             </div>
                           </div>
@@ -416,7 +458,7 @@ export default function FinanceDashboard() {
                       <span className="text-sm text-slate-500">{tx.category?.name}</span>
                     </div>
                     <div className="flex items-center gap-4">
-                      <span className="font-semibold text-slate-800">₪{tx.amount.toFixed(2)}</span>
+                      <span className="font-semibold text-slate-800">{defaultCurrency.symbol}{tx.amount.toFixed(2)}</span>
                       <button
                         onClick={() => handleDeleteTransaction(tx.id)}
                         className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-all"

@@ -18,6 +18,7 @@ public class SanadDbContext : DbContext
     public DbSet<Note> Notes => Set<Note>();
 
     public DbSet<DailyGoal> DailyGoals => Set<DailyGoal>();
+    public DbSet<Currency> Currencies => Set<Currency>();
     public DbSet<Asset> Assets => Set<Asset>();
     public DbSet<AssetSnapshot> AssetSnapshots => Set<AssetSnapshot>();
     public DbSet<Book> Books => Set<Book>();
@@ -44,5 +45,11 @@ public class SanadDbContext : DbContext
             .WithOne(fi => fi.Folder)
             .HasForeignKey(fi => fi.FolderId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Asset>()
+            .HasOne(a => a.Currency)
+            .WithMany()
+            .HasForeignKey(a => a.CurrencyId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

@@ -16,7 +16,7 @@ public static class AssetEndpoints
     }
 
     public static async Task<IResult> GetAssets(SanadDbContext db) => 
-        Results.Ok(await db.Assets.OrderByDescending(a => a.CreatedAt).ToListAsync());
+        Results.Ok(await db.Assets.Include(a => a.Currency).OrderByDescending(a => a.CreatedAt).ToListAsync());
 
     public static async Task<IResult> CreateAsset(SanadDbContext db, Asset asset)
     {
@@ -45,6 +45,8 @@ public static class AssetEndpoints
 
         asset.Name = updated.Name;
         asset.Type = updated.Type;
+        asset.CurrencyId = updated.CurrencyId;
+        asset.Icon = updated.Icon;
         
         if (asset.CurrentAmount != updated.CurrentAmount)
         {
@@ -79,6 +81,7 @@ public static class AssetEndpoints
     {
         var snapshots = await db.AssetSnapshots
             .Include(s => s.Asset)
+                .ThenInclude(a => a!.Currency)
             .OrderBy(s => s.RecordedAt)
             .ToListAsync();
             
@@ -91,6 +94,7 @@ public static class AssetEndpoints
             AssetName = s.Asset?.Name,
             AssetType = s.Asset?.Type,
             s.Amount,
+            ExchangeRateToDefault = s.Asset?.Currency?.ExchangeRateToDefault ?? 1m,
             s.RecordedAt
         }));
     }

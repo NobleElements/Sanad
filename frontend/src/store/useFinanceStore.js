@@ -7,6 +7,7 @@ const useFinanceStore = create((set, get) => ({
   transactions: [],
   budgetSummary: { categories: [], monthlyBudget: 0, totalSpent: 0 },
   assets: [],
+  currencies: [],
   isLoaded: false,
 
   currentMonth: new Date().getMonth() + 1,
@@ -15,6 +16,17 @@ const useFinanceStore = create((set, get) => ({
   setDate: (month, year) => {
     set({ currentMonth: month, currentYear: year });
     get().fetchFinanceData();
+  },
+
+  fetchCurrencies: async () => {
+    try {
+      const res = await fetch(`${API_URL}/finances/currencies`);
+      if (res.ok) {
+        set({ currencies: await res.json() });
+      }
+    } catch (err) {
+      console.error(err);
+    }
   },
 
   fetchFinanceData: async () => {
@@ -30,6 +42,7 @@ const useFinanceStore = create((set, get) => ({
         const sumData = await sumRes.json();
         const catData = await catRes.json();
         const txData = await txRes.json();
+        await get().fetchCurrencies();
         set({ budgetSummary: sumData, categories: catData, transactions: txData, isLoaded: true });
       } else {
         useUIStore.getState().showError('Failed to load financial data');
@@ -60,7 +73,8 @@ const useFinanceStore = create((set, get) => ({
           const dateStr = new Date(snapshot.recordedAt).toLocaleDateString();
           const name = snapshot.assetName || snapshot.assetId;
           
-          assetLatestValue[name] = snapshot.amount;
+          const convertedValue = snapshot.amount * (snapshot.exchangeRateToDefault || 1);
+          assetLatestValue[name] = convertedValue;
           allAssetNames.add(name);
           
           const totalNetWorth = Object.values(assetLatestValue).reduce((a, b) => a + b, 0);
@@ -84,12 +98,12 @@ const useFinanceStore = create((set, get) => ({
     }
   },
 
-  addAsset: async (name, type, amount) => {
+  addAsset: async (name, type, amount, currencyId, icon) => {
     try {
       const res = await fetch(`${API_URL}/finances/assets`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, type, currentAmount: amount })
+        body: JSON.stringify({ name, type, currentAmount: amount, currencyId, icon })
       });
       if (res.ok) {
         useUIStore.getState().showSuccess('Asset created');
@@ -225,6 +239,80 @@ const useFinanceStore = create((set, get) => ({
       throw new Error('Failed to update budget');
     } catch (err) {
       useUIStore.getState().showError('Failed to update budget');
+      return false;
+    }
+  },
+
+  addCurrency: async (code, name, symbol, exchangeRateToDefault) => {
+    try {
+      const res = await fetch(`${API_URL}/finances/currencies`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, name, symbol, exchangeRateToDefault })
+      });
+      if (res.ok) {
+        useUIStore.getState().showSuccess('Currency created');
+        await get().fetchCurrencies();
+        return true;
+      }
+      throw new Error('Failed to create');
+    } catch (err) {
+      useUIStore.getState().showError('Failed to add currency');
+      return false;
+    }
+  },
+
+  updateCurrency: async (id, code, name, symbol, exchangeRateToDefault) => {
+    try {
+      const res = await fetch(`${API_URL}/finances/currencies/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, name, symbol, exchangeRateToDefault })
+      });
+      if (res.ok) {
+        useUIStore.getState().showSuccess('Currency updated');
+        await get().fetchCurrencies();
+        return true;
+      }
+      throw new Error('Failed to update');
+    } catch (err) {
+      useUIStore.getState().showError('Failed to update currency');
+      return false;
+    }
+  },
+
+  deleteCurrency: async (id) => {
+    try {
+      const res = await fetch(`${API_URL}/finances/currencies/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        useUIStore.getState().showSuccess('Currency deleted');
+        await get().fetchCurrencies();
+        return true;
+      }
+      if (res.status === 400) {
+        const text = await res.text();
+        useUIStore.getState().showError(text.replace(/"/g, ''));
+        return false;
+      }
+      throw new Error('Failed to delete');
+    } catch (err) {
+      useUIStore.getState().showError('Failed to delete currency');
+      return false;
+    }
+  },
+
+  setDefaultCurrency: async (id) => {
+    try {
+      const res = await fetch(`${API_URL}/finances/currencies/${id}/set-default`, { method: 'PUT' });
+      if (res.ok) {
+        useUIStore.getState().showSuccess('Default currency changed');
+        await get().fetchCurrencies();
+        await get().fetchAssets();
+        return true;
+      }
+      throw new Error('Failed to set default');
+    } catch (err) {
+      useUIStore.getState().showError('Failed to change default currency');
       return false;
     }
   }
