@@ -1,5 +1,6 @@
 import React, { useEffect, useCallback } from 'react';
 import { X, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import VideoPlayer from './VideoPlayer'
 
 const FilePreview = ({ file, files = [], onClose, onNavigate }) => {
   if (!file) return null;
