@@ -437,7 +437,9 @@ export default function AdminDashboard() {
                           type="text" 
                           value={editDsPath} 
                           onChange={e => setEditDsPath(e.target.value)}
-                          className="w-full border border-slate-300 rounded px-2 py-1 text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
+                          disabled={ds.usersCount > 0}
+                          className={`w-full border rounded px-2 py-1 text-sm outline-none ${ds.usersCount > 0 ? 'bg-slate-100 border-slate-200 text-slate-500 cursor-not-allowed' : 'bg-white border-slate-300 focus:ring-1 focus:ring-indigo-500'}`}
+                          title={ds.usersCount > 0 ? "Cannot edit path while users belong to this datastore" : ""}
                         />
                       </td>
                       <td className="p-3 text-slate-600">

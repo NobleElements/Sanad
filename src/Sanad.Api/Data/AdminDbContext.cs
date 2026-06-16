@@ -18,6 +18,14 @@ public class AdminDbContext : DbContext, IDataProtectionKeyContext
         base.OnModelCreating(modelBuilder);
         
         modelBuilder.Entity<AppUser>()
+            .Property(u => u.Username)
+            .UseCollation("NOCASE");
+
+        modelBuilder.Entity<AppUser>()
+            .HasIndex(u => u.Username)
+            .IsUnique();
+
+        modelBuilder.Entity<AppUser>()
             .HasOne(u => u.Tier)
             .WithMany()
             .HasForeignKey(u => u.TierId)
