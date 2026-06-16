@@ -101,61 +101,64 @@ export default function Habits() {
                             {...provided.draggableProps}
                             className={`bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden transition-all ${snapshot.isDragging ? 'shadow-xl ring-2 ring-indigo-500 scale-[1.02]' : 'hover:shadow-md'}`}
                           >
-                            <div className="p-5 flex items-center justify-between">
-                              <div className="flex items-center gap-4 flex-1">
+                            <div className="p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                              <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
                                 <div 
                                   {...provided.dragHandleProps} 
-                                  className="text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing p-1 -ml-2 rounded-lg hover:bg-slate-50"
+                                  className="text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing p-1 -ml-1 sm:-ml-2 rounded-lg hover:bg-slate-50 shrink-0"
                                 >
                                   <GripVertical className="w-5 h-5" />
                                 </div>
-                                <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-2xl flex-shrink-0">
+                                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-xl sm:text-2xl flex-shrink-0">
                                   {habit.icon}
                                 </div>
-                                <div>
-                                  <h3 className="text-lg font-semibold text-slate-800">{habit.name}</h3>
-                                  <p className="text-sm text-slate-500">{habit.frequency}</p>
+                                <div className="min-w-0 flex-1 pr-2">
+                                  <h3 className="text-base sm:text-lg font-semibold text-slate-800 truncate" title={habit.name}>{habit.name}</h3>
+                                  <p className="text-xs sm:text-sm text-slate-500">{habit.frequency}</p>
                                 </div>
                               </div>
                               
-                              {/* 7-Day Streak */}
-                              <div className="flex items-center gap-2 mr-6">
-                                {last7Days.map(date => {
-                                  const completed = isCompleted(habit, date);
-                                  const isToday = isSameDay(date, new Date());
-                                  return (
-                                    <button
-                                      key={date.toISOString()}
-                                      onClick={() => toggleHabitLog(habit.id, format(date, 'yyyy-MM-dd'))}
-                                      className={`w-8 h-8 rounded-md flex items-center justify-center text-xs font-medium transition-all cursor-pointer
-                                        ${completed ? 'bg-green-500 text-white shadow-sm' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}
-                                        ${isToday && !completed ? 'ring-2 ring-indigo-200 ring-offset-1' : ''}
-                                      `}
-                                      title={format(date, 'MMM d, yyyy')}
-                                    >
-                                      {completed ? <Check className="w-4 h-4" /> : format(date, 'd')}
-                                    </button>
-                                  );
-                                })}
-                              </div>
+                              <div className="flex items-center justify-between md:justify-end w-full md:w-auto gap-4">
+                                {/* 7-Day Streak */}
+                                <div className="flex items-center justify-start gap-1.5 sm:gap-2 overflow-x-auto pb-1 sm:pb-0 pr-2 pt-1 scrollbar-hide flex-1 md:flex-none">
+                                  {last7Days.map(date => {
+                                    const completed = isCompleted(habit, date);
+                                    const isToday = isSameDay(date, new Date());
+                                    return (
+                                      <button
+                                        key={date.toISOString()}
+                                        onClick={() => toggleHabitLog(habit.id, format(date, 'yyyy-MM-dd'))}
+                                        className={`min-w-[28px] w-7 h-7 sm:w-8 sm:h-8 rounded-md flex items-center justify-center text-[10px] sm:text-xs font-medium transition-all cursor-pointer flex-shrink-0
+                                          ${completed ? 'bg-green-500 text-white shadow-sm' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}
+                                          ${isToday && !completed ? 'ring-2 ring-indigo-200 ring-offset-1' : ''}
+                                        `}
+                                        title={format(date, 'MMM d, yyyy')}
+                                      >
+                                        {completed ? <Check className="w-3 h-3 sm:w-4 sm:h-4" /> : format(date, 'd')}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
 
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={() => toggleExpand(habit.id)}
-                                  className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg transition-colors"
-                                >
-                                  {expandedHabits.has(habit.id) ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    if (confirm('Are you sure you want to delete this habit?')) {
-                                      deleteHabit(habit.id);
-                                    }
-                                  }}
-                                  className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                >
-                                  <Trash className="w-5 h-5" />
-                                </button>
+                                <div className="flex gap-1 sm:gap-2 shrink-0 md:ml-2">
+                                  <button
+                                    onClick={() => toggleExpand(habit.id)}
+                                    className="p-1.5 sm:p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg transition-colors"
+                                  >
+                                    {expandedHabits.has(habit.id) ? <ChevronUp className="w-4 h-4 sm:w-5 sm:h-5" /> : <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5" />}
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      if (confirm('Are you sure you want to delete this habit?')) {
+                                        deleteHabit(habit.id);
+                                      }
+                                    }}
+                                    className="p-1.5 sm:p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                    title="Delete Habit"
+                                  >
+                                    <Trash className="w-4 h-4 sm:w-5 sm:h-5" />
+                                  </button>
+                                </div>
                               </div>
                             </div>
 
