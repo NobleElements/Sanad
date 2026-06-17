@@ -461,7 +461,7 @@ export default function FinanceDashboard() {
                       <span className="font-semibold text-slate-800">{defaultCurrency.symbol}{tx.amount.toFixed(2)}</span>
                       <button
                         onClick={() => handleDeleteTransaction(tx.id)}
-                        className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-all"
+                        className="hidden md:block opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-all"
                         title="Delete transaction"
                       >
                         <Trash2 className="w-4 h-4" />

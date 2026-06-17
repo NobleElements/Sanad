@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Star } from 'lucide-react';
 import useFinanceStore from '../store/useFinanceStore';
 
 export default function CurrencyManager() {
@@ -86,15 +86,15 @@ export default function CurrencyManager() {
                         </div>
                       </div>
                       
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2">
                         <div className="text-sm text-slate-600 font-medium cursor-pointer hover:text-indigo-600" onClick={() => { setEditingId(c.id); setEditCode(c.code); setEditName(c.name); setEditSymbol(c.symbol); setEditRate(String(c.exchangeRateToDefault)); }}>
-                          {c.isDefault ? '1.0000' : Number(c.exchangeRateToDefault).toFixed(4)} {defaultCurrency?.code}
+                          {c.isDefault ? '1.00' : Number(c.exchangeRateToDefault).toFixed(2)} {defaultCurrency?.code}
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="hidden md:flex items-center gap-2">
                           {!c.isDefault && (
-                            <button onClick={() => setDefaultCurrency(c.id)} className="text-xs text-indigo-600 hover:text-indigo-800 font-medium px-2 py-1 bg-indigo-50 hover:bg-indigo-100 rounded transition-colors">
-                              Make Default
+                            <button onClick={() => setDefaultCurrency(c.id)} title="Make Default" className="text-indigo-400 hover:text-indigo-600 transition-colors p-1">
+                              <Star className="w-4 h-4" />
                             </button>
                           )}
                           {!c.isDefault && (

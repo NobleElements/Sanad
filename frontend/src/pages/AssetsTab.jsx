@@ -203,7 +203,7 @@ export default function AssetsTab() {
                                 )}
                                 <button
                                     onClick={() => deleteAsset(asset.id)}
-                                    className="opacity-0 group-hover:opacity-100 p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-all"
+                                    className="hidden md:block opacity-0 group-hover:opacity-100 p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-all"
                                 >
                                     <Trash2 className="w-4 h-4" />
                                 </button>
