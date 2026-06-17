@@ -308,18 +308,22 @@ export default function AdminDashboard() {
     <div className="flex-1 p-8 overflow-y-auto bg-slate-50">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-slate-800">Admin Dashboard</h1>
-        <div className="flex gap-4 items-center">
+        <div className="flex gap-2 items-center">
           <button 
             onClick={recalculateAllStorage}
-            className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors shadow-sm"
+            className="flex items-center gap-2 p-2 md:px-4 md:py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors shadow-sm"
+            title="Recalculate All Storage"
           >
-            Recalculate All Storage
+            <RefreshCw className="w-5 h-5 md:w-4 md:h-4" />
+            <span className="hidden md:inline text-sm font-medium">Recalculate All Storage</span>
           </button>
           <Link 
             to="/admin/tiers" 
-            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors shadow-sm"
+            className="flex items-center gap-2 p-2 md:px-4 md:py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors shadow-sm"
+            title="Manage Storage Tiers"
           >
-            Manage Storage Tiers
+            <HardDrive className="w-5 h-5 md:w-4 md:h-4" />
+            <span className="hidden md:inline text-sm font-medium">Manage Storage Tiers</span>
           </Link>
         </div>
       </div>
@@ -370,7 +374,7 @@ export default function AdminDashboard() {
         <h2 className="text-xl font-semibold text-slate-700 mb-6">Datastores Management</h2>
         
         <form onSubmit={createDatastore} className="flex flex-col sm:flex-row gap-4 mb-6 items-end bg-slate-50 p-4 rounded-lg border border-slate-100">
-          <div className="flex-1">
+          <div className="flex-1 w-full">
             <label className="block text-sm font-medium text-slate-700 mb-1">Name</label>
             <input 
               type="text" 
@@ -381,7 +385,7 @@ export default function AdminDashboard() {
               className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
             />
           </div>
-          <div className="flex-1">
+          <div className="flex-1 w-full">
             <label className="block text-sm font-medium text-slate-700 mb-1">Absolute Path</label>
             <input 
               type="text" 
@@ -555,7 +559,7 @@ export default function AdminDashboard() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-slate-200 text-sm text-slate-500 uppercase tracking-wider">
+              <tr className="border-b border-slate-200 text-xs text-slate-500 uppercase tracking-wider whitespace-nowrap">
                 <th className="p-3 cursor-pointer hover:bg-slate-50 select-none" onClick={() => handleSort('Username')}>
                   Username {getSortIndicator('Username')}
                 </th>
