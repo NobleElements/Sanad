@@ -13,6 +13,7 @@ public static class FinanceEndpoints
         app.MapPut("/api/finances/categories/{id}", UpdateCategory);
         app.MapGet("/api/finances/transactions", GetTransactions);
         app.MapPost("/api/finances/transactions", CreateTransaction);
+        app.MapPut("/api/finances/transactions/{id}", UpdateTransaction);
         app.MapDelete("/api/finances/transactions/{id}", DeleteTransaction);
         app.MapGet("/api/finances/summary", GetSummary);
         app.MapGet("/api/finances/budget", GetMonthlyBudget);
@@ -76,6 +77,19 @@ public static class FinanceEndpoints
         
         await db.SaveChangesAsync();
         return Results.Created($"/api/finances/transactions/{transaction.Id}", transaction);
+    }
+
+    public static async Task<IResult> UpdateTransaction(SanadDbContext db, Guid id, Transaction updated)
+    {
+        var transaction = await db.Transactions.FindAsync(id);
+        if (transaction is null) return Results.NotFound();
+
+        transaction.Amount = updated.Amount;
+        // Depending on requirements, we might want to update Date, Description, CategoryId, or Type,
+        // but for now, we just update the Amount as requested by the user.
+
+        await db.SaveChangesAsync();
+        return Results.Ok(transaction);
     }
 
     public static async Task<IResult> DeleteTransaction(SanadDbContext db, Guid id)

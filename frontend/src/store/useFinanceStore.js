@@ -194,6 +194,25 @@ const useFinanceStore = create((set, get) => ({
     }
   },
 
+  updateTransaction: async (id, updatedFields) => {
+    try {
+      const res = await fetch(`${API_URL}/finances/transactions/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedFields)
+      });
+      if (res.ok) {
+        useUIStore.getState().showSuccess('Transaction updated');
+        await get().fetchFinanceData(); // refresh data
+        return true;
+      }
+      throw new Error('Failed to update');
+    } catch (err) {
+      useUIStore.getState().showError('Failed to update transaction');
+      return false;
+    }
+  },
+
   deleteTransaction: async (id) => {
     try {
       const res = await fetch(`${API_URL}/finances/transactions/${id}`, { method: 'DELETE' });

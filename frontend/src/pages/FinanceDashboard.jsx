@@ -18,7 +18,7 @@ export default function FinanceDashboard() {
   const { 
     currencies, categories, transactions, budgetSummary: summary, 
     currentMonth, currentYear, setDate, fetchFinanceData, isLoaded, addCurrency,
-    addTransaction, deleteTransaction, createCategory, updateCategory, updateBudget 
+    addTransaction, updateTransaction, deleteTransaction, createCategory, updateCategory, updateBudget 
   } = useFinanceStore();
 
   const defaultCurrency = currencies.find(c => c.isDefault) || { symbol: '$' };
@@ -50,12 +50,23 @@ export default function FinanceDashboard() {
     }
   };
 
-  // form state
   const [amount, setAmount] = useState('');
   const [desc, setDesc] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [logDate, setLogDate] = useState(getLocalDateStr());
 
+  // inline transaction editing state
+  const [editingTxId, setEditingTxId] = useState(null);
+  const [editingTxAmount, setEditingTxAmount] = useState('');
+
+  const handleSaveTxAmount = async (tx) => {
+    const parsed = parseFloat(editingTxAmount);
+    if (isNaN(parsed) || parsed < 0) return;
+    const success = await updateTransaction(tx.id, { amount: parsed });
+    if (success) {
+      setEditingTxId(null);
+    }
+  };
 
   // category editing state
   const [editingCatId, setEditingCatId] = useState(null);
@@ -458,7 +469,29 @@ export default function FinanceDashboard() {
                       <span className="text-sm text-slate-500">{tx.category?.name}</span>
                     </div>
                     <div className="flex items-center gap-4">
-                      <span className="font-semibold text-slate-800">{defaultCurrency.symbol}{tx.amount.toFixed(2)}</span>
+                      {editingTxId === tx.id ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-slate-400">{defaultCurrency.symbol}</span>
+                          <input
+                              type="number"
+                              value={editingTxAmount}
+                              onChange={e => setEditingTxAmount(e.target.value)}
+                              onKeyDown={e => { if (e.key === 'Enter') handleSaveTxAmount(tx); if (e.key === 'Escape') setEditingTxId(null); }}
+                              className="w-24 border border-indigo-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                              autoFocus
+                          />
+                          <button onClick={() => handleSaveTxAmount(tx)} className="text-emerald-600 font-bold px-2">✓</button>
+                          <button onClick={() => setEditingTxId(null)} className="text-slate-400 font-bold px-1">✕</button>
+                        </div>
+                      ) : (
+                        <button 
+                            onClick={() => { setEditingTxId(tx.id); setEditingTxAmount(String(tx.amount)); }}
+                            className="text-xl font-semibold text-slate-800 hover:text-indigo-600 transition-colors cursor-pointer flex flex-col items-end"
+                            title="Click to update amount"
+                        >
+                            <span>{defaultCurrency.symbol}{tx.amount.toFixed(2)}</span>
+                        </button>
+                      )}
                       <button
                         onClick={() => handleDeleteTransaction(tx.id)}
                         className="hidden md:block opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-all"
