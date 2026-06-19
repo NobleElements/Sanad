@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { LayoutDashboard, CheckSquare, BrainCircuit, Wallet, BookOpen, HardDrive, ArrowRight, Code } from 'lucide-react';
+import { LayoutDashboard, CheckSquare, BrainCircuit, Wallet, BookOpen, HardDrive, ArrowRight, Code, Check } from 'lucide-react';
+import { API_URL } from '../config';
+import { formatBytes } from '../utils/formatUtils';
 
 const FeatureCard = ({ icon: Icon, title, description }) => (
   <div className="flex flex-col items-start p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
@@ -13,6 +15,22 @@ const FeatureCard = ({ icon: Icon, title, description }) => (
 );
 
 export default function LandingPage() {
+  const [tiers, setTiers] = useState([]);
+  const [loadingTiers, setLoadingTiers] = useState(true);
+
+  useEffect(() => {
+    fetch(`${API_URL}/storage/tiers`)
+      .then(res => res.json())
+      .then(data => {
+        setTiers(data);
+        setLoadingTiers(false);
+      })
+      .catch(err => {
+        console.error("Failed to load tiers", err);
+        setLoadingTiers(false);
+      });
+  }, []);
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-gray-900 font-sans selection:bg-blue-200">
       {/* Navigation */}
@@ -267,6 +285,72 @@ export default function LandingPage() {
             </div>
           </div>
 
+        </div>
+      </div>
+
+      {/* Pricing Section */}
+      <div className="bg-white dark:bg-gray-900 py-24 border-t border-gray-100 dark:border-gray-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h1 id="pricing" className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Simple, transparent pricing</h1>
+            <p className="text-lg text-gray-600 dark:text-gray-400">Start for free, upgrade when you need more storage.</p>
+          </div>
+          
+          <div className={`grid grid-cols-1 md:grid-cols-2 ${tiers.length >= 4 ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-8 w-full mx-auto`}>
+            {loadingTiers ? (
+              <div className="col-span-full text-center py-12 text-gray-500">Loading pricing plans...</div>
+            ) : tiers.length > 0 ? (
+              tiers.map((tier, index) => {
+                const isPopular = tier.price > 0 && index === 1; // Highlight the second tier if it has a price
+                return (
+                  <div key={tier.id} className={`flex flex-col p-8 rounded-2xl ${isPopular ? 'bg-white dark:bg-gray-800 border-2 border-blue-500 shadow-xl relative md:scale-105 z-10' : 'bg-slate-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700'}`}>
+                    {isPopular && (
+                      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                        Most Popular
+                      </div>
+                    )}
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{tier.name}</h3>
+                    <div className="flex items-baseline gap-1 mb-6">
+                      <span className="text-4xl font-extrabold text-gray-900 dark:text-white">${tier.price}</span>
+                      <span className="text-gray-500 dark:text-gray-400">{tier.price > 0 ? '/month' : '/forever'}</span>
+                    </div>
+                    <p className="text-gray-600 dark:text-gray-400 mb-8">
+                      {tier.price === 0 ? "Perfect for getting started and organizing your personal life." : "Everything you need for serious productivity and storage."}
+                    </p>
+                    <Link to="/login" className={`w-full py-3 px-4 font-medium rounded-xl text-center transition-colors mb-8 ${isPopular ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md' : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'}`}>
+                      {tier.price === 0 ? "Get Started" : "Upgrade to " + tier.name}
+                    </Link>
+                    <ul className="space-y-4 flex-1">
+                      <li className="flex items-center text-gray-600 dark:text-gray-400">
+                        <Check className="w-5 h-5 text-blue-500 mr-3 shrink-0" />
+                        <span className={isPopular ? "text-gray-900 dark:text-white font-medium" : ""}>Up to {formatBytes(tier.diskLimitBytes)} Storage</span>
+                      </li>
+                      <li className="flex items-center text-gray-600 dark:text-gray-400">
+                        <Check className="w-5 h-5 text-blue-500 mr-3 shrink-0" />
+                        <span className={isPopular ? "text-gray-900 dark:text-white font-medium" : ""}>Unlimited Tasks</span>
+                      </li>
+                      <li className="flex items-center text-gray-600 dark:text-gray-400">
+                        <Check className="w-5 h-5 text-blue-500 mr-3 shrink-0" />
+                        <span className={isPopular ? "text-gray-900 dark:text-white font-medium" : ""}>Basic Habit Tracking</span>
+                      </li>
+                      <li className="flex items-center text-gray-600 dark:text-gray-400">
+                        <Check className="w-5 h-5 text-blue-500 mr-3 shrink-0" />
+                        <span className={isPopular ? "text-gray-900 dark:text-white font-medium" : ""}>Core Finance Features</span>
+                      </li>
+                      {isPopular && (
+                        <li className="flex items-center text-gray-600 dark:text-gray-400">
+                          <Check className="w-5 h-5 text-blue-500 mr-3 shrink-0" />
+                          <span className="text-gray-900 dark:text-white font-medium">Priority Support</span>
+                        </li>
+                      )}
+                    </ul>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="col-span-1 md:col-span-3 text-center py-12 text-gray-500">No pricing plans available.</div>
+            )}
+          </div>
         </div>
       </div>
 

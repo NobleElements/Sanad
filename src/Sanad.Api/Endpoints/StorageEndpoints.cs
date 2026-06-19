@@ -29,6 +29,6 @@ public static class StorageEndpoints
         {
             var tiers = await db.Tiers.ToListAsync();
             return Results.Ok(tiers);
-        });
+        }).AllowAnonymous();
     }
 }
