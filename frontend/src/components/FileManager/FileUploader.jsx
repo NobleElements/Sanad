@@ -1,18 +1,20 @@
 import React, { useCallback, useRef, useEffect } from 'react';
 import { useFileManagerStore } from '../../store/fileManagerStore';
 import useSubscriptionStore from '../../store/useSubscriptionStore';
+import useAuthStore from '../../store/useAuthStore';
 import { UploadCloud, AlertCircle } from 'lucide-react';
 
 const FileUploader = () => {
   const uploadFile = useFileManagerStore(state => state.uploadFile);
   const { storageData, fetchSubscriptionData } = useSubscriptionStore();
+  const isAdmin = useAuthStore(state => state.isAdmin);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
     fetchSubscriptionData();
   }, [fetchSubscriptionData]);
 
-  const isQuotaExceeded = storageData && storageData.diskUsed >= storageData.diskLimitBytes;
+  const isQuotaExceeded = !isAdmin && storageData && storageData.diskUsed >= storageData.diskLimitBytes;
 
   const onDragOver = useCallback((e) => {
     e.preventDefault();
