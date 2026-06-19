@@ -19,6 +19,9 @@ import Subscription from './pages/Subscription';
 import ProtectedRoute from './components/ProtectedRoute';
 import LandingPage from './pages/LandingPage';
 import MaintenancePage from './pages/MaintenancePage';
+import TermsOfService from './pages/TermsOfService';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import RefundPolicy from './pages/RefundPolicy';
 
 function App() {
   const { loaded, authenticated, isAdmin, checkAuthStatus } = useAuthStore();
@@ -70,6 +73,9 @@ function App() {
     <BrowserRouter>
        <Routes>
         <Route path="/" element={!authenticated ? <LandingPage /> : <Navigate to="/dashboard" replace />} />
+        <Route path="/terms" element={<TermsOfService />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/refund" element={<RefundPolicy />} />
         
         <Route path="/login" element={
           !authenticated ? (

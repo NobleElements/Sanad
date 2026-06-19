@@ -364,8 +364,11 @@ export default function LandingPage() {
           <p className="text-gray-500 dark:text-gray-400 text-sm">
             © {new Date().getFullYear()} Sanad. All rights reserved.
           </p>
-          <div className="flex gap-4 mt-4 md:mt-0">
-            <a href="#" className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+          <div className="flex flex-wrap items-center justify-center gap-6 mt-6 md:mt-0 text-sm">
+            <Link to="/terms" className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors">Terms</Link>
+            <Link to="/privacy" className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors">Privacy</Link>
+            <Link to="/refund" className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors">Refunds</Link>
+            <a href="#" className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 ml-2">
               <Code className="w-5 h-5" />
             </a>
           </div>
