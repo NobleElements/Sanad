@@ -11,6 +11,7 @@ public class AdminDbContext : DbContext, IDataProtectionKeyContext
     public DbSet<AppUser> Users => Set<AppUser>();
     public DbSet<StorageTier> Tiers => Set<StorageTier>();
     public DbSet<Datastore> Datastores => Set<Datastore>();
+    public DbSet<SubscriptionHistory> SubscriptionHistories => Set<SubscriptionHistory>();
     public DbSet<DataProtectionKey> DataProtectionKeys { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -35,6 +36,18 @@ public class AdminDbContext : DbContext, IDataProtectionKeyContext
             .HasOne(u => u.Datastore)
             .WithMany()
             .HasForeignKey(u => u.DatastoreId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<SubscriptionHistory>()
+            .HasOne(s => s.User)
+            .WithMany()
+            .HasForeignKey(s => s.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<SubscriptionHistory>()
+            .HasOne(s => s.Tier)
+            .WithMany()
+            .HasForeignKey(s => s.TierId)
             .OnDelete(DeleteBehavior.Restrict);
 
         // Seed default tiers

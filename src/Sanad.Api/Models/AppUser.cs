@@ -18,6 +18,9 @@ public class AppUser
     public int TierId { get; set; }
     public StorageTier? Tier { get; set; }
     
+    public DateTime TierStartedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? TierExpiresAt { get; set; }
+    
     public int DatastoreId { get; set; } = 1;
     public Datastore? Datastore { get; set; }
     

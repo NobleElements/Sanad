@@ -30,7 +30,9 @@ public static class AuthEndpoints
                         username = user.Username,
                         isAdmin = user.IsAdmin,
                         tierId = user.TierId,
-                        apiKey = user.ApiKey
+                        apiKey = user.ApiKey,
+                        tierStartedAt = user.TierStartedAt,
+                        tierExpiresAt = user.TierExpiresAt
                     });
                 }
             }

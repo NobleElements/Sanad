@@ -8,6 +8,8 @@ const useAuthStore = create((set, get) => ({
   username: null,
   isAdmin: false,
   tierId: 1,
+  tierStartedAt: null,
+  tierExpiresAt: null,
   apiKey: null,
 
   checkAuthStatus: async () => {
@@ -20,11 +22,13 @@ const useAuthStore = create((set, get) => ({
         username: data.username,
         isAdmin: data.isAdmin || false,
         tierId: data.tierId || 1,
+        tierStartedAt: data.tierStartedAt || null,
+        tierExpiresAt: data.tierExpiresAt || null,
         apiKey: data.apiKey || null
       });
     } catch (err) {
       console.error("Auth status error:", err);
-      set({ loaded: true, authenticated: false, username: null, isAdmin: false, apiKey: null });
+      set({ loaded: true, authenticated: false, username: null, isAdmin: false, apiKey: null, tierStartedAt: null, tierExpiresAt: null });
     }
   },
 
@@ -44,6 +48,8 @@ const useAuthStore = create((set, get) => ({
             username: data.username, 
             isAdmin: data.isAdmin,
             tierId: data.tierId || 1,
+            tierStartedAt: data.tierStartedAt || null,
+            tierExpiresAt: data.tierExpiresAt || null,
             apiKey: data.apiKey || null
         });
         return { success: true };
@@ -59,7 +65,7 @@ const useAuthStore = create((set, get) => ({
   logout: async () => {
     try {
       await fetch(`${API_URL}/auth/logout`, { method: 'POST' });
-      set({ authenticated: false, username: null, isAdmin: false, tierId: 1, apiKey: null });
+      set({ authenticated: false, username: null, isAdmin: false, tierId: 1, apiKey: null, tierStartedAt: null, tierExpiresAt: null });
     } catch (err) {
       console.error('Logout failed', err);
       useUIStore.getState().showError('Logout failed');

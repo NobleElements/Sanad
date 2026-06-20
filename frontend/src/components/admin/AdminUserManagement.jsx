@@ -91,13 +91,32 @@ export default function AdminUserManagement({
                 <td className="p-3 font-medium text-slate-800">{u.username}</td>
                 <td className="p-3 text-slate-600">{formatBytes(u.diskUsed)}</td>
                 <td className="p-3">
-                  <select 
-                    className="border rounded p-1 bg-white"
-                    value={u.tierId || ''}
-                    onChange={(e) => updateUser(u.id, { tierId: parseInt(e.target.value) }, queryParamsStr)}
-                  >
-                    {tiers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                  </select>
+                  <div className="flex flex-col gap-2">
+                    <select 
+                      className="border rounded p-1 bg-white w-full"
+                      value={u.tierId || ''}
+                      onChange={(e) => updateUser(u.id, { tierId: parseInt(e.target.value) }, queryParamsStr)}
+                    >
+                      {tiers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                    </select>
+                    {u.tierId > 1 && (
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] uppercase font-bold text-slate-500">Expires At</label>
+                        <input 
+                          type="date"
+                          className="border border-slate-300 rounded p-1 text-xs bg-white w-full"
+                          value={u.tierExpiresAt ? u.tierExpiresAt.split('T')[0] : ''}
+                          onChange={(e) => {
+                            if (!e.target.value) {
+                              updateUser(u.id, { clearTierExpiresAt: true }, queryParamsStr);
+                            } else {
+                              updateUser(u.id, { tierExpiresAt: e.target.value }, queryParamsStr);
+                            }
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
                 </td>
                 <td className="p-3 text-slate-500">
                   {new Date(u.createdAt).toLocaleDateString()}

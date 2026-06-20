@@ -8,10 +8,21 @@ import usePageTitle from '../hooks/usePageTitle';
 export default function Subscription() {
   usePageTitle('Subscription');
   const { tiers, storageData, loading, fetchSubscriptionData } = useSubscriptionStore();
-  const { tierId, apiKey, rerollApiKey, changePassword } = useAuthStore();
+  const { tierId, tierStartedAt, tierExpiresAt, apiKey, rerollApiKey, changePassword } = useAuthStore();
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [passwordData, setPasswordData] = useState({ current: '', new: '', confirm: '' });
   const [passwordStatus, setPasswordStatus] = useState({ type: '', msg: '' });
+  const [history, setHistory] = useState([]);
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const res = await fetch(`${API_URL}/storage/history`);
+        if (res.ok) setHistory(await res.json());
+      } catch (e) { console.error(e); }
+    };
+    fetchHistory();
+  }, []);
 
   const handlePasswordChange = async (e) => {
     e.preventDefault();
@@ -56,9 +67,13 @@ export default function Subscription() {
             style={{ width: `${usagePercent}%` }}
           ></div>
         </div>
-        <p className="text-sm text-slate-500">
-          You are currently on the <span className="font-bold text-slate-700">{tiers.find(t => t.id === tierId)?.name || 'Unknown'}</span> tier.
-        </p>
+        <div className="text-sm text-slate-500 flex flex-col sm:flex-row sm:items-center justify-between">
+          <p>You are currently on the <span className="font-bold text-slate-700">{tiers.find(t => t.id === tierId)?.name || 'Unknown'}</span> tier.</p>
+          <div className="mt-2 sm:mt-0 text-right">
+            {tierStartedAt && <p>Started: {new Date(tierStartedAt).toLocaleDateString()}</p>}
+            {tierExpiresAt && <p>Expires: <span className="font-medium text-slate-700">{new Date(tierExpiresAt).toLocaleDateString()}</span></p>}
+          </div>
+        </div>
       </div>
 
       <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-6 mb-8">
@@ -163,6 +178,32 @@ export default function Subscription() {
           );
         })}
       </div>
+
+      {history.length > 0 && (
+        <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-6 mt-8 mb-8">
+          <h2 className="text-xl font-semibold text-slate-800 mb-4">Subscription History</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
+                <tr>
+                  <th className="px-4 py-3 font-medium">Tier Name</th>
+                  <th className="px-4 py-3 font-medium">Started At</th>
+                  <th className="px-4 py-3 font-medium">Ended At</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {history.map((h, i) => (
+                  <tr key={i} className="hover:bg-slate-50">
+                    <td className="px-4 py-3 text-slate-800 font-medium">{h.tierName}</td>
+                    <td className="px-4 py-3 text-slate-500">{new Date(h.startedAt).toLocaleDateString()}</td>
+                    <td className="px-4 py-3 text-slate-500">{h.endedAt ? new Date(h.endedAt).toLocaleDateString() : 'N/A'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {isConfirmModalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">

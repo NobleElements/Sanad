@@ -64,6 +64,8 @@ public static class AdminEndpoints
                 u.LastVisitAt,
                 u.TierId,
                 TierName = u.Tier?.Name,
+                u.TierStartedAt,
+                u.TierExpiresAt,
                 u.DatastoreId,
                 DatastoreName = u.Datastore?.Name,
                 u.IsMigrating,
@@ -89,7 +91,38 @@ public static class AdminEndpoints
 
             if (req.IsAdmin.HasValue) user.IsAdmin = req.IsAdmin.Value;
             if (req.IsBlocked.HasValue) user.IsBlocked = req.IsBlocked.Value;
-            if (req.TierId.HasValue) user.TierId = req.TierId.Value;
+
+            if (req.ClearTierExpiresAt == true)
+            {
+                user.TierExpiresAt = null;
+            }
+            else if (!string.IsNullOrWhiteSpace(req.TierExpiresAt))
+            {
+                if (DateTime.TryParse(req.TierExpiresAt, out var parsedDate))
+                {
+                    user.TierExpiresAt = parsedDate.ToUniversalTime();
+                }
+            }
+
+            if (req.TierId.HasValue && req.TierId.Value != user.TierId)
+            {
+                db.SubscriptionHistories.Add(new Sanad.Api.Models.SubscriptionHistory
+                {
+                    UserId = user.Id,
+                    TierId = user.TierId,
+                    StartedAt = user.TierStartedAt,
+                    EndedAt = DateTime.UtcNow
+                });
+
+                bool wasFree = user.TierId == 1;
+                user.TierId = req.TierId.Value;
+                user.TierStartedAt = DateTime.UtcNow;
+
+                if (wasFree && req.TierId.Value > 1)
+                {
+                    user.TierExpiresAt = DateTime.UtcNow.AddYears(1);
+                }
+            }
 
             await db.SaveChangesAsync();
             return Results.Ok(user);
@@ -331,7 +364,7 @@ public static class AdminEndpoints
     }
 }
 
-public record AdminUserUpdateRequest(bool? IsAdmin, bool? IsBlocked, int? TierId);
+public record AdminUserUpdateRequest(bool? IsAdmin, bool? IsBlocked, int? TierId, string? TierExpiresAt, bool? ClearTierExpiresAt);
 public record AdminTierUpdateRequest(decimal? Price, long? DiskLimitBytes, string? Name);
 public record AdminResetPasswordRequest(string NewPassword);
 public record AdminDatastoreCreateRequest(string Name, string Path, bool IsDefault);
