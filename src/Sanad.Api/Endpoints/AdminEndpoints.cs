@@ -145,6 +145,7 @@ public static class AdminEndpoints
 
             if (req.Price.HasValue) tier.Price = req.Price.Value;
             if (req.DiskLimitBytes.HasValue) tier.DiskLimitBytes = req.DiskLimitBytes.Value;
+            if (!string.IsNullOrWhiteSpace(req.Name)) tier.Name = req.Name;
 
             await db.SaveChangesAsync();
             return Results.Ok(tier);
@@ -331,7 +332,7 @@ public static class AdminEndpoints
 }
 
 public record AdminUserUpdateRequest(bool? IsAdmin, bool? IsBlocked, int? TierId);
-public record AdminTierUpdateRequest(decimal? Price, long? DiskLimitBytes);
+public record AdminTierUpdateRequest(decimal? Price, long? DiskLimitBytes, string? Name);
 public record AdminResetPasswordRequest(string NewPassword);
 public record AdminDatastoreCreateRequest(string Name, string Path, bool IsDefault);
 public record AdminDatastoreUpdateRequest(string? Name, string? Path, bool? IsDefault);

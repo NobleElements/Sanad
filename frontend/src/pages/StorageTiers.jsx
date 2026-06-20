@@ -37,6 +37,7 @@ export default function StorageTiers() {
   const saveTier = async () => {
     try {
       const updates = {
+        name: editingTier.name,
         price: parseFloat(editingTier.price),
         diskLimitBytes: Math.floor(parseFloat(editingTier.limitGb) * BYTES_PER_KB * BYTES_PER_KB * BYTES_PER_KB)
       };
@@ -68,7 +69,19 @@ export default function StorageTiers() {
             const isEditing = editingTier && editingTier.id === tier.id;
             return (
               <div key={tier.id} className={`border rounded-lg p-4 bg-slate-50 flex flex-col ${isEditing ? 'border-blue-500' : ''}`}>
-                <h3 className="font-bold text-lg mb-2">{tier.name}</h3>
+                {isEditing ? (
+                  <div className="mb-2">
+                    <input 
+                      type="text"
+                      className="w-full font-bold text-lg border rounded px-2 py-1 bg-white"
+                      value={editingTier.name}
+                      onChange={(e) => setEditingTier({...editingTier, name: e.target.value})}
+                      placeholder="Tier Name"
+                    />
+                  </div>
+                ) : (
+                  <h3 className="font-bold text-lg mb-2">{tier.name}</h3>
+                )}
                 
                 {isEditing ? (
                   <div className="space-y-3 flex-1 mb-4">

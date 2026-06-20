@@ -129,7 +129,17 @@ export default function Subscription() {
           return (
             <div key={tier.id} className={`border rounded-2xl p-6 flex flex-col ${isCurrent ? 'border-blue-500 shadow-md bg-blue-50/30' : 'border-slate-200 bg-white hover:border-blue-300 transition-colors'}`}>
               <h3 className="font-bold text-xl mb-2 text-slate-800">{tier.name}</h3>
-              <div className="text-3xl font-bold text-slate-900 mb-4">${tier.price}<span className="text-sm font-normal text-slate-500">/mo</span></div>
+              <div className="flex flex-col mb-4">
+                <div className="text-3xl font-bold text-slate-900">
+                  ${tier.price > 0 ? tier.price * 12 : 0}
+                  <span className="text-sm font-normal text-slate-500">{tier.price > 0 ? '/year' : '/forever'}</span>
+                </div>
+                {tier.price > 0 && (
+                  <div className="text-sm text-slate-500 mt-1">
+                    ${tier.price}/month, billed annually
+                  </div>
+                )}
+              </div>
               
               <ul className="space-y-3 mb-8 flex-1 text-slate-600">
                 <li className="flex items-center">

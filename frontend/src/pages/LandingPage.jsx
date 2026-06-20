@@ -310,9 +310,14 @@ export default function LandingPage() {
                       </div>
                     )}
                     <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{tier.name}</h3>
-                    <div className="flex items-baseline gap-1 mb-6">
-                      <span className="text-4xl font-extrabold text-gray-900 dark:text-white">${tier.price}</span>
-                      <span className="text-gray-500 dark:text-gray-400">{tier.price > 0 ? '/month' : '/forever'}</span>
+                    <div className="flex flex-col mb-6">
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-4xl font-extrabold text-gray-900 dark:text-white">${tier.price > 0 ? tier.price * 12 : 0}</span>
+                        <span className="text-gray-500 dark:text-gray-400">{tier.price > 0 ? '/year' : '/forever'}</span>
+                      </div>
+                      {tier.price > 0 && (
+                        <span className="text-sm text-gray-400 dark:text-gray-500 mt-1">${tier.price}/month, billed annually</span>
+                      )}
                     </div>
                     <p className="text-gray-600 dark:text-gray-400 mb-8">
                       {tier.price === 0 ? "Perfect for getting started and organizing your personal life." : "Everything you need for serious productivity and storage."}
