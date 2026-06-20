@@ -29,6 +29,11 @@ public class AppUser
     
     public long DiskUsed { get; set; }
     
+    // Paddle integration fields
+    public string? PaddleCustomerId { get; set; }
+    public string? PaddleSubscriptionId { get; set; }
+    public string? PaddleSubscriptionStatus { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? LastVisitAt { get; set; }
     public string CreatedIpAddress { get; set; } = string.Empty;

@@ -12,12 +12,16 @@ public class AdminDbContext : DbContext, IDataProtectionKeyContext
     public DbSet<StorageTier> Tiers => Set<StorageTier>();
     public DbSet<Datastore> Datastores => Set<Datastore>();
     public DbSet<SubscriptionHistory> SubscriptionHistories => Set<SubscriptionHistory>();
+    public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
     public DbSet<DataProtectionKey> DataProtectionKeys { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
         
+        modelBuilder.Entity<SystemSetting>()
+            .HasKey(s => s.Key);
+
         modelBuilder.Entity<AppUser>()
             .Property(u => u.Username)
             .UseCollation("NOCASE");

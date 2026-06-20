@@ -9,6 +9,7 @@ export default function StorageTiers() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [editingTier, setEditingTier] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     fetchTiers();
@@ -35,6 +36,7 @@ export default function StorageTiers() {
   };
 
   const saveTier = async () => {
+    setIsSaving(true);
     try {
       const updates = {
         name: editingTier.name,
@@ -53,6 +55,8 @@ export default function StorageTiers() {
       }
     } catch (e) {
       console.error(e);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -80,7 +84,14 @@ export default function StorageTiers() {
                     />
                   </div>
                 ) : (
-                  <h3 className="font-bold text-lg mb-2">{tier.name}</h3>
+                  <div className="mb-2 flex items-center justify-between">
+                    <h3 className="font-bold text-lg">{tier.name}</h3>
+                    {tier.paddleProductId && (
+                      <span className="text-xs bg-emerald-100 text-emerald-800 px-2 py-1 rounded-full font-medium" title="Synced with Paddle">
+                        Paddle Synced
+                      </span>
+                    )}
+                  </div>
                 )}
                 
                 {isEditing ? (
@@ -114,8 +125,20 @@ export default function StorageTiers() {
                 <div>
                   {isEditing ? (
                     <div className="flex space-x-2">
-                      <button onClick={saveTier} className="flex-1 bg-blue-600 text-white rounded py-1 text-sm font-medium hover:bg-blue-700">Save</button>
-                      <button onClick={() => setEditingTier(null)} className="flex-1 border text-slate-600 rounded py-1 text-sm font-medium hover:bg-slate-100">Cancel</button>
+                      <button 
+                        onClick={saveTier} 
+                        disabled={isSaving}
+                        className="flex-1 bg-blue-600 text-white rounded py-1 text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isSaving ? 'Saving...' : 'Save'}
+                      </button>
+                      <button 
+                        onClick={() => setEditingTier(null)} 
+                        disabled={isSaving}
+                        className="flex-1 border text-slate-600 rounded py-1 text-sm font-medium hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Cancel
+                      </button>
                     </div>
                   ) : (
                     <button onClick={() => handleEditTier(tier)} className="w-full border border-slate-300 text-slate-600 rounded py-1 text-sm font-medium hover:bg-white">

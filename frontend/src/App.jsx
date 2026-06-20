@@ -14,6 +14,7 @@ import AuthOverlay from './components/AuthOverlay';
 import ToastContainer from './components/ToastContainer';
 import useAuthStore from './store/useAuthStore';
 import AdminDashboard from './pages/AdminDashboard';
+import AdminSettings from './pages/AdminSettings';
 import StorageTiers from './pages/StorageTiers';
 import Subscription from './pages/Subscription';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -107,6 +108,10 @@ function App() {
         <Route 
           path="/admin/tiers" 
           element={<ProtectedRoute><AppLayout>{isAdmin ? <StorageTiers /> : <Navigate to="/dashboard" replace />}</AppLayout></ProtectedRoute>} 
+        />
+        <Route 
+          path="/admin/settings" 
+          element={<ProtectedRoute><AppLayout>{isAdmin ? <AdminSettings /> : <Navigate to="/dashboard" replace />}</AppLayout></ProtectedRoute>} 
         />
       </Routes>
     </BrowserRouter>

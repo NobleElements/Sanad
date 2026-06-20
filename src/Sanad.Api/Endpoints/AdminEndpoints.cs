@@ -171,14 +171,121 @@ public static class AdminEndpoints
             return Results.Ok(new { message = "Password reset successfully" });
         });
 
-        group.MapPut("/tiers/{id}", async (int id, AdminDbContext db, AdminTierUpdateRequest req) =>
+        group.MapPost("/users/{id}/subscription/cancel", async (Guid id, AdminDbContext db, Services.PaddleService paddleService) =>
+        {
+            var user = await db.Users.FindAsync(id);
+            if (user == null) return Results.NotFound();
+
+            if (string.IsNullOrEmpty(user.PaddleSubscriptionId))
+                return Results.BadRequest("User does not have an active Paddle subscription.");
+
+            try
+            {
+                await paddleService.CancelSubscriptionAsync(user.PaddleSubscriptionId);
+                
+                // We could wait for the webhook, but we can also eagerly update it:
+                user.PaddleSubscriptionStatus = "canceled";
+
+                // Move to free tier
+                _ = db.SubscriptionHistories.Add(new Models.SubscriptionHistory
+                {
+                    UserId = user.Id,
+                    TierId = user.TierId,
+                    StartedAt = user.TierStartedAt,
+                    EndedAt = DateTime.UtcNow
+                });
+                
+                user.TierId = 1; // Free tier
+                user.TierStartedAt = DateTime.UtcNow;
+                user.TierExpiresAt = null;
+
+                await db.SaveChangesAsync();
+                return Results.Ok(new { message = "Subscription canceled successfully." });
+            }
+            catch (Exception ex)
+            {
+                return Results.BadRequest(ex.Message);
+            }
+        });
+
+        group.MapPost("/users/{id}/subscription/refund", async (Guid id, AdminDbContext db, Services.PaddleService paddleService, AdminRefundRequest req) =>
+        {
+            var user = await db.Users.FindAsync(id);
+            if (user == null) return Results.NotFound();
+
+            if (string.IsNullOrEmpty(user.PaddleSubscriptionId))
+                return Results.BadRequest("User does not have an active Paddle subscription.");
+
+            try
+            {
+                await paddleService.RefundPaymentAsync(user.PaddleSubscriptionId, req.Amount);
+                return Results.Ok(new { message = "Refund issued successfully." });
+            }
+            catch (Exception ex)
+            {
+                return Results.BadRequest(ex.Message);
+            }
+        });
+
+        group.MapPut("/tiers/{id}", async (int id, AdminDbContext db, Services.PaddleService paddleService, AdminTierUpdateRequest req) =>
         {
             var tier = await db.Tiers.FindAsync(id);
             if (tier == null) return Results.NotFound();
 
+            bool priceChanged = req.Price.HasValue && req.Price.Value != tier.Price;
+
             if (req.Price.HasValue) tier.Price = req.Price.Value;
             if (req.DiskLimitBytes.HasValue) tier.DiskLimitBytes = req.DiskLimitBytes.Value;
             if (!string.IsNullOrWhiteSpace(req.Name)) tier.Name = req.Name;
+
+            var settings = await db.SystemSettings.ToDictionaryAsync(s => s.Key, s => s.Value);
+            var isPaddleEnabled = settings.GetValueOrDefault("IsPaddleEnabled") == "true";
+
+            if (isPaddleEnabled)
+            {
+                // Sync with Paddle
+                var productId = await paddleService.CreateOrUpdateProductAsync(tier.Name, tier.PaddleProductId);
+                if (!string.IsNullOrEmpty(productId))
+                {
+                    tier.PaddleProductId = productId;
+                }
+
+                if (tier.Price > 0 && !string.IsNullOrEmpty(tier.PaddleProductId))
+                {
+                    if (!string.IsNullOrEmpty(tier.PaddlePriceId))
+                    {
+                        var status = await paddleService.GetPriceStatusAsync(tier.PaddlePriceId);
+                        if (status != "active")
+                        {
+                            tier.PaddlePriceId = null; // force creation
+                        }
+                    }
+
+                    if (string.IsNullOrEmpty(tier.PaddlePriceId))
+                    {
+                        // Create initial price
+                        var priceId = await paddleService.CreatePriceAsync(tier.PaddleProductId, tier.Name, tier.Price);
+                        if (!string.IsNullOrEmpty(priceId)) tier.PaddlePriceId = priceId;
+                    }
+                    else if (priceChanged)
+                    {
+                        // Archive old price and create new one
+                        var oldPriceId = tier.PaddlePriceId;
+                        var newPriceId = await paddleService.CreatePriceAsync(tier.PaddleProductId, tier.Name, tier.Price);
+                        if (!string.IsNullOrEmpty(newPriceId))
+                        {
+                            tier.PaddlePriceId = newPriceId;
+                            try { await paddleService.UpdatePriceAsync(oldPriceId, status: "archived"); } catch { /* ignore if fail to archive */ }
+                        }
+                    }
+                }
+
+                // If only name changed and price didn't change, we should update the existing price's name
+                if (!priceChanged && !string.IsNullOrWhiteSpace(req.Name) && !string.IsNullOrEmpty(tier.PaddlePriceId))
+                {
+                    try { await paddleService.UpdatePriceAsync(tier.PaddlePriceId, name: tier.Name); } catch { /* ignore */ }
+                }
+            }
 
             await db.SaveChangesAsync();
             return Results.Ok(tier);
@@ -370,3 +477,4 @@ public record AdminResetPasswordRequest(string NewPassword);
 public record AdminDatastoreCreateRequest(string Name, string Path, bool IsDefault);
 public record AdminDatastoreUpdateRequest(string? Name, string? Path, bool? IsDefault);
 public record AdminMigrateUserRequest(int TargetDatastoreId);
+public record AdminRefundRequest(decimal Amount);

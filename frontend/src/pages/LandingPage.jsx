@@ -44,6 +44,20 @@ export default function LandingPage() {
               </span>
             </div>
             <div className="flex items-center gap-4">
+              <div className="hidden md:flex items-center gap-4 mr-4">
+                <a 
+                  href="#features" 
+                  className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium px-3 py-2 transition-colors"
+                >
+                  Features
+                </a>
+                <a 
+                  href="#pricing" 
+                  className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium px-3 py-2 transition-colors"
+                >
+                  Pricing
+                </a>
+              </div>
               <Link 
                 to="/login" 
                 className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium px-3 py-2 transition-colors"
@@ -99,7 +113,7 @@ export default function LandingPage() {
       </div>
 
       {/* Features Section */}
-      <div className="bg-white dark:bg-gray-900 py-24 border-t border-gray-100 dark:border-gray-800">
+      <div id="features" className="bg-white dark:bg-gray-900 py-24 border-t border-gray-100 dark:border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Everything you need to stay productive</h2>

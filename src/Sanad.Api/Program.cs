@@ -92,8 +92,10 @@ builder.Services.AddMcpServer()
 // Change to Scoped since it needs ITenantProvider
 builder.Services.AddScoped<FileStorageService>();
 builder.Services.AddScoped<FileManagerService>();
+builder.Services.AddScoped<PaddleService>();
 builder.Services.AddSingleton<MigrationService>();
 builder.Services.AddHostedService<DiskUsageSyncService>();
+builder.Services.AddHostedService<SubscriptionCleanupService>();
 builder.Services.AddMemoryCache();
 var app = builder.Build();
 
@@ -141,9 +143,13 @@ api.MapHabitEndpoints();
 api.MapFolderEndpoints();
 api.MapFileEndpoints();
 api.MapStorageEndpoints();
+api.MapSubscriptionEndpoints();
 
 // Admin Endpoints
 api.MapAdminEndpoints();
+api.MapAdminSettingsEndpoints();
+
+app.MapPaddleWebhookEndpoints();
 
 app.MapMcp("/mcp").RequireAuthorization();
 

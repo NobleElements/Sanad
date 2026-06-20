@@ -93,6 +93,13 @@ export default function AdminDashboard() {
             <HardDrive className="w-5 h-5 md:w-4 md:h-4" />
             <span className="hidden md:inline text-sm font-medium">Manage Storage Tiers</span>
           </Link>
+          <Link 
+            to="/admin/settings" 
+            className="flex items-center gap-2 p-2 md:px-4 md:py-2 bg-slate-800 text-white rounded-md hover:bg-slate-700 transition-colors shadow-sm"
+            title="System Settings"
+          >
+            <span className="hidden md:inline text-sm font-medium">Settings</span>
+          </Link>
         </div>
       </div>
 

@@ -4,24 +4,86 @@ import useAuthStore from '../store/useAuthStore';
 import useSubscriptionStore from '../store/useSubscriptionStore';
 import { formatBytes } from '../utils/formatUtils';
 import usePageTitle from '../hooks/usePageTitle';
+import { initializePaddle } from '@paddle/paddle-js';
+import { API_URL } from '../config';
 
 export default function Subscription() {
   usePageTitle('Subscription');
   const { tiers, storageData, loading, fetchSubscriptionData } = useSubscriptionStore();
-  const { tierId, tierStartedAt, tierExpiresAt, apiKey, rerollApiKey, changePassword } = useAuthStore();
+  const { tierId, tierStartedAt, tierExpiresAt, paddleSubscriptionStatus, apiKey, rerollApiKey, changePassword, checkAuthStatus } = useAuthStore();
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [passwordData, setPasswordData] = useState({ current: '', new: '', confirm: '' });
   const [passwordStatus, setPasswordStatus] = useState({ type: '', msg: '' });
   const [history, setHistory] = useState([]);
+  const [transactions, setTransactions] = useState([]);
+  const [paddleInstance, setPaddleInstance] = useState(null);
+  const [paddleConfig, setPaddleConfig] = useState(null);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
+  const [verifyTransactionId, setVerifyTransactionId] = useState('');
+  const [verifyStatus, setVerifyStatus] = useState({ type: '', msg: '' });
+  const [isVerifying, setIsVerifying] = useState(false);
 
   useEffect(() => {
-    const fetchHistory = async () => {
+    const initPaddle = async () => {
+      try {
+        const res = await fetch(`${API_URL}/storage/paddle-config`);
+        if (res.ok) {
+          const config = await res.json();
+          setPaddleConfig(config);
+          
+          if (config.enabled && config.token) {
+            let pendingTransactionId = null;
+
+            const paddle = await initializePaddle({
+              environment: config.environment,
+              token: config.token,
+              eventCallback: async (event) => {
+                if (event.name === 'checkout.completed') {
+                  pendingTransactionId = event.data?.transaction_id;
+                } else if (event.name === 'checkout.closed') {
+                  if (pendingTransactionId) {
+                    try {
+                      await fetch(`${API_URL}/subscription/verify-checkout`, {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'Authorization': `Bearer ${useAuthStore.getState().token}`
+                        },
+                        body: JSON.stringify({ transactionId: pendingTransactionId })
+                      });
+                    } catch (e) {
+                      console.error('Verify checkout failed', e);
+                    } finally {
+                      pendingTransactionId = null;
+                      fetchSubscriptionData();
+                      checkAuthStatus();
+                    }
+                  }
+                }
+              }
+            });
+            setPaddleInstance(paddle);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to init paddle', e);
+      }
+    };
+    initPaddle();
+  }, [fetchSubscriptionData]);
+
+  useEffect(() => {
+    const fetchHistoryAndTransactions = async () => {
       try {
         const res = await fetch(`${API_URL}/storage/history`);
         if (res.ok) setHistory(await res.json());
+
+        const tRes = await fetch(`${API_URL}/subscription/transactions`);
+        if (tRes.ok) setTransactions(await tRes.json());
       } catch (e) { console.error(e); }
     };
-    fetchHistory();
+    fetchHistoryAndTransactions();
   }, []);
 
   const handlePasswordChange = async (e) => {
@@ -46,6 +108,84 @@ export default function Subscription() {
     fetchSubscriptionData();
   }, [fetchSubscriptionData]);
 
+  const handleVerifySubscription = async () => {
+    if (!verifyTransactionId.trim()) return;
+    setIsVerifying(true);
+    setVerifyStatus({ type: '', msg: '' });
+    try {
+      const res = await fetch(`${API_URL}/subscription/verify-checkout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${useAuthStore.getState().token}`
+        },
+        body: JSON.stringify({ transactionId: verifyTransactionId.trim() })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setVerifyStatus({ type: 'success', msg: data.message || 'Verified successfully!' });
+        fetchSubscriptionData();
+        checkAuthStatus();
+        setTimeout(() => {
+          setIsVerifyModalOpen(false);
+          setVerifyTransactionId('');
+          setVerifyStatus({ type: '', msg: '' });
+        }, 2000);
+      } else {
+        setVerifyStatus({ type: 'error', msg: data.message || 'Verification failed.' });
+      }
+    } catch (e) {
+      setVerifyStatus({ type: 'error', msg: 'Network error occurred.' });
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const handleCancelSubscription = async () => {
+    if (!confirm('Are you sure you want to cancel your auto-renewal? You will keep your tier until the current period expires.')) return;
+    try {
+      const res = await fetch(`${API_URL}/subscription/cancel`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${useAuthStore.getState().token}`
+        }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(data.message);
+        checkAuthStatus();
+      } else {
+        alert(data.message || 'Failed to cancel.');
+      }
+    } catch (e) {
+      alert('Network error.');
+    }
+  };
+
+  const handleChangeTier = async (newTierId) => {
+    if (!confirm('Are you sure you want to change your plan?')) return;
+    try {
+      const res = await fetch(`${API_URL}/subscription/change-tier`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${useAuthStore.getState().token}`
+        },
+        body: JSON.stringify({ tierId: newTierId })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(data.message);
+        checkAuthStatus();
+        fetchSubscriptionData();
+      } else {
+        alert(data.message || 'Failed to change tier.');
+      }
+    } catch (e) {
+      alert('Network error.');
+    }
+  };
+
   if (loading) return <div className="p-8">Loading subscription data...</div>;
 
   const usagePercent = Math.min(100, (storageData.diskUsed / storageData.diskLimitBytes) * 100);
@@ -69,9 +209,22 @@ export default function Subscription() {
         </div>
         <div className="text-sm text-slate-500 flex flex-col sm:flex-row sm:items-center justify-between">
           <p>You are currently on the <span className="font-bold text-slate-700">{tiers.find(t => t.id === tierId)?.name || 'Unknown'}</span> tier.</p>
-          <div className="mt-2 sm:mt-0 text-right">
-            {tierStartedAt && <p>Started: {new Date(tierStartedAt).toLocaleDateString()}</p>}
-            {tierExpiresAt && <p>Expires: <span className="font-medium text-slate-700">{new Date(tierExpiresAt).toLocaleDateString()}</span></p>}
+          <div className="mt-2 sm:mt-0 text-right flex flex-col items-end gap-2">
+            <div>
+              {tierStartedAt && <p>Started: {new Date(tierStartedAt).toLocaleDateString()}</p>}
+              {tierExpiresAt && <p>Expires: <span className="font-medium text-slate-700">{new Date(tierExpiresAt).toLocaleDateString()}</span></p>}
+            </div>
+            {paddleSubscriptionStatus === 'active' && (
+              <button 
+                onClick={handleCancelSubscription}
+                className="text-sm px-3 py-1 bg-red-100 text-red-700 hover:bg-red-200 rounded transition-colors"
+              >
+                Cancel Subscription
+              </button>
+            )}
+            {paddleSubscriptionStatus === 'canceled_pending' && (
+              <span className="text-sm text-amber-600 bg-amber-50 px-2 py-1 rounded">Cancels at end of period</span>
+            )}
           </div>
         </div>
       </div>
@@ -91,56 +244,77 @@ export default function Subscription() {
       </div>
 
       <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-6 mb-8">
-        <h2 className="text-xl font-semibold text-slate-800 mb-4">Change Password</h2>
-        <form onSubmit={handlePasswordChange} className="max-w-md space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Current Password</label>
-            <input 
-              type="password" 
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
-              value={passwordData.current}
-              onChange={e => setPasswordData({...passwordData, current: e.target.value})}
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">New Password</label>
-            <input 
-              type="password" 
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
-              value={passwordData.new}
-              onChange={e => setPasswordData({...passwordData, new: e.target.value})}
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Confirm New Password</label>
-            <input 
-              type="password" 
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
-              value={passwordData.confirm}
-              onChange={e => setPasswordData({...passwordData, confirm: e.target.value})}
-              required
-            />
-          </div>
-          {passwordStatus.msg && (
-            <div className={`p-3 rounded-lg text-sm ${passwordStatus.type === 'error' ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'}`}>
-              {passwordStatus.msg}
-            </div>
-          )}
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold text-slate-800">Change Password</h2>
           <button 
-            type="submit"
-            className="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors"
+            onClick={() => setShowChangePassword(!showChangePassword)}
+            className="text-sm font-medium text-blue-600 hover:text-blue-700"
           >
-            Update Password
+            {showChangePassword ? 'Hide' : 'Change Password'}
           </button>
-        </form>
+        </div>
+        
+        {showChangePassword && (
+          <form onSubmit={handlePasswordChange} className="max-w-md space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Current Password</label>
+              <input 
+                type="password" 
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                value={passwordData.current}
+                onChange={e => setPasswordData({...passwordData, current: e.target.value})}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">New Password</label>
+              <input 
+                type="password" 
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                value={passwordData.new}
+                onChange={e => setPasswordData({...passwordData, new: e.target.value})}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Confirm New Password</label>
+              <input 
+                type="password" 
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                value={passwordData.confirm}
+                onChange={e => setPasswordData({...passwordData, confirm: e.target.value})}
+                required
+              />
+            </div>
+            {passwordStatus.msg && (
+              <div className={`p-3 rounded-lg text-sm ${passwordStatus.type === 'error' ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'}`}>
+                {passwordStatus.msg}
+              </div>
+            )}
+            <button 
+              type="submit"
+              className="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors"
+            >
+              Update Password
+            </button>
+          </form>
+        )}
       </div>
 
-      <h2 className="text-xl font-semibold mb-4 text-slate-700">Available Tiers</h2>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold text-slate-700">Available Tiers</h2>
+        <button 
+          onClick={() => setIsVerifyModalOpen(true)}
+          className="text-sm font-medium text-slate-600 hover:text-slate-800 border border-slate-300 rounded px-3 py-1 bg-white"
+        >
+          Verify Missing Subscription
+        </button>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {tiers.map(tier => {
           const isCurrent = tier.id === tierId;
+          const currentTierPrice = tiers.find(t => t.id === tierId)?.price || 0;
+          const isUpgrade = tier.price > currentTierPrice;
           return (
             <div key={tier.id} className={`border rounded-2xl p-6 flex flex-col ${isCurrent ? 'border-blue-500 shadow-md bg-blue-50/30' : 'border-slate-200 bg-white hover:border-blue-300 transition-colors'}`}>
               <h3 className="font-bold text-xl mb-2 text-slate-800">{tier.name}</h3>
@@ -164,15 +338,30 @@ export default function Subscription() {
               </ul>
               
               <button 
-                disabled={isCurrent}
+                disabled={isCurrent || (tier.price > 0 && (!paddleInstance || !tier.paddlePriceId))}
                 className={`w-full py-3 rounded-lg font-medium transition-colors ${
                   isCurrent 
                     ? 'bg-slate-200 text-slate-500 cursor-not-allowed' 
-                    : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
+                    : (tier.price > 0 && (!paddleInstance || !tier.paddlePriceId)) 
+                      ? 'bg-slate-300 text-white cursor-not-allowed'
+                      : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
                 }`}
-                onClick={() => alert('Payment integration would go here!')}
+                onClick={() => {
+                  if (tier.price === 0) return; // Need backend API to explicitly downgrade to free
+                  
+                  if (paddleSubscriptionStatus === 'active' || paddleSubscriptionStatus === 'canceled_pending') {
+                    handleChangeTier(tier.id);
+                  } else {
+                    if (paddleInstance && tier.paddlePriceId) {
+                      paddleInstance.Checkout.open({
+                        items: [{ priceId: tier.paddlePriceId, quantity: 1 }],
+                        customData: { userId: useAuthStore.getState().id || '' }
+                      });
+                    }
+                  }
+                }}
               >
-                {isCurrent ? 'Current Plan' : 'Upgrade'}
+                {isCurrent ? 'Current Plan' : (tier.price > 0 && !tier.paddlePriceId ? 'Unavailable' : (isUpgrade ? 'Upgrade' : 'Downgrade'))}
               </button>
             </div>
           );
@@ -197,6 +386,36 @@ export default function Subscription() {
                     <td className="px-4 py-3 text-slate-800 font-medium">{h.tierName}</td>
                     <td className="px-4 py-3 text-slate-500">{new Date(h.startedAt).toLocaleDateString()}</td>
                     <td className="px-4 py-3 text-slate-500">{h.endedAt ? new Date(h.endedAt).toLocaleDateString() : 'N/A'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {transactions.length > 0 && (
+        <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-6 mb-8">
+          <h2 className="text-xl font-semibold text-slate-800 mb-4">Billing History</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
+                <tr>
+                  <th className="px-4 py-3 font-medium">Date</th>
+                  <th className="px-4 py-3 font-medium">Amount</th>
+                  <th className="px-4 py-3 font-medium">Status</th>
+                  <th className="px-4 py-3 font-medium">Transaction ID</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {transactions.map((t, i) => (
+                  <tr key={i} className="hover:bg-slate-50">
+                    <td className="px-4 py-3 text-slate-500">{new Date(t.created_at).toLocaleDateString()}</td>
+                    <td className="px-4 py-3 text-slate-800 font-medium">
+                      {t.details?.totals?.total ? (parseInt(t.details.totals.total) / 100).toFixed(2) : '0.00'} {t.details?.totals?.currency_code}
+                    </td>
+                    <td className="px-4 py-3 text-slate-500 capitalize">{t.status.replace('_', ' ')}</td>
+                    <td className="px-4 py-3 text-slate-500 font-mono text-xs">{t.id}</td>
                   </tr>
                 ))}
               </tbody>
@@ -236,6 +455,51 @@ export default function Subscription() {
                 className="px-4 py-2 font-medium bg-red-600 text-white hover:bg-red-700 rounded-lg transition-colors shadow-sm"
               >
                 Yes, Reroll Key
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isVerifyModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-slate-100">
+              <div className="font-semibold text-slate-800">Verify Subscription</div>
+              <button onClick={() => setIsVerifyModalOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6">
+              <p className="text-sm text-slate-600 mb-4">
+                If you recently paid for a subscription but your tier was not updated, please enter your Transaction ID here to verify it.
+              </p>
+              <input
+                type="text"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2"
+                placeholder="txn_..."
+                value={verifyTransactionId}
+                onChange={e => setVerifyTransactionId(e.target.value)}
+              />
+              {verifyStatus.msg && (
+                <div className={`p-3 rounded-lg text-sm mt-2 ${verifyStatus.type === 'error' ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'}`}>
+                  {verifyStatus.msg}
+                </div>
+              )}
+            </div>
+            <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+              <button 
+                onClick={() => setIsVerifyModalOpen(false)}
+                className="px-4 py-2 font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleVerifySubscription}
+                disabled={isVerifying || !verifyTransactionId.trim()}
+                className="px-4 py-2 font-medium bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50"
+              >
+                {isVerifying ? 'Verifying...' : 'Verify'}
               </button>
             </div>
           </div>

@@ -208,6 +208,52 @@ const useAdminStore = create((set, get) => ({
         alert(error);
       }
     } catch (e) { console.error(e); }
+  },
+
+  cancelSubscription: async (userId, queryParamsStr) => {
+    if (!window.confirm("Are you sure you want to cancel this subscription? The user will be downgraded to the Free tier.")) return;
+    try {
+      const res = await fetch(`${API_URL}/admin/users/${userId}/subscription/cancel`, {
+        method: 'POST'
+      });
+      if (res.ok) {
+        alert("Subscription canceled successfully.");
+        get().fetchData(queryParamsStr);
+      } else {
+        const err = await res.text();
+        alert(`Failed to cancel subscription: ${err}`);
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Network error.");
+    }
+  },
+
+  refundSubscription: async (userId, queryParamsStr) => {
+    const amountStr = window.prompt("Enter amount to refund (e.g., 5.00):");
+    if (!amountStr) return;
+    const amount = parseFloat(amountStr);
+    if (isNaN(amount) || amount <= 0) return alert("Invalid amount.");
+
+    if (!window.confirm(`Are you sure you want to issue a refund of $${amount}?`)) return;
+
+    try {
+      const res = await fetch(`${API_URL}/admin/users/${userId}/subscription/refund`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount })
+      });
+      if (res.ok) {
+        alert("Refund issued successfully.");
+        get().fetchData(queryParamsStr);
+      } else {
+        const err = await res.text();
+        alert(`Failed to issue refund: ${err}`);
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Network error.");
+    }
   }
 }));
 

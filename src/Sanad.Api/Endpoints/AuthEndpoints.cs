@@ -27,12 +27,14 @@ public static class AuthEndpoints
                     await db.SaveChangesAsync();
                     return Results.Ok(new { 
                         authenticated = true, 
+                        id = user.Id,
                         username = user.Username,
                         isAdmin = user.IsAdmin,
                         tierId = user.TierId,
                         apiKey = user.ApiKey,
                         tierStartedAt = user.TierStartedAt,
-                        tierExpiresAt = user.TierExpiresAt
+                        tierExpiresAt = user.TierExpiresAt,
+                        paddleSubscriptionStatus = user.PaddleSubscriptionStatus
                     });
                 }
             }
@@ -81,7 +83,7 @@ public static class AuthEndpoints
 
             await SignInUser(context, user);
 
-            return Results.Ok(new { message = "Signup completed successfully", username = user.Username, isAdmin = user.IsAdmin, apiKey = user.ApiKey });
+            return Results.Ok(new { message = "Signup completed successfully", id = user.Id, username = user.Username, isAdmin = user.IsAdmin, apiKey = user.ApiKey, paddleSubscriptionStatus = user.PaddleSubscriptionStatus });
         }).AllowAnonymous();
 
         group.MapPost("/login", async (AdminDbContext db, HttpContext context, LoginRequest request) =>
@@ -114,7 +116,7 @@ public static class AuthEndpoints
 
             await SignInUser(context, user);
 
-            return Results.Ok(new { message = "Logged in successfully", username = user.Username, isAdmin = user.IsAdmin, apiKey = user.ApiKey });
+            return Results.Ok(new { message = "Logged in successfully", id = user.Id, username = user.Username, isAdmin = user.IsAdmin, apiKey = user.ApiKey, paddleSubscriptionStatus = user.PaddleSubscriptionStatus });
         }).AllowAnonymous();
 
         group.MapPost("/logout", async (HttpContext context) =>

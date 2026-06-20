@@ -6,4 +6,7 @@ public class StorageTier
     public string Name { get; set; } = string.Empty;
     public decimal Price { get; set; }
     public long DiskLimitBytes { get; set; }
+    
+    public string? PaddleProductId { get; set; }
+    public string? PaddlePriceId { get; set; }
 }

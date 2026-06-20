@@ -1,7 +1,7 @@
 import useAdminStore from '../../store/useAdminStore';
 import useAuthStore from '../../store/useAuthStore';
 import { formatBytes } from '../../utils/formatUtils';
-import { RefreshCw, Key, Trash2 } from 'lucide-react';
+import { RefreshCw, Key, Trash2, XCircle, CreditCard } from 'lucide-react';
 
 export default function AdminUserManagement({
   queryParamsStr,
@@ -25,6 +25,8 @@ export default function AdminUserManagement({
   const recalculateStorage = useAdminStore(state => state.recalculateStorage);
   const resetPassword = useAdminStore(state => state.resetPassword);
   const deleteUser = useAdminStore(state => state.deleteUser);
+  const cancelSubscription = useAdminStore(state => state.cancelSubscription);
+  const refundSubscription = useAdminStore(state => state.refundSubscription);
   const loading = useAdminStore(state => state.loading);
 
   const usersList = dashboardData.users || [];
@@ -188,6 +190,26 @@ export default function AdminUserManagement({
                   >
                     <Key className="w-4 h-4" />
                   </button>
+                  {u.tierId > 1 && (
+                    <>
+                      <button 
+                        onClick={() => refundSubscription(u.id, queryParamsStr)}
+                        disabled={u.isMigrating}
+                        title="Refund Subscription"
+                        className="text-amber-600 hover:text-amber-800 p-1.5 border border-amber-200 rounded hover:bg-amber-50 transition-colors disabled:opacity-50 inline-flex"
+                      >
+                        <CreditCard className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => cancelSubscription(u.id, queryParamsStr)}
+                        disabled={u.isMigrating}
+                        title="Cancel Subscription"
+                        className="text-orange-500 hover:text-orange-700 p-1.5 border border-orange-200 rounded hover:bg-orange-50 transition-colors disabled:opacity-50 inline-flex"
+                      >
+                        <XCircle className="w-4 h-4" />
+                      </button>
+                    </>
+                  )}
                   {u.username !== currentUsername && (
                     <button 
                       onClick={() => deleteUser(u.id, queryParamsStr)}

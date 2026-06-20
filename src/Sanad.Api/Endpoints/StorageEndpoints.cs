@@ -31,6 +31,20 @@ public static class StorageEndpoints
             return Results.Ok(tiers);
         }).AllowAnonymous();
 
+        group.MapGet("/paddle-config", async (AdminDbContext db) =>
+        {
+            var settings = await db.SystemSettings.ToDictionaryAsync(s => s.Key, s => s.Value);
+            var isEnabled = settings.GetValueOrDefault("IsPaddleEnabled") == "true";
+            var token = settings.GetValueOrDefault("PaddleClientToken", "");
+            var env = settings.GetValueOrDefault("PaddleEnvironment", "sandbox");
+            
+            return Results.Ok(new {
+                enabled = isEnabled,
+                token,
+                environment = env
+            });
+        }).AllowAnonymous();
+
         group.MapGet("/history", async (AdminDbContext db, HttpContext context) =>
         {
             var username = context.User.Identity?.Name;

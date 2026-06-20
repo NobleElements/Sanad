@@ -5,11 +5,13 @@ import useUIStore from './useUIStore';
 const useAuthStore = create((set, get) => ({
   loaded: false,
   authenticated: false,
+  id: null,
   username: null,
   isAdmin: false,
   tierId: 1,
   tierStartedAt: null,
   tierExpiresAt: null,
+  paddleSubscriptionStatus: null,
   apiKey: null,
 
   checkAuthStatus: async () => {
@@ -19,16 +21,18 @@ const useAuthStore = create((set, get) => ({
       set({
         loaded: true,
         authenticated: data.authenticated,
+        id: data.id || null,
         username: data.username,
         isAdmin: data.isAdmin || false,
         tierId: data.tierId || 1,
         tierStartedAt: data.tierStartedAt || null,
         tierExpiresAt: data.tierExpiresAt || null,
+        paddleSubscriptionStatus: data.paddleSubscriptionStatus || null,
         apiKey: data.apiKey || null
       });
     } catch (err) {
       console.error("Auth status error:", err);
-      set({ loaded: true, authenticated: false, username: null, isAdmin: false, apiKey: null, tierStartedAt: null, tierExpiresAt: null });
+      set({ loaded: true, authenticated: false, id: null, username: null, isAdmin: false, apiKey: null, tierStartedAt: null, tierExpiresAt: null, paddleSubscriptionStatus: null });
     }
   },
 
@@ -45,11 +49,13 @@ const useAuthStore = create((set, get) => ({
         const data = await response.json();
         set({ 
             authenticated: true, 
+            id: data.id,
             username: data.username, 
             isAdmin: data.isAdmin,
             tierId: data.tierId || 1,
             tierStartedAt: data.tierStartedAt || null,
             tierExpiresAt: data.tierExpiresAt || null,
+            paddleSubscriptionStatus: data.paddleSubscriptionStatus || null,
             apiKey: data.apiKey || null
         });
         return { success: true };
@@ -65,7 +71,7 @@ const useAuthStore = create((set, get) => ({
   logout: async () => {
     try {
       await fetch(`${API_URL}/auth/logout`, { method: 'POST' });
-      set({ authenticated: false, username: null, isAdmin: false, tierId: 1, apiKey: null, tierStartedAt: null, tierExpiresAt: null });
+      set({ authenticated: false, id: null, username: null, isAdmin: false, tierId: 1, apiKey: null, tierStartedAt: null, tierExpiresAt: null, paddleSubscriptionStatus: null });
     } catch (err) {
       console.error('Logout failed', err);
       useUIStore.getState().showError('Logout failed');
