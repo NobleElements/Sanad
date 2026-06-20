@@ -150,6 +150,7 @@ api.MapAdminEndpoints();
 api.MapAdminSettingsEndpoints();
 
 app.MapPaddleWebhookEndpoints();
+app.MapPublicSettingsEndpoints();
 
 app.MapMcp("/mcp").RequireAuthorization();
 

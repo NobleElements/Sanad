@@ -23,7 +23,8 @@ public static class AdminSettingsEndpoints
                 PaddleApiKey = settings.GetValueOrDefault("PaddleApiKey", ""),
                 PaddleClientToken = settings.GetValueOrDefault("PaddleClientToken", ""),
                 PaddleWebhookSecret = settings.GetValueOrDefault("PaddleWebhookSecret", ""),
-                EnableNewSubscriptions = settings.GetValueOrDefault("EnableNewSubscriptions") == "true"
+                EnableNewSubscriptions = settings.GetValueOrDefault("EnableNewSubscriptions") == "true",
+                ContactEmail = settings.GetValueOrDefault("ContactEmail", "")
             });
         });
 
@@ -49,6 +50,7 @@ public static class AdminSettingsEndpoints
             if (req.PaddleApiKey != null) UpdateSetting("PaddleApiKey", req.PaddleApiKey);
             if (req.PaddleClientToken != null) UpdateSetting("PaddleClientToken", req.PaddleClientToken);
             if (req.PaddleWebhookSecret != null) UpdateSetting("PaddleWebhookSecret", req.PaddleWebhookSecret);
+            if (req.ContactEmail != null) UpdateSetting("ContactEmail", req.ContactEmail);
 
             await db.SaveChangesAsync();
             return Results.Ok();
@@ -75,7 +77,8 @@ public record AdminSettingsUpdateRequest(
     string? PaddleEnvironment,
     string? PaddleApiKey,
     string? PaddleClientToken,
-    string? PaddleWebhookSecret
+    string? PaddleWebhookSecret,
+    string? ContactEmail
 );
 
 public record PaddleVerifyRequest(string Environment, string ApiKey);

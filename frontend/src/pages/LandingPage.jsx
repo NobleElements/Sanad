@@ -17,6 +17,8 @@ const FeatureCard = ({ icon: Icon, title, description }) => (
 export default function LandingPage() {
   const [tiers, setTiers] = useState([]);
   const [loadingTiers, setLoadingTiers] = useState(true);
+  const [contactEmail, setContactEmail] = useState('');
+  const [contactReason, setContactReason] = useState('General Inquiry');
 
   useEffect(() => {
     fetch(`${API_URL}/storage/tiers`)
@@ -29,6 +31,15 @@ export default function LandingPage() {
         console.error("Failed to load tiers", err);
         setLoadingTiers(false);
       });
+
+    fetch(`${API_URL}/settings/public`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.contactEmail) {
+          setContactEmail(data.contactEmail);
+        }
+      })
+      .catch(err => console.error("Failed to load public settings", err));
   }, []);
 
   return (
@@ -57,6 +68,14 @@ export default function LandingPage() {
                 >
                   Pricing
                 </a>
+                {contactEmail && (
+                  <a 
+                    href="#contact" 
+                    className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium px-3 py-2 transition-colors"
+                  >
+                    Contact
+                  </a>
+                )}
               </div>
               <Link 
                 to="/login" 
@@ -372,6 +391,46 @@ export default function LandingPage() {
           </div>
         </div>
       </div>
+
+      {/* Contact Us Section */}
+      {contactEmail && (
+        <div id="contact" className="bg-slate-50 dark:bg-gray-800/50 py-24 border-t border-gray-100 dark:border-gray-800">
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Get in Touch</h2>
+            <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">
+              Have questions or need support? Select a reason and reach out to us. We'll get back to you as soon as possible.
+            </p>
+            
+            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-8">
+              <div className="flex flex-col md:flex-row gap-4 items-center justify-center">
+                <div className="w-full md:w-1/2 text-left">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Reason for Contacting</label>
+                  <select 
+                    value={contactReason}
+                    onChange={(e) => setContactReason(e.target.value)}
+                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-xl px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="General Inquiry">General Inquiry</option>
+                    <option value="Technical Support">Technical Support</option>
+                    <option value="Billing Issue">Billing Issue</option>
+                    <option value="Feature Request">Feature Request</option>
+                    <option value="Bug Report">Bug Report</option>
+                  </select>
+                </div>
+                
+                <div className="w-full md:w-auto mt-4 md:mt-0 pt-6">
+                  <a 
+                    href={`mailto:${contactEmail}?subject=${encodeURIComponent(contactReason)}`}
+                    className="inline-flex w-full md:w-auto items-center justify-center px-8 py-3 text-lg font-semibold rounded-xl text-white bg-blue-600 hover:bg-blue-700 shadow-lg hover:shadow-xl transition-all"
+                  >
+                    Send Email
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="bg-white dark:bg-gray-900 py-12 border-t border-gray-100 dark:border-gray-800">
