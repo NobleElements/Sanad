@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import usePageTitle from '../hooks/usePageTitle';
 import useAdminStore from '../store/useAdminStore';
-import { RefreshCw, HardDrive } from 'lucide-react';
+import { RefreshCw, HardDrive, Settings } from 'lucide-react';
 
 import AdminSummaryCards from '../components/admin/AdminSummaryCards';
 import AdminDatastoresManagement from '../components/admin/AdminDatastoresManagement';
@@ -98,6 +98,7 @@ export default function AdminDashboard() {
             className="flex items-center gap-2 p-2 md:px-4 md:py-2 bg-slate-800 text-white rounded-md hover:bg-slate-700 transition-colors shadow-sm"
             title="System Settings"
           >
+            <Settings className="w-5 h-5 md:w-4 md:h-4" />
             <span className="hidden md:inline text-sm font-medium">Settings</span>
           </Link>
         </div>
