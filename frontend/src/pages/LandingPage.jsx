@@ -49,10 +49,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             <div className="flex items-center gap-2">
-              <LayoutDashboard className="w-8 h-8 text-blue-600 dark:text-blue-500" />
-              <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">
-                Sanad
-              </span>
+              <img src="/logo.png" alt="Sanad Logo" className="w-32 dark:invert" />
             </div>
             <div className="flex items-center gap-4">
               <div className="hidden md:flex items-center gap-4 mr-4">
@@ -436,7 +433,6 @@ export default function LandingPage() {
       <footer className="bg-white dark:bg-gray-900 py-12 border-t border-gray-100 dark:border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center">
           <div className="flex items-center gap-2 mb-4 md:mb-0">
-            <LayoutDashboard className="w-6 h-6 text-gray-400" />
             <span className="text-xl font-bold text-gray-900 dark:text-white">Sanad</span>
           </div>
           <p className="text-gray-500 dark:text-gray-400 text-sm">

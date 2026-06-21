@@ -54,7 +54,7 @@ function App() {
       <div className="flex-1 flex flex-col min-w-0">
         {/* Mobile Top Bar */}
         <div className="md:hidden flex items-center justify-between bg-slate-900 text-slate-100 p-4 border-b border-slate-800">
-          <div className="text-xl font-bold tracking-wider text-indigo-400">SANAD</div>
+          <div className="text-xl font-bold tracking-wider text-white">SANAD</div>
           <button 
             onClick={() => setIsMobileMenuOpen(true)}
             className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-100 transition-colors"

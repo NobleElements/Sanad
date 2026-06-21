@@ -55,7 +55,9 @@ export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }) {
       
       <div className={`fixed md:static inset-y-0 left-0 z-50 bg-slate-900 text-slate-100 flex flex-col transition-all duration-300 ease-in-out border-r border-slate-800 ${isCollapsed ? 'md:w-20 w-64' : 'w-64'} ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
         <div className={`flex items-center ${isCollapsed ? 'md:justify-center justify-between' : 'justify-between'} p-4 mb-4 border-b border-slate-800`}>
-          {(!isCollapsed || window.innerWidth < 768) && <div className="text-xl font-bold tracking-wider text-indigo-400">SANAD</div>}
+          {(!isCollapsed || window.innerWidth < 768) && (
+            <img src="/logo.png" alt="Sanad Logo" className="w-24 -m-24 ml-1 invert opacity-90" />
+          )}
           <button 
             onClick={() => setIsCollapsed(!isCollapsed)} 
             className="hidden md:block p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-100 transition-colors"
