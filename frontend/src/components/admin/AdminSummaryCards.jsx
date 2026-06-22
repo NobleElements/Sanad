@@ -10,34 +10,34 @@ export default function AdminSummaryCards() {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-        <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wider">Storage Total</h3>
-        <div className="mt-2 text-sm text-slate-700 space-y-1">
+      <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 dark:text-slate-100">
+        <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 dark:text-slate-500 uppercase tracking-wider">Storage Total</h3>
+        <div className="mt-2 text-sm text-slate-700 dark:text-slate-300 space-y-1">
           <div className="flex justify-between border-b border-slate-100 pb-1 mb-1">
             <span>System Total:</span>
-            <span className="font-semibold text-slate-800">{formatBytes(totalDsSpace || 0)}</span>
+            <span className="font-semibold text-slate-800 dark:text-slate-200">{formatBytes(totalDsSpace || 0)}</span>
           </div>
           <div className="flex justify-between">
             <span>System Free:</span>
-            <span className="font-semibold text-emerald-600">{formatBytes(totalDsFree || 0)}</span>
+            <span className="font-semibold text-emerald-600 dark:text-emerald-400">{formatBytes(totalDsFree || 0)}</span>
           </div>
           <div className="flex justify-between mt-2 pt-2 border-t border-slate-100">
-            <span className="text-slate-500 text-xs">Used By Users:</span>
-            <span className="font-semibold text-slate-800 text-xs">{formatBytes(dashboardData.totalDiskUsage || 0)}</span>
+            <span className="text-slate-500 dark:text-slate-400 dark:text-slate-500 text-xs">Used By Users:</span>
+            <span className="font-semibold text-slate-800 dark:text-slate-200 text-xs">{formatBytes(dashboardData.totalDiskUsage || 0)}</span>
           </div>
         </div>
       </div>
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-        <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wider">Total Users</h3>
-        <p className="text-2xl font-bold text-slate-800 mt-2">{dashboardData.totalCount || 0}</p>
+      <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 dark:text-slate-100">
+        <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 dark:text-slate-500 uppercase tracking-wider">Total Users</h3>
+        <p className="text-2xl font-bold text-slate-800 dark:text-slate-200 mt-2">{dashboardData.totalCount || 0}</p>
       </div>
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-        <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wider">Monthly Revenue</h3>
-        <p className="text-2xl font-bold text-slate-800 mt-2">${(dashboardData.monthlyRevenue || 0).toFixed(2)}</p>
+      <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 dark:text-slate-100">
+        <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 dark:text-slate-500 uppercase tracking-wider">Monthly Revenue</h3>
+        <p className="text-2xl font-bold text-slate-800 dark:text-slate-200 mt-2">${(dashboardData.monthlyRevenue || 0).toFixed(2)}</p>
       </div>
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-        <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wider">Users by Tier</h3>
-        <div className="mt-2 text-sm text-slate-700 space-y-1">
+      <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 dark:text-slate-100">
+        <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 dark:text-slate-500 uppercase tracking-wider">Users by Tier</h3>
+        <div className="mt-2 text-sm text-slate-700 dark:text-slate-300 space-y-1">
           {Object.entries(dashboardData.usersByTier || {}).map(([tier, count]) => (
             <div key={tier} className="flex justify-between">
               <span>{tier}:</span>
@@ -45,7 +45,7 @@ export default function AdminSummaryCards() {
             </div>
           ))}
           {Object.keys(dashboardData.usersByTier || {}).length === 0 && (
-            <div className="text-slate-400 italic">No data</div>
+            <div className="text-slate-400 dark:text-slate-500 italic">No data</div>
           )}
         </div>
       </div>

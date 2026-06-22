@@ -102,29 +102,29 @@ export default function Thoughts() {
   };
 
   return (
-    <div className="flex-1 flex flex-col p-8 overflow-y-auto bg-slate-50">
+    <div className="flex-1 flex flex-col p-8 overflow-y-auto bg-slate-50 dark:bg-slate-900">
       <div className="max-w-3xl w-full mx-auto">
         <div className="flex justify-between items-center mb-8 gap-2">
-          <h2 className="text-3xl font-bold text-slate-800">Thoughts</h2>
+          <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-200">Thoughts</h2>
           <div className="relative w-64">
-            <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
             <input
               type="text"
               placeholder="Search thoughts..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none dark:text-slate-100"
             />
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-10">
-          <h3 className="text-lg font-semibold mb-4 text-slate-700">What's on your mind?</h3>
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 mb-10 dark:text-slate-100">
+          <h3 className="text-lg font-semibold mb-4 text-slate-700 dark:text-slate-300">What's on your mind?</h3>
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
             <textarea 
               value={newContent}
               onChange={(e) => setNewContent(e.target.value)}
-              className="w-full border border-slate-300 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              className="w-full border border-slate-300 dark:border-slate-600 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none dark:bg-slate-700 dark:text-slate-100"
               placeholder="Capture a thought..."
               rows="3"
               disabled={isSubmitting}
@@ -132,7 +132,7 @@ export default function Thoughts() {
             <button 
               type="submit" 
               disabled={isSubmitting || !newContent.trim()}
-              className="self-end bg-indigo-600 text-white px-5 py-2 rounded-lg font-medium hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="self-end bg-indigo-600 dark:bg-indigo-500 text-white px-5 py-2 rounded-lg font-medium hover:bg-indigo-700 dark:hover:bg-indigo-600 dark:bg-indigo-500 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? 'Capturing...' : 'Capture Thought'}
             </button>
@@ -140,11 +140,11 @@ export default function Thoughts() {
         </div>
 
         {!isLoaded ? (
-          <div className="text-slate-500 italic">Loading thoughts...</div>
+          <div className="text-slate-500 dark:text-slate-400 dark:text-slate-500 italic">Loading thoughts...</div>
         ) : thoughts.length === 0 ? (
-          <div className="bg-white p-8 rounded-xl shadow-sm border border-slate-200 text-center">
-            <p className="text-slate-500 italic text-lg mb-2">No thoughts captured yet.</p>
-            <p className="text-slate-400 text-sm">Head over to the Dashboard to write your first thought.</p>
+          <div className="bg-white dark:bg-slate-800 p-8 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 text-center dark:text-slate-100">
+            <p className="text-slate-500 dark:text-slate-400 dark:text-slate-500 italic text-lg mb-2">No thoughts captured yet.</p>
+            <p className="text-slate-400 dark:text-slate-500 text-sm">Head over to the Dashboard to write your first thought.</p>
           </div>
         ) : (
           <div className="relative border-l-2 border-indigo-200 ml-4 space-y-8">
@@ -157,10 +157,10 @@ export default function Thoughts() {
                 <Fragment key={thought.id}>
                   {showDateHeader && (
                     <div className="relative pl-8 my-6">
-                      <div className="absolute -left-[11px] top-1/2 -translate-y-1/2 w-6 h-6 bg-slate-100 rounded-full border-4 border-slate-50 flex items-center justify-center">
+                      <div className="absolute -left-[11px] top-1/2 -translate-y-1/2 w-6 h-6 bg-slate-100 rounded-full border-4 border-slate-50 flex items-center justify-center dark:bg-slate-700 dark:text-slate-100">
                         <div className="w-2 h-2 bg-slate-400 rounded-full"></div>
                       </div>
-                      <span className="inline-block px-4 py-1.5 bg-slate-100 border border-slate-200 text-sm font-semibold text-slate-600 rounded-full shadow-sm">
+                      <span className="inline-block px-4 py-1.5 bg-slate-100 border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-400 dark:text-slate-500 rounded-full shadow-sm dark:bg-slate-700">
                         {currentDay}
                       </span>
                     </div>
@@ -168,11 +168,11 @@ export default function Thoughts() {
 
                   <div className="relative pl-8 group">
                     {/* Timeline dot */}
-                    <div className="absolute -left-[9px] top-1.5 w-4 h-4 bg-indigo-500 rounded-full border-4 border-slate-50"></div>
+                    <div className="absolute -left-[9px] top-1.5 w-4 h-4 bg-indigo-500 rounded-full border-4 border-slate-50 dark:bg-slate-700 dark:text-slate-100"></div>
                     
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                    <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow dark:text-slate-100">
                       <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs font-semibold uppercase tracking-wider text-indigo-500 bg-indigo-50 px-2 py-1 rounded">
+                        <span className="text-xs font-semibold uppercase tracking-wider text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10 px-2 py-1 rounded">
                           Thought
                         </span>
                         <div className="flex items-center gap-3">
@@ -180,19 +180,19 @@ export default function Thoughts() {
                             <>
                               <button
                                 onClick={() => startEdit(thought)}
-                                className="text-xs text-slate-400 hover:text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="text-xs text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-400 dark:text-indigo-400 dark:hover:text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity"
                               >
                                 Edit
                               </button>
                               <button
                                 onClick={() => deleteThought(thought.id)}
-                                className="text-xs text-slate-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="text-xs text-slate-400 dark:text-slate-500 hover:text-red-600 dark:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
                               >
                                 Delete
                               </button>
                             </>
                           )}
-                          <span className="text-sm text-slate-400 font-medium" title={parseUTCDate(thought.createdAt).toLocaleString()}>
+                          <span className="text-sm text-slate-400 dark:text-slate-500 font-medium" title={parseUTCDate(thought.createdAt).toLocaleString()}>
                             {timeAgo(thought.createdAt)}
                           </span>
                         </div>
@@ -203,7 +203,7 @@ export default function Thoughts() {
                           <textarea
                             value={editContent}
                             onChange={(e) => setEditContent(e.target.value)}
-                            className="w-full border border-slate-300 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                            className="w-full border border-slate-300 dark:border-slate-600 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none dark:bg-slate-700 dark:text-slate-100"
                             rows="3"
                             disabled={isSaving}
                             autoFocus
@@ -212,14 +212,14 @@ export default function Thoughts() {
                             <button
                               onClick={cancelEdit}
                               disabled={isSaving}
-                              className="px-3 py-1.5 text-sm text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded transition"
+                              className="px-3 py-1.5 text-sm text-slate-600 dark:text-slate-400 dark:text-slate-500 hover:text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition"
                             >
                               Cancel
                             </button>
                             <button
                               onClick={() => saveEdit(thought.id)}
                               disabled={isSaving}
-                              className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 transition disabled:opacity-50"
+                              className="px-3 py-1.5 text-sm bg-indigo-600 dark:bg-indigo-500 text-white rounded hover:bg-indigo-700 dark:hover:bg-indigo-600 dark:bg-indigo-500 transition disabled:opacity-50"
                             >
                               {isSaving ? 'Saving...' : 'Save'}
                             </button>
@@ -227,7 +227,7 @@ export default function Thoughts() {
                         </div>
                       ) : (
                         <div 
-                          className="text-slate-700 text-lg leading-relaxed whitespace-pre-wrap break-words"
+                          className="text-slate-700 dark:text-slate-300 text-lg leading-relaxed whitespace-pre-wrap break-words"
                           dangerouslySetInnerHTML={{ __html: linkify(thought.content) }} 
                         />
                       )}
@@ -240,13 +240,13 @@ export default function Thoughts() {
             {/* Loading more indicator & sentinel node */}
             <div ref={lastElementRef} className="py-4 flex justify-center">
               {loadingMore && (
-                <div className="flex items-center gap-2 text-slate-400">
+                <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500">
                   <Loader2 className="w-5 h-5 animate-spin" />
                   <span className="text-sm font-medium">Loading older thoughts...</span>
                 </div>
               )}
               {!hasMore && thoughts.length > 0 && (
-                <div className="text-slate-400 text-sm font-medium italic">
+                <div className="text-slate-400 dark:text-slate-500 text-sm font-medium italic">
                   No more thoughts to load
                 </div>
               )}

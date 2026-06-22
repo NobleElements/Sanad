@@ -21,7 +21,7 @@ export default function LegalPageLayout({ title, lastUpdated, children }) {
           Back to Home
         </Link>
         
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-8 sm:p-12">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-8 sm:p-12 dark:text-slate-100">
           <header className="mb-10 border-b border-gray-100 dark:border-gray-700 pb-8">
             <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-4">
               {title}

@@ -13,7 +13,7 @@ export default function ToastContainer() {
           key={toast.id}
           className={`pointer-events-auto px-4 py-3 rounded-lg shadow-lg flex items-center justify-between min-w-[300px] max-w-sm ${
             toast.type === 'error'
-              ? 'bg-red-50 text-red-800 border border-red-200 dark:bg-red-900/50 dark:text-red-200 dark:border-red-800'
+              ? 'bg-red-50 dark:bg-red-500/10 text-red-800 border border-red-200 dark:bg-red-900/50 dark:text-red-200 dark:border-red-800'
               : toast.type === 'success'
               ? 'bg-green-50 text-green-800 border border-green-200 dark:bg-green-900/50 dark:text-green-200 dark:border-green-800'
               : 'bg-blue-50 text-blue-800 border border-blue-200 dark:bg-blue-900/50 dark:text-blue-200 dark:border-blue-800'

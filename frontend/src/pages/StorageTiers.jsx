@@ -61,23 +61,23 @@ export default function StorageTiers() {
   };
 
   if (loading) return <div className="p-8">Loading storage tiers...</div>;
-  if (error) return <div className="p-8 text-red-500">{error}</div>;
+  if (error) return <div className="p-8 text-red-500 dark:text-red-400">{error}</div>;
 
   return (
-    <div className="flex-1 p-8 overflow-y-auto bg-slate-50">
-      <h1 className="text-3xl font-bold text-slate-800 mb-8">Storage Tiers</h1>
+    <div className="flex-1 p-8 overflow-y-auto bg-slate-50 dark:bg-slate-900">
+      <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-200 mb-8">Storage Tiers</h1>
 
-      <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 border border-slate-200 dark:border-slate-700 dark:text-slate-100">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {tiers.map(tier => {
             const isEditing = editingTier && editingTier.id === tier.id;
             return (
-              <div key={tier.id} className={`border rounded-lg p-4 bg-slate-50 flex flex-col ${isEditing ? 'border-blue-500' : ''}`}>
+              <div key={tier.id} className={`border rounded-lg p-4 bg-slate-50 dark:bg-slate-900 flex flex-col ${isEditing ? 'border-blue-500' : ''}`}>
                 {isEditing ? (
                   <div className="mb-2">
                     <input 
                       type="text"
-                      className="w-full font-bold text-lg border rounded px-2 py-1 bg-white"
+                      className="w-full font-bold text-lg border rounded px-2 py-1 bg-white dark:bg-slate-800 dark:text-slate-100"
                       value={editingTier.name}
                       onChange={(e) => setEditingTier({...editingTier, name: e.target.value})}
                       placeholder="Tier Name"
@@ -97,19 +97,19 @@ export default function StorageTiers() {
                 {isEditing ? (
                   <div className="space-y-3 flex-1 mb-4">
                     <div>
-                      <label className="block text-xs text-slate-500 mb-1">Price ($)</label>
+                      <label className="block text-xs text-slate-500 dark:text-slate-400 dark:text-slate-500 mb-1">Price ($)</label>
                       <input 
                         type="number"
-                        className="w-full border rounded px-2 py-1"
+                        className="w-full border rounded px-2 py-1 dark:bg-slate-700 dark:text-slate-100"
                         value={editingTier.price}
                         onChange={(e) => setEditingTier({...editingTier, price: e.target.value})}
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-slate-500 mb-1">Limit (GB)</label>
+                      <label className="block text-xs text-slate-500 dark:text-slate-400 dark:text-slate-500 mb-1">Limit (GB)</label>
                       <input 
                         type="number"
-                        className="w-full border rounded px-2 py-1"
+                        className="w-full border rounded px-2 py-1 dark:bg-slate-700 dark:text-slate-100"
                         value={editingTier.limitGb}
                         onChange={(e) => setEditingTier({...editingTier, limitGb: e.target.value})}
                       />
@@ -117,8 +117,8 @@ export default function StorageTiers() {
                   </div>
                 ) : (
                   <div className="flex-1 mb-4">
-                    <p className="text-slate-600 mb-2">Price: ${tier.price}</p>
-                    <p className="text-slate-600">Limit: {formatBytes(tier.diskLimitBytes)}</p>
+                    <p className="text-slate-600 dark:text-slate-400 dark:text-slate-500 mb-2">Price: ${tier.price}</p>
+                    <p className="text-slate-600 dark:text-slate-400 dark:text-slate-500">Limit: {formatBytes(tier.diskLimitBytes)}</p>
                   </div>
                 )}
 
@@ -135,13 +135,13 @@ export default function StorageTiers() {
                       <button 
                         onClick={() => setEditingTier(null)} 
                         disabled={isSaving}
-                        className="flex-1 border text-slate-600 rounded py-1 text-sm font-medium hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex-1 border text-slate-600 dark:text-slate-400 dark:text-slate-500 rounded py-1 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Cancel
                       </button>
                     </div>
                   ) : (
-                    <button onClick={() => handleEditTier(tier)} className="w-full border border-slate-300 text-slate-600 rounded py-1 text-sm font-medium hover:bg-white">
+                    <button onClick={() => handleEditTier(tier)} className="w-full border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 dark:text-slate-500 rounded py-1 text-sm font-medium hover:bg-white dark:bg-slate-800">
                       Edit
                     </button>
                   )}

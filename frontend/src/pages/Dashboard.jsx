@@ -144,12 +144,12 @@ export default function Dashboard() {
       <h2 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6">Dashboard</h2>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
-          <h3 className="text-sm text-slate-500 font-semibold uppercase">Spent Today</h3>
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 dark:text-slate-100">
+          <h3 className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-500 font-semibold uppercase">Spent Today</h3>
           <p className="text-2xl font-bold">{defaultCurrency.symbol}{totalSpentToday.toFixed(2)}</p>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
-          <h3 className="text-sm text-slate-500 font-semibold uppercase">Today's Goals</h3>
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 dark:text-slate-100">
+          <h3 className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-500 font-semibold uppercase">Today's Goals</h3>
           {isEditingGoal ? (
             <div className="mt-2 flex items-center gap-2">
               <input
@@ -157,17 +157,17 @@ export default function Dashboard() {
                 value={editGoalValue}
                 onChange={(e) => setEditGoalValue(e.target.value)}
                 onKeyDown={handleGoalKeyDown}
-                className="w-full border border-indigo-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full border border-indigo-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-slate-700 dark:text-slate-100"
                 placeholder="What is your goal today?"
                 autoFocus
                 disabled={isSavingGoal}
               />
-              <button onClick={saveDailyGoal} disabled={isSavingGoal} className="text-emerald-600 hover:text-emerald-700 font-bold px-1 text-sm">✓</button>
-              <button onClick={() => setIsEditingGoal(false)} disabled={isSavingGoal} className="text-slate-400 hover:text-slate-600 font-bold px-1 text-sm">✕</button>
+              <button onClick={saveDailyGoal} disabled={isSavingGoal} className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 font-bold px-1 text-sm">✓</button>
+              <button onClick={() => setIsEditingGoal(false)} disabled={isSavingGoal} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400 dark:text-slate-500 font-bold px-1 text-sm">✕</button>
             </div>
           ) : (
             <div className="mt-2 group flex items-center justify-between">
-              <p className={`text-sm ${dailyGoal ? 'text-slate-800 font-medium' : 'text-slate-400 italic'}`}>
+              <p className={`text-sm ${dailyGoal ? 'text-slate-800 dark:text-slate-200 font-medium' : 'text-slate-400 dark:text-slate-500 italic'}`}>
                 {dailyGoal || 'No goals yet'}
               </p>
               <button
@@ -175,32 +175,32 @@ export default function Dashboard() {
                   setEditGoalValue(dailyGoal);
                   setIsEditingGoal(true);
                 }}
-                className="text-xs text-slate-400 hover:text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="text-xs text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-400 dark:text-indigo-400 dark:hover:text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity"
               >
                 Edit
               </button>
             </div>
           )}
         </div>
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200 flex flex-col max-h-[140px]">
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col max-h-[140px] dark:text-slate-100">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm text-slate-500 font-semibold uppercase">Today's Habits</h3>
-            <a href="/habits" className="text-xs text-indigo-600 hover:text-indigo-800 font-medium">All →</a>
+            <h3 className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-500 font-semibold uppercase">Today's Habits</h3>
+            <a href="/habits" className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 font-medium">All →</a>
           </div>
           <div className="overflow-y-auto flex-1 pr-1 custom-scrollbar">
             {uncompletedHabitsToday.length === 0 ? (
-               <p className="text-slate-400 text-sm mt-2">All done for today! 🎉</p>
+               <p className="text-slate-400 dark:text-slate-500 text-sm mt-2">All done for today! 🎉</p>
             ) : (
                <div className="flex flex-col gap-2 mt-2">
                  {uncompletedHabitsToday.map(habit => (
                    <div key={habit.id} className="flex items-center justify-between group">
                      <div className="flex items-center gap-2 min-w-0">
                        <span className="text-lg flex-shrink-0">{habit.icon}</span>
-                       <span className="text-sm font-medium text-slate-700 truncate" title={habit.name}>{habit.name}</span>
+                       <span className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate" title={habit.name}>{habit.name}</span>
                      </div>
                      <button
                        onClick={() => toggleHabitLog(habit.id, todayStr)}
-                       className="w-5 h-5 rounded border border-slate-300 flex items-center justify-center text-transparent hover:border-emerald-500 hover:text-emerald-500 transition-colors flex-shrink-0"
+                       className="w-5 h-5 rounded border border-slate-300 dark:border-slate-600 flex items-center justify-center text-transparent hover:border-emerald-500 hover:text-emerald-500 transition-colors flex-shrink-0"
                        title="Mark completed"
                      >
                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -218,13 +218,13 @@ export default function Dashboard() {
       <div className="flex flex-col lg:flex-row gap-6 md:gap-8">
         <div className="w-full lg:w-2/3 flex flex-col gap-6">
           {/* Thoughts Input */}
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
-            <h3 className="text-lg font-semibold mb-4 text-slate-700">What's on your mind?</h3>
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 dark:text-slate-100">
+            <h3 className="text-lg font-semibold mb-4 text-slate-700 dark:text-slate-300">What's on your mind?</h3>
             <form onSubmit={handleSubmit} className="flex flex-col gap-3">
               <textarea 
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                className="w-full border border-slate-300 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                className="w-full border border-slate-300 dark:border-slate-600 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none dark:bg-slate-700 dark:text-slate-100"
                 placeholder="Write a thought..."
                 rows="2"
                 disabled={isSubmitting}
@@ -245,53 +245,53 @@ export default function Dashboard() {
         <div className="w-full lg:w-1/3 flex flex-col gap-6">
            {/* Current Read Widget */}
            {currentRead && (
-             <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+             <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 dark:text-slate-100">
                <div className="flex justify-between items-center mb-4">
-                 <h3 className="text-lg font-semibold text-slate-700">Current Read</h3>
-                 <a href="/books" className="text-xs text-indigo-600 hover:text-indigo-800 font-medium">Shelf →</a>
+                 <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300">Current Read</h3>
+                 <a href="/books" className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 font-medium">Shelf →</a>
                </div>
                <div className="flex gap-4">
                  {currentRead.period.book.coverUrl ? (
                     <CachedImage src={currentRead.period.book.coverUrl} className="w-16 h-24 object-cover rounded shadow-sm" alt="cover"/>
                  ) : (
                     <div className="w-16 h-24 bg-slate-200 rounded flex items-center justify-center shadow-sm">
-                      <span className="text-slate-400 text-xs">No Cover</span>
+                      <span className="text-slate-400 dark:text-slate-500 text-xs">No Cover</span>
                     </div>
                  )}
                  <div className="flex-1 min-w-0">
-                   <p className="font-medium text-slate-800 truncate" title={currentRead.period.book.title}>{currentRead.period.book.title}</p>
-                   <p className="text-sm text-slate-600 truncate mb-1">Ch: {currentRead.currentChapter || 'Not Started'}</p>
+                   <p className="font-medium text-slate-800 dark:text-slate-200 truncate" title={currentRead.period.book.title}>{currentRead.period.book.title}</p>
+                   <p className="text-sm text-slate-600 dark:text-slate-400 dark:text-slate-500 truncate mb-1">Ch: {currentRead.currentChapter || 'Not Started'}</p>
                    <p className="text-xs text-amber-600 font-medium bg-amber-50 inline-block px-2 py-0.5 rounded mb-2">{currentRead.pagesLeftInChapter} pages left</p>
                    <div className="flex gap-2">
-                      <input type="number" id="logPageInput" className="w-16 border border-slate-300 rounded p-1.5 text-sm focus:outline-none focus:border-indigo-500" placeholder="Pg" />
+                      <input type="number" id="logPageInput" className="w-16 border border-slate-300 dark:border-slate-600 rounded p-1.5 text-sm focus:outline-none focus:border-indigo-500 dark:bg-slate-700 dark:text-slate-100" placeholder="Pg" />
                       <button onClick={() => {
                          const val = document.getElementById('logPageInput').value;
                          if(val) {
                             logProgress(currentRead.period.id, currentRead.currentPage, parseInt(val));
                             document.getElementById('logPageInput').value = '';
                          }
-                      }} className="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded hover:bg-indigo-700 transition font-medium">Log</button>
+                      }} className="text-xs bg-indigo-600 dark:bg-indigo-500 text-white px-3 py-1.5 rounded hover:bg-indigo-700 dark:hover:bg-indigo-600 dark:bg-indigo-500 transition font-medium">Log</button>
                    </div>
                  </div>
                </div>
              </div>
            )}
 
-           <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+           <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 dark:text-slate-100">
               <div className="flex items-center justify-between mb-4">
-                <a href="/finance" className="text-lg font-semibold text-slate-700 hover:text-indigo-600 transition-colors cursor-pointer">Recent Spending →</a>
+                <a href="/finance" className="text-lg font-semibold text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-400 dark:text-indigo-400 dark:hover:text-indigo-400 transition-colors cursor-pointer">Recent Spending →</a>
                 <button
                   type="button"
                   onClick={() => setShowSpendModal(true)}
-                  className="text-xs text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
+                  className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 font-medium transition-colors"
                 >
                   Quick Log
                 </button>
              </div>
              <div className="mb-4">
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-slate-500">Left this month</span>
-                  <span className={`font-semibold ${budgetSummary.monthlyBudget - budgetSummary.totalSpent < 0 ? 'text-red-500' : 'text-slate-700'}`}>
+                  <span className="text-slate-500 dark:text-slate-400 dark:text-slate-500">Left this month</span>
+                  <span className={`font-semibold ${budgetSummary.monthlyBudget - budgetSummary.totalSpent < 0 ? 'text-red-500 dark:text-red-400' : 'text-slate-700 dark:text-slate-300'}`}>
                     {defaultCurrency.symbol}{(budgetSummary.monthlyBudget - budgetSummary.totalSpent).toFixed(2)}
                   </span>
                 </div>
@@ -305,24 +305,24 @@ export default function Dashboard() {
                 )}
              </div>
              {recentTransactions.length === 0 ? (
-               <p className="text-slate-400 text-sm italic">No spending logged yet.</p>
+               <p className="text-slate-400 dark:text-slate-500 text-sm italic">No spending logged yet.</p>
              ) : (
                <div className="flex flex-col gap-3">
                  {recentTransactions.slice(0, 5).map(tx => (
-                   <div key={tx.id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100">
+                   <div key={tx.id} className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-100 dark:text-slate-100">
                      <div
                        className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                        style={{ backgroundColor: tx.category?.colorHex || '#CBD5E1' }}
                      />
                      <div className="flex-1 min-w-0">
-                       <div className="text-sm font-medium text-slate-800 truncate">
+                       <div className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">
                          {tx.description || 'No description'}
                        </div>
-                       <div className="text-xs text-slate-400">
+                       <div className="text-xs text-slate-400 dark:text-slate-500">
                          {tx.category?.name} · {timeAgo(tx.date)}
                        </div>
                      </div>
-                     <div className="text-sm font-semibold text-slate-700 flex-shrink-0">
+                     <div className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex-shrink-0">
                        {defaultCurrency.symbol}{tx.amount.toFixed(2)}
                      </div>
                    </div>
@@ -337,22 +337,22 @@ export default function Dashboard() {
       {showSpendModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowSpendModal(false)} />
-          <div className="relative bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-md mx-4 p-6 animate-fadeInUp">
+          <div className="relative bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-md mx-4 p-6 animate-fadeInUp dark:text-slate-100">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-semibold text-slate-800">Quick Spend</h3>
+              <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">Quick Spend</h3>
               <button
                 type="button"
                 onClick={() => setShowSpendModal(false)}
-                className="text-slate-400 hover:text-slate-600 transition-colors text-xl leading-none"
+                className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400 dark:text-slate-500 transition-colors text-xl leading-none"
               >
                 ×
               </button>
             </div>
             <form onSubmit={handleLogSpend} className="flex flex-col gap-4">
               <div>
-                <label className="block text-sm text-slate-600 mb-1 font-medium">Amount</label>
+                <label className="block text-sm text-slate-600 dark:text-slate-400 dark:text-slate-500 mb-1 font-medium">Amount</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">{defaultCurrency.symbol}</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 text-sm">{defaultCurrency.symbol}</span>
                   <input
                     type="number"
                     step="0.01"
@@ -360,7 +360,7 @@ export default function Dashboard() {
                     placeholder="0.00"
                     value={spendAmount}
                     onChange={(e) => setSpendAmount(e.target.value)}
-                    className="w-full border border-slate-300 rounded-lg p-2.5 pl-7 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 pl-7 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none dark:bg-slate-700 dark:text-slate-100"
                     required
                     disabled={isLoggingSpend}
                     autoFocus
@@ -368,7 +368,7 @@ export default function Dashboard() {
                 </div>
               </div>
               <div className="relative">
-                <label className="block text-sm text-slate-600 mb-1 font-medium">Category</label>
+                <label className="block text-sm text-slate-600 dark:text-slate-400 dark:text-slate-500 mb-1 font-medium">Category</label>
                 <CategorySelector 
                   value={spendCategoryId}
                   onChange={setSpendCategoryId}
@@ -376,13 +376,13 @@ export default function Dashboard() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-slate-600 mb-1 font-medium">Description</label>
+                <label className="block text-sm text-slate-600 dark:text-slate-400 dark:text-slate-500 mb-1 font-medium">Description</label>
                 <input
                   type="text"
                   placeholder="What was it for?"
                   value={spendDesc}
                   onChange={(e) => setSpendDesc(e.target.value)}
-                  className="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none dark:bg-slate-700 dark:text-slate-100"
                   disabled={isLoggingSpend}
                 />
               </div>

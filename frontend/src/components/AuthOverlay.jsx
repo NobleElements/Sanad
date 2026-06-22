@@ -33,7 +33,7 @@ export default function AuthOverlay({ onAuthenticated }) {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/80 backdrop-blur-sm">
-            <div className="w-full max-w-md p-8 bg-white rounded-2xl shadow-2xl dark:bg-gray-800">
+            <div className="w-full max-w-md p-8 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl dark:bg-gray-800">
                 <div className="text-center mb-8">
                     <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{title}</h2>
                     <p className="text-gray-600 dark:text-gray-400">{subtitle}</p>
@@ -70,7 +70,7 @@ export default function AuthOverlay({ onAuthenticated }) {
                     </div>
 
                     {error && (
-                        <div className="p-3 text-sm text-red-600 bg-red-100 rounded-lg dark:bg-red-900/30 dark:text-red-400">
+                        <div className="p-3 text-sm text-red-600 dark:text-red-400 bg-red-100 rounded-lg dark:bg-red-900/30 dark:text-red-400">
                             {error}
                         </div>
                     )}

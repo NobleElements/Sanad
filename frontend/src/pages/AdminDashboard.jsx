@@ -69,13 +69,13 @@ export default function AdminDashboard() {
   }
   
   if (error) {
-    return <div className="p-8 text-red-500">{error}</div>;
+    return <div className="p-8 text-red-500 dark:text-red-400">{error}</div>;
   }
 
   return (
-    <div className="flex-1 p-8 overflow-y-auto bg-slate-50">
+    <div className="flex-1 p-8 overflow-y-auto bg-slate-50 dark:bg-slate-900">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-slate-800">Admin Dashboard</h1>
+        <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-200">Admin Dashboard</h1>
         <div className="flex gap-2 items-center">
           <button 
             onClick={() => recalculateAllStorage(queryParamsStr)}
@@ -87,7 +87,7 @@ export default function AdminDashboard() {
           </button>
           <Link 
             to="/admin/tiers" 
-            className="flex items-center gap-2 p-2 md:px-4 md:py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors shadow-sm"
+            className="flex items-center gap-2 p-2 md:px-4 md:py-2 bg-indigo-600 dark:bg-indigo-500 text-white rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600 dark:bg-indigo-500 transition-colors shadow-sm"
             title="Manage Storage Tiers"
           >
             <HardDrive className="w-5 h-5 md:w-4 md:h-4" />

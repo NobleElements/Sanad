@@ -5,7 +5,7 @@ import { API_URL } from '../config';
 import { formatBytes } from '../utils/formatUtils';
 
 const FeatureCard = ({ icon: Icon, title, description }) => (
-  <div className="flex flex-col items-start p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
+  <div className="flex flex-col items-start p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow dark:text-slate-100">
     <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg mb-4">
       <Icon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
     </div>
@@ -45,7 +45,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-gray-900 font-sans selection:bg-blue-200">
       {/* Navigation */}
-      <nav className="fixed top-0 w-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 z-50">
+      <nav className="fixed top-0 w-full bg-white dark:bg-slate-800/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 z-50 dark:text-slate-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             <div className="flex items-center gap-2">
@@ -398,7 +398,7 @@ export default function LandingPage() {
               Have questions or need support? Select a reason and reach out to us. We'll get back to you as soon as possible.
             </p>
             
-            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-8">
+            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-8 dark:text-slate-100">
               <div className="flex flex-col md:flex-row gap-4 items-center justify-center">
                 <div className="w-full md:w-1/2 text-left">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Reason for Contacting</label>

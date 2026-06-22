@@ -184,24 +184,24 @@ export default function FinanceDashboard() {
 
   if (isLoaded && currencies.length === 0) {
     return (
-      <div className="flex-1 p-8 overflow-y-auto bg-slate-50 text-slate-900 flex items-center justify-center">
-        <div className="max-w-md w-full bg-white p-8 rounded-xl border border-slate-200 shadow-sm">
-          <h2 className="text-2xl font-bold mb-2 text-slate-800">Welcome to Finance</h2>
-          <p className="text-slate-500 mb-6">Before you start tracking your finances, please configure your primary default currency.</p>
+      <div className="flex-1 p-8 overflow-y-auto bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 flex items-center justify-center">
+        <div className="max-w-md w-full bg-white dark:bg-slate-800 p-8 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:text-slate-100">
+          <h2 className="text-2xl font-bold mb-2 text-slate-800 dark:text-slate-200">Welcome to Finance</h2>
+          <p className="text-slate-500 dark:text-slate-400 dark:text-slate-500 mb-6">Before you start tracking your finances, please configure your primary default currency.</p>
           <form onSubmit={handleSetup} className="flex flex-col gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Code (e.g. USD)</label>
-              <input type="text" value={setupCode} onChange={e=>setSetupCode(e.target.value)} className="w-full border border-slate-300 rounded p-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none" required maxLength={10} />
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Code (e.g. USD)</label>
+              <input type="text" value={setupCode} onChange={e=>setSetupCode(e.target.value)} className="w-full border border-slate-300 dark:border-slate-600 rounded p-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none dark:bg-slate-700 dark:text-slate-100" required maxLength={10} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Name (e.g. US Dollar)</label>
-              <input type="text" value={setupName} onChange={e=>setSetupName(e.target.value)} className="w-full border border-slate-300 rounded p-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none" required maxLength={50} />
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Name (e.g. US Dollar)</label>
+              <input type="text" value={setupName} onChange={e=>setSetupName(e.target.value)} className="w-full border border-slate-300 dark:border-slate-600 rounded p-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none dark:bg-slate-700 dark:text-slate-100" required maxLength={50} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Symbol (e.g. $)</label>
-              <input type="text" value={setupSymbol} onChange={e=>setSetupSymbol(e.target.value)} className="w-full border border-slate-300 rounded p-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none" required maxLength={10} />
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Symbol (e.g. $)</label>
+              <input type="text" value={setupSymbol} onChange={e=>setSetupSymbol(e.target.value)} className="w-full border border-slate-300 dark:border-slate-600 rounded p-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none dark:bg-slate-700 dark:text-slate-100" required maxLength={10} />
             </div>
-            <button type="submit" className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white p-3 rounded font-semibold transition-colors">Set Default Currency</button>
+            <button type="submit" className="mt-4 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 dark:bg-indigo-500 text-white p-3 rounded font-semibold transition-colors">Set Default Currency</button>
           </form>
         </div>
       </div>
@@ -209,21 +209,21 @@ export default function FinanceDashboard() {
   }
 
   return (
-    <div className="flex-1 p-8 overflow-y-auto bg-slate-50 text-slate-900">
+    <div className="flex-1 p-8 overflow-y-auto bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100">
       <div className="max-w-6xl mx-auto">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 w-full lg:w-auto">
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-800">Financial Tracking</h1>
-            <div className="flex bg-slate-200 p-1 rounded-lg">
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-slate-200">Financial Tracking</h1>
+            <div className="flex bg-slate-200 dark:bg-slate-800 p-1 rounded-lg">
               <button 
                 onClick={() => setActiveTab('spending')}
-                className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-colors ${activeTab === 'spending' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-colors ${activeTab === 'spending' ? 'bg-white dark:bg-slate-700 text-indigo-700 dark:text-indigo-300 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}
               >
                 Spending & Budget
               </button>
               <button 
                 onClick={() => setActiveTab('assets')}
-                className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-colors ${activeTab === 'assets' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-colors ${activeTab === 'assets' ? 'bg-white dark:bg-slate-700 text-indigo-700 dark:text-indigo-300 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}
               >
                 Assets & Net Worth
               </button>
@@ -231,14 +231,14 @@ export default function FinanceDashboard() {
           </div>
           
           {activeTab === 'spending' && (
-            <div className="w-full lg:w-auto flex justify-between lg:justify-start items-center gap-4 bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm">
-              <button onClick={prevMonth} className="p-1 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer" title="Previous Month">
+            <div className="w-full lg:w-auto flex justify-between lg:justify-start items-center gap-4 bg-white dark:bg-slate-800 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:text-slate-100">
+              <button onClick={prevMonth} className="p-1 text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:text-slate-300 transition-colors cursor-pointer" title="Previous Month">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
               </button>
-              <span className="font-semibold text-slate-700 min-w-[120px] text-center">
+              <span className="font-semibold text-slate-700 dark:text-slate-300 min-w-[120px] text-center">
                 {monthNames[currentMonth - 1]} {currentYear}
               </span>
-              <button onClick={nextMonth} className="p-1 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer" title="Next Month">
+              <button onClick={nextMonth} className="p-1 text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:text-slate-300 transition-colors cursor-pointer" title="Next Month">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
               </button>
             </div>
@@ -251,15 +251,15 @@ export default function FinanceDashboard() {
           <>
             {/* Top Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8">
-              <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                <p className="text-slate-500">Total Spent</p>
-                <p className="text-3xl font-semibold text-slate-800">{defaultCurrency.symbol}{totalSpent.toFixed(2)}</p>
+              <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:text-slate-100">
+                <p className="text-slate-500 dark:text-slate-400 dark:text-slate-500">Total Spent</p>
+                <p className="text-3xl font-semibold text-slate-800 dark:text-slate-200">{defaultCurrency.symbol}{totalSpent.toFixed(2)}</p>
               </div>
-              <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                <p className="text-slate-500 mb-1">Monthly Budget</p>
+              <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:text-slate-100">
+                <p className="text-slate-500 dark:text-slate-400 dark:text-slate-500 mb-1">Monthly Budget</p>
                 {editingMonthlyBudget ? (
                   <div className="flex items-center gap-2">
-                    <span className="text-xl text-slate-400">{defaultCurrency.symbol}</span>
+                    <span className="text-xl text-slate-400 dark:text-slate-500">{defaultCurrency.symbol}</span>
                     <input
                       type="number"
                       min="0"
@@ -267,19 +267,19 @@ export default function FinanceDashboard() {
                       value={monthlyBudgetValue}
                       onChange={(e) => setMonthlyBudgetValue(e.target.value)}
                       onKeyDown={handleMonthlyBudgetKeyDown}
-                      className="w-32 text-2xl font-semibold border border-indigo-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-32 text-2xl font-semibold border border-indigo-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-slate-700 dark:text-slate-100"
                       autoFocus
                     />
                     <button
                       onClick={saveMonthlyBudget}
-                      className="text-emerald-600 hover:text-emerald-700 font-bold text-lg px-1"
+                      className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 font-bold text-lg px-1"
                       title="Save"
                     >
                       ✓
                     </button>
                     <button
                       onClick={cancelEditMonthlyBudget}
-                      className="text-slate-400 hover:text-slate-600 font-bold text-lg px-1"
+                      className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400 dark:text-slate-500 font-bold text-lg px-1"
                       title="Cancel"
                     >
                       ✕
@@ -288,16 +288,16 @@ export default function FinanceDashboard() {
                 ) : (
                   <button
                     onClick={startEditMonthlyBudget}
-                    className="text-3xl font-semibold text-slate-800 hover:text-indigo-600 transition-colors cursor-pointer text-left"
+                    className="text-3xl font-semibold text-slate-800 dark:text-slate-200 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-400 dark:text-indigo-400 dark:hover:text-indigo-400 transition-colors cursor-pointer text-left"
                     title="Click to edit monthly budget"
                   >
                     {defaultCurrency.symbol}{totalBudget.toFixed(2)}
                   </button>
                 )}
               </div>
-              <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                <p className="text-slate-500">Remaining</p>
-                <p className={`text-3xl font-semibold ${remaining < 0 ? 'text-red-500' : 'text-slate-800'}`}>{defaultCurrency.symbol}{remaining.toFixed(2)}</p>
+              <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:text-slate-100">
+                <p className="text-slate-500 dark:text-slate-400 dark:text-slate-500">Remaining</p>
+                <p className={`text-3xl font-semibold ${remaining < 0 ? 'text-red-500 dark:text-red-400' : 'text-slate-800 dark:text-slate-200'}`}>{defaultCurrency.symbol}{remaining.toFixed(2)}</p>
                 {totalBudget > 0 && (
                   <div className="mt-3">
                     <div className="w-full bg-slate-100 rounded-full h-2">
@@ -309,7 +309,7 @@ export default function FinanceDashboard() {
                         }}
                       />
                     </div>
-                    <p className="text-xs text-slate-400 mt-1">{spentPct.toFixed(0)}% used</p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{spentPct.toFixed(0)}% used</p>
                   </div>
                 )}
               </div>
@@ -317,8 +317,8 @@ export default function FinanceDashboard() {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* Main Chart + Budget Breakdown */}
-              <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                <h2 className="text-xl font-bold mb-4 text-slate-800">Budget vs Spend</h2>
+              <div className="lg:col-span-2 bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:text-slate-100">
+                <h2 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-200">Budget vs Spend</h2>
                 <div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
                   <div className="w-48 h-48 flex-shrink-0">
                     <ResponsiveContainer width="100%" height="100%">
@@ -342,13 +342,13 @@ export default function FinanceDashboard() {
 
                       if (isEditing) {
                         return (
-                          <div key={item.category.id} className="flex flex-col gap-2 p-3 bg-slate-50 rounded-lg border border-indigo-200">
+                          <div key={item.category.id} className="flex flex-col gap-2 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border border-indigo-200 dark:text-slate-100">
                             <div className="flex items-center gap-2">
                               <input
                                 type="color"
                                 value={editingCatColor}
                                 onChange={(e) => setEditingCatColor(e.target.value)}
-                                className="w-7 h-7 p-0.5 bg-white border border-slate-300 rounded cursor-pointer flex-shrink-0"
+                                className="w-7 h-7 p-0.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded cursor-pointer flex-shrink-0 dark:text-slate-100"
                                 title="Category color"
                               />
                               <input
@@ -356,12 +356,12 @@ export default function FinanceDashboard() {
                                 value={editingCatName}
                                 onChange={(e) => setEditingCatName(e.target.value)}
                                 onKeyDown={(e) => handleEditCatKeyDown(e, item.category)}
-                                className="flex-1 border border-indigo-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                className="flex-1 border border-indigo-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-slate-700 dark:text-slate-100"
                                 placeholder="Category name"
                                 autoFocus
                               />
                               <div className="flex items-center gap-1">
-                                <span className="text-slate-400 text-sm">{defaultCurrency.symbol}</span>
+                                <span className="text-slate-400 dark:text-slate-500 text-sm">{defaultCurrency.symbol}</span>
                                 <input
                                   type="number"
                                   min="0"
@@ -369,7 +369,7 @@ export default function FinanceDashboard() {
                                   value={editingCatBudget}
                                   onChange={(e) => setEditingCatBudget(e.target.value)}
                                   onKeyDown={(e) => handleEditCatKeyDown(e, item.category)}
-                                  className="w-20 border border-indigo-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                  className="w-20 border border-indigo-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-slate-700 dark:text-slate-100"
                                   placeholder="Budget"
                                 />
                               </div>
@@ -383,7 +383,7 @@ export default function FinanceDashboard() {
                               </button>
                               <button
                                 onClick={cancelEditCategory}
-                                className="text-xs font-semibold text-slate-500 hover:text-slate-700 px-3 py-1 rounded transition-colors"
+                                className="text-xs font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:text-slate-300 px-3 py-1 rounded transition-colors"
                               >
                                 Cancel
                               </button>
@@ -401,16 +401,16 @@ export default function FinanceDashboard() {
                               title="Click to edit category"
                             >
                               <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: item.category.colorHex || '#CBD5E1' }} />
-                              <span className="text-sm font-medium text-slate-700">{item.category.name}</span>
+                              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{item.category.name}</span>
                             </button>
                             <div className="flex items-center gap-1 text-sm">
-                              <span className={`font-semibold ${isOver ? 'text-red-500' : 'text-slate-700'}`}>
+                              <span className={`font-semibold ${isOver ? 'text-red-500 dark:text-red-400' : 'text-slate-700 dark:text-slate-300'}`}>
                                 {defaultCurrency.symbol}{item.spent.toFixed(0)}
                               </span>
-                              <span className="text-slate-400">/</span>
+                              <span className="text-slate-400 dark:text-slate-500">/</span>
                               <button
                                 onClick={() => startEditCategory(item.category)}
-                                className="text-slate-500 hover:text-indigo-600 transition-colors cursor-pointer"
+                                className="text-slate-500 dark:text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-400 dark:text-indigo-400 dark:hover:text-indigo-400 transition-colors cursor-pointer"
                                 title="Click to edit category"
                               >
                                 {defaultCurrency.symbol}{item.category.monthlyBudget.toFixed(0)}
@@ -430,19 +430,19 @@ export default function FinanceDashboard() {
                       );
                     })}
                     {catSummary.length === 0 && (
-                      <p className="text-slate-400 text-sm italic">No categories yet. Create one to get started.</p>
+                      <p className="text-slate-400 dark:text-slate-500 text-sm italic">No categories yet. Create one to get started.</p>
                     )}
                   </div>
                 </div>
               </div>
 
               {/* Quick Log Form */}
-              <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-6">
+              <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col gap-6 dark:text-slate-100">
                 <div>
-                  <h2 className="text-xl font-bold mb-4 text-slate-800">Quick Log</h2>
+                  <h2 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-200">Quick Log</h2>
                   <form onSubmit={handleLog} className="flex flex-col gap-4">
-                    <input type="number" placeholder="Amount" value={amount} onChange={e=>setAmount(e.target.value)} className="bg-white border border-slate-300 rounded p-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
-                    <input type="date" value={logDate} onChange={e=>setLogDate(e.target.value)} className="bg-white border border-slate-300 rounded p-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+                    <input type="number" placeholder="Amount" value={amount} onChange={e=>setAmount(e.target.value)} className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded p-2 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+                    <input type="date" value={logDate} onChange={e=>setLogDate(e.target.value)} className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded p-2 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
                     <div className="relative">
                       <CategorySelector 
                         value={categoryId}
@@ -450,7 +450,7 @@ export default function FinanceDashboard() {
                         placeholder="Select Category..."
                       />
                     </div>
-                    <input type="text" placeholder="Description" value={desc} onChange={e=>setDesc(e.target.value)} className="bg-white border border-slate-300 rounded p-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    <input type="text" placeholder="Description" value={desc} onChange={e=>setDesc(e.target.value)} className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded p-2 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                     <button type="submit" disabled={!categoryId} className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Log Expense</button>
                   </form>
                 </div>
@@ -458,35 +458,35 @@ export default function FinanceDashboard() {
             </div>
 
             {/* Recent Transactions */}
-            <div className="mt-8 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-              <h2 className="text-xl font-bold mb-4 text-slate-800">Recent Transactions</h2>
+            <div className="mt-8 bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:text-slate-100">
+              <h2 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-200">Recent Transactions</h2>
               <div className="flex flex-col gap-2">
                 {transactions.map(tx => (
-                  <div key={tx.id} className="group flex justify-between items-center p-3 bg-slate-50 rounded border border-slate-100 transition-colors hover:bg-slate-100">
+                  <div key={tx.id} className="group flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-900 rounded border border-slate-100 transition-colors hover:bg-slate-100 dark:hover:bg-slate-700 dark:text-slate-100">
                     <div className="flex items-center gap-3">
                       <div className="w-3 h-3 rounded-full" style={{ backgroundColor: tx.category?.colorHex || '#CBD5E1' }}></div>
-                      <span className="font-medium text-slate-800">{tx.description || 'No description'}</span>
-                      <span className="text-sm text-slate-500">{tx.category?.name}</span>
+                      <span className="font-medium text-slate-800 dark:text-slate-200">{tx.description || 'No description'}</span>
+                      <span className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-500">{tx.category?.name}</span>
                     </div>
                     <div className="flex items-center gap-4">
                       {editingTxId === tx.id ? (
                         <div className="flex items-center gap-2">
-                          <span className="text-slate-400">{defaultCurrency.symbol}</span>
+                          <span className="text-slate-400 dark:text-slate-500">{defaultCurrency.symbol}</span>
                           <input
                               type="number"
                               value={editingTxAmount}
                               onChange={e => setEditingTxAmount(e.target.value)}
                               onKeyDown={e => { if (e.key === 'Enter') handleSaveTxAmount(tx); if (e.key === 'Escape') setEditingTxId(null); }}
-                              className="w-24 border border-indigo-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                              className="w-24 border border-indigo-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-slate-700 dark:text-slate-100"
                               autoFocus
                           />
-                          <button onClick={() => handleSaveTxAmount(tx)} className="text-emerald-600 font-bold px-2">✓</button>
-                          <button onClick={() => setEditingTxId(null)} className="text-slate-400 font-bold px-1">✕</button>
+                          <button onClick={() => handleSaveTxAmount(tx)} className="text-emerald-600 dark:text-emerald-400 font-bold px-2">✓</button>
+                          <button onClick={() => setEditingTxId(null)} className="text-slate-400 dark:text-slate-500 font-bold px-1">✕</button>
                         </div>
                       ) : (
                         <button 
                             onClick={() => { setEditingTxId(tx.id); setEditingTxAmount(String(tx.amount)); }}
-                            className="text-xl font-semibold text-slate-800 hover:text-indigo-600 transition-colors cursor-pointer flex flex-col items-end"
+                            className="text-xl font-semibold text-slate-800 dark:text-slate-200 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-400 dark:text-indigo-400 dark:hover:text-indigo-400 transition-colors cursor-pointer flex flex-col items-end"
                             title="Click to update amount"
                         >
                             <span>{defaultCurrency.symbol}{tx.amount.toFixed(2)}</span>
@@ -494,7 +494,7 @@ export default function FinanceDashboard() {
                       )}
                       <button
                         onClick={() => handleDeleteTransaction(tx.id)}
-                        className="hidden md:block opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-all"
+                        className="hidden md:block opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 dark:text-slate-500 hover:text-red-600 dark:text-red-400 hover:bg-red-50 dark:bg-red-500/10 rounded transition-all"
                         title="Delete transaction"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -502,7 +502,7 @@ export default function FinanceDashboard() {
                     </div>
                   </div>
                 ))}
-                {transactions.length === 0 && <p className="text-slate-500">No transactions yet.</p>}
+                {transactions.length === 0 && <p className="text-slate-500 dark:text-slate-400 dark:text-slate-500">No transactions yet.</p>}
               </div>
             </div>
           </>

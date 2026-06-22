@@ -301,19 +301,22 @@ body {
   position: relative;
 }
 
-.dark .tiptap-editor table td,
-.dark .tiptap-editor table th {
-  border-color: #374151;
-}
-
 .tiptap-editor table th {
   font-weight: bold;
   text-align: left;
   background-color: #f9fafb;
 }
 
-.dark .tiptap-editor table th {
-  background-color: #1f2937;
+@media (prefers-color-scheme: dark) {
+  .tiptap-editor table td,
+  .tiptap-editor table th {
+    border-color: #374151 !important;
+  }
+
+  .tiptap-editor table th {
+    background-color: #1f2937 !important;
+    color: #f3f4f6 !important;
+  }
 }
 
 .tiptap-editor table .column-resize-handle {

@@ -68,7 +68,7 @@ export default function SearchableSelect({
   return (
     <div className={`relative ${className}`} ref={containerRef}>
       <div className="relative flex items-center">
-        {icon && <div className="absolute left-3 text-slate-400 pointer-events-none">{icon}</div>}
+        {icon && <div className="absolute left-3 text-slate-400 dark:text-slate-500 pointer-events-none">{icon}</div>}
         <input
           type="text"
           placeholder={placeholder}
@@ -79,19 +79,19 @@ export default function SearchableSelect({
             setIsOpen(true);
           }}
           onFocus={() => setIsOpen(true)}
-          className={`w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white placeholder-gray-400 ${icon ? 'pl-9' : ''}`}
+          className={`w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white dark:bg-slate-800 placeholder-gray-400 ${icon ? 'pl-9' : ''}`}
           disabled={disabled || isCreating}
         />
       </div>
       
       {isOpen && (
-        <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+        <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg max-h-48 overflow-y-auto dark:text-slate-100">
           {filteredOptions.length > 0 && filteredOptions.map(o => (
             <button
               key={o.id}
               type="button"
               onClick={() => handleSelect(o)}
-              className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 flex items-center gap-2 transition-colors"
+              className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700/50 dark:bg-slate-900 flex items-center gap-2 transition-colors"
             >
               {renderOption ? renderOption(o) : o.name}
             </button>
@@ -101,7 +101,7 @@ export default function SearchableSelect({
               type="button"
               onClick={handleCreate}
               disabled={isCreating}
-              className="w-full text-left px-3 py-2 text-sm text-indigo-600 hover:bg-indigo-50 border-t border-slate-100 flex items-center gap-2"
+              className="w-full text-left px-3 py-2 text-sm text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:bg-indigo-500/10 border-t border-slate-100 flex items-center gap-2"
             >
               {isCreating ? (
                 <><Loader2 className="w-4 h-4 animate-spin" /> Creating...</>

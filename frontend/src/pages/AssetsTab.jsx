@@ -99,14 +99,14 @@ export default function AssetsTab() {
 
       {/* Top Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm md:col-span-1">
-          <p className="text-slate-500">Total Net Worth</p>
-          <p className="text-4xl font-bold text-slate-800 mt-2">{defaultCurrency.symbol}{totalAssetsValue.toFixed(2)}</p>
-          <p className="text-sm text-slate-400 mt-2">Across {assets.length} active assets</p>
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm md:col-span-1 dark:text-slate-100">
+          <p className="text-slate-500 dark:text-slate-400 dark:text-slate-500">Total Net Worth</p>
+          <p className="text-4xl font-bold text-slate-800 dark:text-slate-200 mt-2">{defaultCurrency.symbol}{totalAssetsValue.toFixed(2)}</p>
+          <p className="text-sm text-slate-400 dark:text-slate-500 mt-2">Across {assets.length} active assets</p>
         </div>
         
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm md:col-span-2">
-            <h2 className="text-lg font-bold mb-4 text-slate-800">Net Worth Over Time</h2>
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm md:col-span-2 dark:text-slate-100">
+            <h2 className="text-lg font-bold mb-4 text-slate-800 dark:text-slate-200">Net Worth Over Time</h2>
             <div className="h-48 w-full">
                 {history.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
@@ -133,15 +133,15 @@ export default function AssetsTab() {
                     </LineChart>
                     </ResponsiveContainer>
                 ) : (
-                    <div className="h-full flex items-center justify-center text-slate-400 italic">No history available yet.</div>
+                    <div className="h-full flex items-center justify-center text-slate-400 dark:text-slate-500 italic">No history available yet.</div>
                 )}
             </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-            <h2 className="text-xl font-bold mb-4 text-slate-800">Your Assets</h2>
+        <div className="lg:col-span-2 bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:text-slate-100">
+            <h2 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-200">Your Assets</h2>
             <DragDropContext onDragEnd={handleDragEnd}>
               <Droppable droppableId="assets">
                 {(provided) => (
@@ -154,10 +154,10 @@ export default function AssetsTab() {
                               <div 
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
-                                className={`group flex justify-between items-center p-4 rounded-lg border transition-all ${snapshot.isDragging ? 'bg-indigo-50 border-indigo-200 shadow-md scale-[1.01]' : 'bg-slate-50 border-slate-100 hover:border-slate-200'}`}
+                                className={`group flex justify-between items-center p-4 rounded-lg border transition-all ${snapshot.isDragging ? 'bg-indigo-50 dark:bg-indigo-500/10 border-indigo-200 shadow-md scale-[1.01]' : 'bg-slate-50 dark:bg-slate-900 border-slate-100 hover:border-slate-200 dark:border-slate-700'}`}
                               >
                                 <div className="flex items-center gap-3">
-                                  <div {...provided.dragHandleProps} className="text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing">
+                                  <div {...provided.dragHandleProps} className="text-slate-300 hover:text-slate-500 dark:text-slate-400 dark:text-slate-500 cursor-grab active:cursor-grabbing">
                                     <GripVertical size={20} />
                                   </div>
                                   <div 
@@ -167,35 +167,35 @@ export default function AssetsTab() {
                                   >
                                       {asset.icon && <span className="text-2xl">{asset.icon}</span>}
                                       <div>
-                                          <h3 className="font-semibold text-slate-800 text-lg group-hover:text-indigo-600 transition-colors">{asset.name}</h3>
-                                          <p className="text-sm text-slate-500">{asset.type}</p>
+                                          <h3 className="font-semibold text-slate-800 dark:text-slate-200 text-lg group-hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-400 transition-colors">{asset.name}</h3>
+                                          <p className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-500">{asset.type}</p>
                                       </div>
                                   </div>
                                 </div>
                             <div className="flex items-center gap-4">
                                 {isEditing ? (
                                     <div className="flex items-center gap-2">
-                                        <span className="text-slate-400">{asset.currency?.symbol || defaultCurrency.symbol}</span>
+                                        <span className="text-slate-400 dark:text-slate-500">{asset.currency?.symbol || defaultCurrency.symbol}</span>
                                         <input
                                             type="number"
                                             value={editingAmount}
                                             onChange={e => setEditingAmount(e.target.value)}
                                             onKeyDown={e => { if (e.key === 'Enter') saveEdit(asset); if (e.key === 'Escape') setEditingId(null); }}
-                                            className="w-24 border border-indigo-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                            className="w-24 border border-indigo-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-slate-700 dark:text-slate-100"
                                             autoFocus
                                         />
-                                        <button onClick={() => saveEdit(asset)} className="text-emerald-600 font-bold px-2">✓</button>
-                                        <button onClick={() => setEditingId(null)} className="text-slate-400 font-bold px-1">✕</button>
+                                        <button onClick={() => saveEdit(asset)} className="text-emerald-600 dark:text-emerald-400 font-bold px-2">✓</button>
+                                        <button onClick={() => setEditingId(null)} className="text-slate-400 dark:text-slate-500 font-bold px-1">✕</button>
                                     </div>
                                 ) : (
                                     <button 
                                         onClick={() => { setEditingId(asset.id); setEditingAmount(String(asset.currentAmount)); }}
-                                        className="text-xl font-semibold text-slate-800 hover:text-indigo-600 transition-colors cursor-pointer flex flex-col items-end"
+                                        className="text-xl font-semibold text-slate-800 dark:text-slate-200 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-400 transition-colors cursor-pointer flex flex-col items-end"
                                         title="Click to update amount"
                                     >
                                         <span>{asset.currency?.symbol || defaultCurrency.symbol}{asset.currentAmount.toFixed(2)}</span>
                                         {!asset.currency?.isDefault && asset.currency?.exchangeRateToDefault && (
-                                          <span className="text-xs text-slate-400 font-normal">
+                                          <span className="text-xs text-slate-400 dark:text-slate-500 font-normal">
                                             ≈ {defaultCurrency.symbol}{(asset.currentAmount * asset.currency.exchangeRateToDefault).toFixed(2)}
                                           </span>
                                         )}
@@ -203,7 +203,7 @@ export default function AssetsTab() {
                                 )}
                                 <button
                                     onClick={() => deleteAsset(asset.id)}
-                                    className="hidden md:block opacity-0 group-hover:opacity-100 p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-all"
+                                    className="hidden md:block opacity-0 group-hover:opacity-100 p-2 text-slate-400 dark:text-slate-500 hover:text-red-600 dark:text-red-400 hover:bg-red-50 dark:bg-red-500/10 rounded transition-all"
                                 >
                                     <Trash2 className="w-4 h-4" />
                                 </button>
@@ -214,23 +214,23 @@ export default function AssetsTab() {
                   );
                 })}
                 {provided.placeholder}
-                {assets.length === 0 && <p className="text-slate-500 italic text-center py-4">You have not added any assets yet.</p>}
+                {assets.length === 0 && <p className="text-slate-500 dark:text-slate-400 dark:text-slate-500 italic text-center py-4">You have not added any assets yet.</p>}
               </div>
             )}
           </Droppable>
         </DragDropContext>
         </div>
 
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm h-fit">
-            <h2 className="text-xl font-bold mb-4 text-slate-800">{editingFullAsset ? 'Update Asset' : 'Add Asset'}</h2>
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm h-fit dark:text-slate-100">
+            <h2 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-200">{editingFullAsset ? 'Update Asset' : 'Add Asset'}</h2>
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                 <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Name</label>
-                    <input type="text" value={name} onChange={e=>setName(e.target.value)} placeholder="e.g. Chase Checking" className="w-full bg-white border border-slate-300 rounded p-2 text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none" required />
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Name</label>
+                    <input type="text" value={name} onChange={e=>setName(e.target.value)} placeholder="e.g. Chase Checking" className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded p-2 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none" required />
                 </div>
                 <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Type</label>
-                    <select value={type} onChange={e=>setType(e.target.value)} className="w-full bg-white border border-slate-300 rounded p-2 text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Type</label>
+                    <select value={type} onChange={e=>setType(e.target.value)} className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded p-2 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                         <option value="Cash">Cash</option>
                         <option value="Bank Account">Bank Account</option>
                         <option value="Gold">Gold</option>
@@ -242,29 +242,29 @@ export default function AssetsTab() {
                 </div>
                 <div className="flex gap-4">
                   <div className="flex-1">
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Currency</label>
-                      <select value={currencyId} onChange={e=>setCurrencyId(e.target.value)} className="w-full bg-white border border-slate-300 rounded p-2 text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Currency</label>
+                      <select value={currencyId} onChange={e=>setCurrencyId(e.target.value)} className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded p-2 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                           <option value="">{defaultCurrency.name || 'Default'} ({defaultCurrency.code})</option>
                           {currencies.filter(c => !c.isDefault).map(c => <option key={c.id} value={c.id}>{c.name} ({c.code})</option>)}
                       </select>
                   </div>
                   <div className="flex-1">
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Icon (Emoji)</label>
-                      <input type="text" value={icon} onChange={e=>setIcon(e.target.value)} placeholder="💰" className="w-full bg-white border border-slate-300 rounded p-2 text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none" maxLength={10} />
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Icon (Emoji)</label>
+                      <input type="text" value={icon} onChange={e=>setIcon(e.target.value)} placeholder="💰" className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded p-2 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none" maxLength={10} />
                   </div>
                 </div>
                 {!editingFullAsset && (
                   <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Initial Amount</label>
-                      <input type="number" step="0.01" value={amount} onChange={e=>setAmount(e.target.value)} placeholder="0.00" className="w-full bg-white border border-slate-300 rounded p-2 text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none" required />
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Initial Amount</label>
+                      <input type="number" step="0.01" value={amount} onChange={e=>setAmount(e.target.value)} placeholder="0.00" className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded p-2 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none" required />
                   </div>
                 )}
                 <div className="flex gap-2 mt-2">
-                  <button type="submit" className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded font-semibold transition-colors">
+                  <button type="submit" className="flex-1 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white p-2 rounded font-semibold transition-colors">
                     {editingFullAsset ? 'Update Asset' : 'Add Asset'}
                   </button>
                   {editingFullAsset && (
-                    <button type="button" onClick={clearForm} className="px-4 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded font-semibold transition-colors">
+                    <button type="button" onClick={clearForm} className="px-4 bg-slate-100 hover:bg-slate-200 text-slate-600 dark:text-slate-400 dark:text-slate-500 rounded font-semibold transition-colors">
                       Cancel
                     </button>
                   )}

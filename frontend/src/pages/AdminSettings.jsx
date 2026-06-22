@@ -96,10 +96,10 @@ export default function AdminSettings() {
   if (loading) return <div className="p-8">Loading settings...</div>;
 
   return (
-    <div className="flex-1 p-8 overflow-y-auto bg-slate-50">
-      <h1 className="text-3xl font-bold text-slate-800 mb-8">Admin Settings</h1>
+    <div className="flex-1 p-8 overflow-y-auto bg-slate-50 dark:bg-slate-900">
+      <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-200 mb-8">Admin Settings</h1>
       
-      <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200 max-w-2xl">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 border border-slate-200 dark:border-slate-700 max-w-2xl dark:text-slate-100">
         {message && <div className="mb-4 p-3 bg-green-100 text-green-700 rounded">{message}</div>}
         {error && <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">{error}</div>}
 
@@ -107,19 +107,19 @@ export default function AdminSettings() {
           <div>
             <h2 className="text-xl font-bold mb-4">General Settings</h2>
             <div className="mb-4">
-              <label className="block font-medium text-slate-700 mb-1">Contact Email Address</label>
+              <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">Contact Email Address</label>
               <input 
                 type="email"
                 value={settings.contactEmail}
                 onChange={(e) => setSettings({...settings, contactEmail: e.target.value})}
-                className="w-full border rounded-md px-3 py-2"
+                className="w-full border rounded-md px-3 py-2 dark:bg-slate-700 dark:text-slate-100"
                 placeholder="e.g. support@yourdomain.com"
               />
-              <p className="text-sm text-slate-500 mt-1">This email will be used for the 'Contact Us' form on the landing page.</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-500 mt-1">This email will be used for the 'Contact Us' form on the landing page.</p>
             </div>
           </div>
 
-          <div className="pt-4 border-t border-slate-200">
+          <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
             <h2 className="text-xl font-bold mb-4">Paddle Integration</h2>
             
             <div className="space-y-4">
@@ -131,7 +131,7 @@ export default function AdminSettings() {
                   onChange={(e) => setSettings({...settings, isPaddleEnabled: e.target.checked})}
                   className="w-4 h-4"
                 />
-                <label htmlFor="isPaddleEnabled" className="font-medium text-slate-700">Enable Paddle Integration</label>
+                <label htmlFor="isPaddleEnabled" className="font-medium text-slate-700 dark:text-slate-300">Enable Paddle Integration</label>
               </div>
 
               <div className="flex items-center space-x-3">
@@ -142,15 +142,15 @@ export default function AdminSettings() {
                   onChange={(e) => setSettings({...settings, enableNewSubscriptions: e.target.checked})}
                   className="w-4 h-4"
                 />
-                <label htmlFor="enableNewSubscriptions" className="font-medium text-slate-700">Enable New Subscriptions</label>
+                <label htmlFor="enableNewSubscriptions" className="font-medium text-slate-700 dark:text-slate-300">Enable New Subscriptions</label>
               </div>
 
               <div>
-                <label className="block font-medium text-slate-700 mb-1">Paddle Base URL</label>
+                <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">Paddle Base URL</label>
                 <select 
                   value={settings.paddleEnvironment}
                   onChange={(e) => setSettings({...settings, paddleEnvironment: e.target.value})}
-                  className="w-full border rounded-md px-3 py-2"
+                  className="w-full border rounded-md px-3 py-2 dark:bg-slate-700 dark:text-slate-100"
                 >
                   <option value="sandbox">Sandbox (https://sandbox-api.paddle.com)</option>
                   <option value="production">Live (https://api.paddle.com)</option>
@@ -158,34 +158,34 @@ export default function AdminSettings() {
               </div>
 
               <div>
-                <label className="block font-medium text-slate-700 mb-1">Paddle API Key (Backend)</label>
+                <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">Paddle API Key (Backend)</label>
                 <input 
                   type="password"
                   value={settings.paddleApiKey}
                   onChange={(e) => setSettings({...settings, paddleApiKey: e.target.value})}
-                  className="w-full border rounded-md px-3 py-2"
+                  className="w-full border rounded-md px-3 py-2 dark:bg-slate-700 dark:text-slate-100"
                   placeholder="e.g. 5d..."
                 />
               </div>
 
               <div>
-                <label className="block font-medium text-slate-700 mb-1">Paddle Client Token (Frontend)</label>
+                <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">Paddle Client Token (Frontend)</label>
                 <input 
                   type="text"
                   value={settings.paddleClientToken}
                   onChange={(e) => setSettings({...settings, paddleClientToken: e.target.value})}
-                  className="w-full border rounded-md px-3 py-2"
+                  className="w-full border rounded-md px-3 py-2 dark:bg-slate-700 dark:text-slate-100"
                   placeholder="e.g. live_..."
                 />
               </div>
 
               <div>
-                <label className="block font-medium text-slate-700 mb-1">Paddle Webhook Secret</label>
+                <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">Paddle Webhook Secret</label>
                 <input 
                   type="password"
                   value={settings.paddleWebhookSecret}
                   onChange={(e) => setSettings({...settings, paddleWebhookSecret: e.target.value})}
-                  className="w-full border rounded-md px-3 py-2"
+                  className="w-full border rounded-md px-3 py-2 dark:bg-slate-700 dark:text-slate-100"
                   placeholder="e.g. whsec_..."
                 />
               </div>
@@ -204,13 +204,13 @@ export default function AdminSettings() {
             <button 
               type="button" 
               onClick={handleVerify}
-              className="px-4 py-2 border border-slate-300 text-slate-700 rounded-md hover:bg-slate-50"
+              className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700/50 dark:bg-slate-900"
             >
               Verify API Access
             </button>
             
             {verifyStatus && (
-              <span className={`text-sm ${verifyStatus.includes('Success') ? 'text-green-600' : 'text-red-600'}`}>
+              <span className={`text-sm ${verifyStatus.includes('Success') ? 'text-green-600' : 'text-red-600 dark:text-red-400'}`}>
                 {verifyStatus}
               </span>
             )}

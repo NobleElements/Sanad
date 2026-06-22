@@ -231,24 +231,12 @@ export default function TipTapEditor({ content, onChange, onImageUpload }) {
       }),
       Table.configure({
         resizable: true,
-        HTMLAttributes: {
-          class: 'min-w-full divide-y divide-gray-200 dark:divide-gray-700 border border-gray-200 dark:border-gray-700 rounded-lg',
-        },
       }),
       TableRow.configure({
-        HTMLAttributes: {
-          class: 'divide-x divide-gray-200 dark:divide-gray-700',
-        },
       }),
       TableHeader.configure({
-        HTMLAttributes: {
-          class: 'bg-gray-50 dark:bg-gray-800 p-2 font-semibold text-left text-gray-900 dark:text-gray-100',
-        },
       }),
       TableCell.configure({
-        HTMLAttributes: {
-          class: 'p-2',
-        },
       }),
       Color,
       TextStyle,

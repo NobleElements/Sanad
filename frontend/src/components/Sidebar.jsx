@@ -62,13 +62,13 @@ export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }) {
           )}
           <button 
             onClick={() => setIsCollapsed(!isCollapsed)} 
-            className="hidden md:block p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-100 transition-colors"
+            className="hidden md:block p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-slate-100 transition-colors"
           >
             {isCollapsed ? <Menu className="w-6 h-6" /> : <Menu className="w-5 h-5" />}
           </button>
           <button 
             onClick={() => setIsMobileMenuOpen(false)} 
-            className="md:hidden p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-100 transition-colors"
+            className="md:hidden p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-slate-100 transition-colors"
           >
             <span className="text-2xl leading-none">×</span>
           </button>
@@ -123,10 +123,10 @@ export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }) {
         )}
       </nav>
       
-      <div className="p-3 border-t border-slate-800">
+      <div className="p-3 border-t border-slate-800 dark:bg-slate-900 dark:text-slate-100">
         <button 
           onClick={() => { handleLinkClick(); handleLogout(); }}
-          className={`w-full flex items-center ${isCollapsed && window.innerWidth >= 768 ? 'justify-center' : 'gap-3'} p-3 rounded transition-colors text-slate-400 hover:bg-red-900/40 hover:text-red-300`}
+          className={`w-full flex items-center ${isCollapsed && window.innerWidth >= 768 ? 'justify-center' : 'gap-3'} p-3 rounded transition-colors text-slate-300 hover:bg-slate-800 hover:text-slate-100`}
           title="Log Out"
         >
           <LogOut className="w-5 h-5 flex-shrink-0" />
