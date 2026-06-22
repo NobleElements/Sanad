@@ -96,13 +96,13 @@ export default function LandingPage() {
         <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E')] opacity-20 mix-blend-overlay"></div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
           <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-gray-900 dark:text-white mb-8">
-            Your personal workspace, <br className="hidden md:block" />
+            Your self-hosted personal workspace, <br className="hidden md:block" />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">
               all in one place.
             </span>
           </h1>
           <p className="mt-4 text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto mb-10 leading-relaxed">
-            Sanad is the ultimate self-hosted companion to organize your tasks, manage your finances, capture your thoughts, and securely store your files.
+            Sanad is the ultimate companion to organize your tasks, manage your finances, capture your thoughts, and securely store your files. Self-hosted for complete data control and privacy in your personal management.
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <Link 
