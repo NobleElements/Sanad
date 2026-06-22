@@ -56,7 +56,9 @@ export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }) {
       <div className={`fixed md:static inset-y-0 left-0 z-50 bg-slate-900 text-slate-100 flex flex-col transition-all duration-300 ease-in-out border-r border-slate-800 ${isCollapsed ? 'md:w-20 w-64' : 'w-64'} ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
         <div className={`flex items-center ${isCollapsed ? 'md:justify-center justify-between' : 'justify-between'} p-4 mb-4 border-b border-slate-800`}>
           {(!isCollapsed || window.innerWidth < 768) && (
-            <img src="/logo.png" alt="Sanad Logo" className="w-24 -m-24 ml-1 invert opacity-90" />
+            <Link to="/" onClick={handleLinkClick} className="block -m-24 ml-1">
+              <img src="/logo.png" alt="Sanad Logo" className="w-24 invert opacity-90" />
+            </Link>
           )}
           <button 
             onClick={() => setIsCollapsed(!isCollapsed)} 

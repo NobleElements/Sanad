@@ -308,7 +308,7 @@ export default function Dashboard() {
                <p className="text-slate-400 text-sm italic">No spending logged yet.</p>
              ) : (
                <div className="flex flex-col gap-3">
-                 {recentTransactions.map(tx => (
+                 {recentTransactions.slice(0, 5).map(tx => (
                    <div key={tx.id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100">
                      <div
                        className="w-2.5 h-2.5 rounded-full flex-shrink-0"
