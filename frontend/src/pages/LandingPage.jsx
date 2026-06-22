@@ -1,8 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { LayoutDashboard, CheckSquare, BrainCircuit, Wallet, BookOpen, HardDrive, ArrowRight, Code, Check } from 'lucide-react';
+import { LayoutDashboard, CheckSquare, BrainCircuit, Wallet, BookOpen, HardDrive, ArrowRight, Code, Check, Terminal, Copy } from 'lucide-react';
 import { API_URL } from '../config';
 import { formatBytes } from '../utils/formatUtils';
+
+const GithubIcon = ({ className }) => (
+  <svg className={className} fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+    <path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" />
+  </svg>
+);
 
 const FeatureCard = ({ icon: Icon, title, description }) => (
   <div className="flex flex-col items-start p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow dark:text-slate-100">
@@ -19,6 +25,13 @@ export default function LandingPage() {
   const [loadingTiers, setLoadingTiers] = useState(true);
   const [contactEmail, setContactEmail] = useState('');
   const [contactReason, setContactReason] = useState('General Inquiry');
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText("curl -O https://raw.githubusercontent.com/NobleElements/Sanad/main/docs/docker-compose.yml && docker compose up -d");
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   useEffect(() => {
     fetch(`${API_URL}/storage/tiers`)
@@ -54,6 +67,15 @@ export default function LandingPage() {
             <div className="flex items-center gap-4">
               <div className="hidden md:flex items-center gap-4 mr-4">
                 <a 
+                  href="https://github.com/NobleElements/Sanad" 
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium px-3 py-2 transition-colors flex items-center gap-2"
+                >
+                  <GithubIcon className="w-5 h-5" />
+                  GitHub
+                </a>
+                <a 
                   href="#features" 
                   className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium px-3 py-2 transition-colors"
                 >
@@ -86,7 +108,7 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <div className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
+      <div className="relative pt-32 pb-16 lg:pt-48 lg:pb-16 overflow-hidden">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E')] opacity-20 mix-blend-overlay"></div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
           <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-gray-900 dark:text-white mb-8">
@@ -98,6 +120,38 @@ export default function LandingPage() {
           <p className="mt-4 text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto mb-10 leading-relaxed">
             Sanad is the ultimate companion to organize your tasks, manage your finances, capture your thoughts, and securely store your files. Self-hosted for complete data control and privacy in your personal management.
           </p>
+        </div>
+      </div>
+
+      {/* Self-Hosting Section */}
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-48 relative">
+        <div className="bg-gradient-to-r from-gray-900 to-slate-800 dark:from-gray-800 dark:to-gray-900 rounded-xl shadow-lg border border-gray-700">
+          <div className="p-4 md:p-6 flex flex-col lg:flex-row items-center gap-4 md:gap-6">
+            <div className="flex-shrink-0 flex items-center gap-3">
+              <div className="bg-blue-500/20 p-2 rounded-lg">
+                <Terminal className="w-5 h-5 text-blue-400" />
+              </div>
+              <h2 className="text-xl font-semibold text-white whitespace-nowrap">
+                Self-host with one line
+              </h2>
+            </div>
+            <div className="flex-1 w-full relative">
+              <button 
+                onClick={handleCopy}
+                className="absolute top-1/2 -translate-y-1/2 right-2 p-2 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-md text-gray-400 hover:text-white transition-all z-10"
+                title="Copy command"
+              >
+                {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+              </button>
+              <div 
+                className="w-full bg-black/50 rounded-lg border border-gray-700 py-3 pl-4 pr-14 shadow-inner"
+              >
+                <pre className="text-sm font-mono text-gray-300 whitespace-pre-wrap break-all sm:break-words">
+                  <code>curl -O https://raw.githubusercontent.com/NobleElements/Sanad/main/docs/docker-compose.yml && docker compose up -d</code>
+                </pre>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -427,8 +481,8 @@ export default function LandingPage() {
             <Link to="/terms" className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors">Terms</Link>
             <Link to="/privacy" className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors">Privacy</Link>
             <Link to="/refund" className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors">Refunds</Link>
-            <a href="#" className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 ml-2">
-              <Code className="w-5 h-5" />
+            <a href="https://github.com/NobleElements/Sanad" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 ml-2" title="GitHub Repository">
+              <GithubIcon className="w-5 h-5" />
             </a>
           </div>
         </div>

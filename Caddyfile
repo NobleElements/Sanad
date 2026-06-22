@@ -1,4 +1,4 @@
-sanadcloud.app {
+{$DOMAIN:sanadcloud.app} {
     # Proxy API endpoints to the .NET backend
     handle /api/* {
         reverse_proxy sanad-api:8080

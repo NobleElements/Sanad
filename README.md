@@ -74,7 +74,17 @@ Sanad is a comprehensive personal management application designed to help you or
 
 ## Getting Started
 
-### Frontend
+### Quick Start (Self-Hosting via Docker)
+The easiest way to get Sanad running on your own machine or server is using Docker Compose.
+
+```bash
+curl -O https://raw.githubusercontent.com/NobleElements/Sanad/main/docs/docker-compose.yml && docker compose up -d
+```
+Sanad will now be running and accessible at **http://localhost:5858**.
+
+### Local Development
+
+#### Frontend
 To run the frontend development server:
 ```bash
 cd frontend
@@ -82,7 +92,7 @@ npm install
 npm run dev
 ```
 
-### Backend
+#### Backend
 To run the backend API server:
 ```bash
 cd src/Sanad.Api
