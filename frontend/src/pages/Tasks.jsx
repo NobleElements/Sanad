@@ -201,7 +201,7 @@ export default function Tasks() {
           {/* Tag Filter */}
           {tags.length > 0 && (
             <div className="relative">
-              <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none z-10" />
               <select
                 value={tagFilter}
                 onChange={(e) => setTagFilter(e.target.value)}
@@ -218,7 +218,7 @@ export default function Tasks() {
           {/* Project Filter */}
           {projects.length > 0 && (
             <div className="relative">
-              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none z-10" />
               <select
                 value={projectFilter}
                 onChange={(e) => setProjectFilter(e.target.value)}
@@ -253,11 +253,10 @@ export default function Tasks() {
           {/* Show/Hide Completed Toggle */}
           <button
             onClick={() => setShowCompleted(!showCompleted)}
-            className="inline-flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all shadow-sm"
+            className={`flex items-center justify-center w-10 h-10 transition-colors border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-sm ${!showCompleted ? 'bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl hover:bg-gray-50 dark:hover:bg-gray-700'}`}
             title={showCompleted ? "Hide Done column" : "Show Done column"}
           >
             {showCompleted ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            <span className="hidden sm:inline">{showCompleted ? "Hide Done" : "Show Done"}</span>
           </button>
 
           <button
