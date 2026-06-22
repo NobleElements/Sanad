@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   caddy:
-    image: ghcr.io/NobleElements/sanad-caddy:latest
+    image: ghcr.io/nobleelements/sanad-caddy:latest
     container_name: sanad-caddy
     restart: unless-stopped
     environment:
@@ -16,7 +16,7 @@ services:
       - sanad-api
 
   sanad-api:
-    image: ghcr.io/NobleElements/sanad:latest
+    image: ghcr.io/nobleelements/sanad:latest
     container_name: sanad-api
     restart: unless-stopped
     environment:
