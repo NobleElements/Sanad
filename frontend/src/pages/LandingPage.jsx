@@ -76,15 +76,9 @@ export default function LandingPage() {
               </div>
               <Link 
                 to="/login" 
-                className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium px-3 py-2 transition-colors"
-              >
-                Log In
-              </Link>
-              <Link 
-                to="/login" 
                 className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-medium transition-colors shadow-sm"
               >
-                Get Started
+                Log In
               </Link>
             </div>
           </div>
@@ -104,15 +98,6 @@ export default function LandingPage() {
           <p className="mt-4 text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto mb-10 leading-relaxed">
             Sanad is the ultimate companion to organize your tasks, manage your finances, capture your thoughts, and securely store your files. Self-hosted for complete data control and privacy in your personal management.
           </p>
-          <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <Link 
-              to="/login" 
-              className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold rounded-xl text-white bg-blue-600 hover:bg-blue-700 shadow-lg hover:shadow-xl transition-all"
-            >
-              Start for free
-              <ArrowRight className="ml-2 w-5 h-5" />
-            </Link>
-          </div>
         </div>
       </div>
 
