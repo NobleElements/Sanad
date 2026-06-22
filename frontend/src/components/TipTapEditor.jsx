@@ -5,9 +5,13 @@ import TaskItem from '@tiptap/extension-task-item';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import ImageResize from 'tiptap-extension-resize-image';
 import Link from '@tiptap/extension-link';
+import { Table } from '@tiptap/extension-table';
+import { TableRow } from '@tiptap/extension-table-row';
+import { TableHeader } from '@tiptap/extension-table-header';
+import { TableCell } from '@tiptap/extension-table-cell';
 import { common, createLowlight } from 'lowlight';
 import { useEffect, useRef, useCallback } from 'react';
-import { Bold, Italic, Strikethrough, List, ListOrdered, CheckSquare, Code, ImagePlus, Link as LinkIcon } from 'lucide-react';
+import { Bold, Italic, Strikethrough, List, ListOrdered, CheckSquare, Code, ImagePlus, Link as LinkIcon, Table as TableIcon } from 'lucide-react';
 
 const lowlight = createLowlight(common);
 
@@ -25,6 +29,7 @@ const MenuBar = ({ editor, onImageUpload }) => {
   const toggleOrderedList = () => editor.chain().focus().toggleOrderedList().run();
   const toggleTaskList = () => editor.chain().focus().toggleTaskList().run();
   const toggleCodeBlock = () => editor.chain().focus().toggleCodeBlock().run();
+  const insertTable = () => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
 
   const setLink = useCallback(() => {
     const previousUrl = editor.getAttributes('link').href;
@@ -97,6 +102,9 @@ const MenuBar = ({ editor, onImageUpload }) => {
       <button onClick={setLink} className={btnClass(editor.isActive('link'))} aria-label="Add Link">
         <LinkIcon className="w-4 h-4" />
       </button>
+      <button onClick={insertTable} className={btnClass(editor.isActive('table'))} aria-label="Insert Table">
+        <TableIcon className="w-4 h-4" />
+      </button>
       {onImageUpload && (
         <>
           <button onClick={handleImageClick} className={btnClass(false)} aria-label="Insert Image">
@@ -140,6 +148,27 @@ export default function TipTapEditor({ content, onChange, onImageUpload }) {
           target: '_blank',
           rel: 'noopener noreferrer',
           class: 'text-indigo-600 dark:text-indigo-400 underline hover:text-indigo-800 dark:hover:text-indigo-300 cursor-pointer',
+        },
+      }),
+      Table.configure({
+        resizable: true,
+        HTMLAttributes: {
+          class: 'min-w-full divide-y divide-gray-200 dark:divide-gray-700 border border-gray-200 dark:border-gray-700 rounded-lg',
+        },
+      }),
+      TableRow.configure({
+        HTMLAttributes: {
+          class: 'divide-x divide-gray-200 dark:divide-gray-700',
+        },
+      }),
+      TableHeader.configure({
+        HTMLAttributes: {
+          class: 'bg-gray-50 dark:bg-gray-800 p-2 font-semibold text-left text-gray-900 dark:text-gray-100',
+        },
+      }),
+      TableCell.configure({
+        HTMLAttributes: {
+          class: 'p-2',
         },
       }),
     ],
