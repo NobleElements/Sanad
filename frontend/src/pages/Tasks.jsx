@@ -31,6 +31,7 @@ export default function Tasks() {
     return localStorage.getItem('sanad_tag_filter') || '';
   });
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [showCompleted, setShowCompleted] = useState(() => {
     const saved = localStorage.getItem('sanad_show_completed');
     return saved !== null ? JSON.parse(saved) : true;
@@ -171,15 +172,30 @@ export default function Tasks() {
         </div>
         <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
           {/* Search Input */}
-          <div className="relative flex-1 sm:flex-none sm:w-48">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Search tasks..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 text-sm bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-            />
+          <div className={`relative transition-all duration-300 ease-in-out flex-shrink-0 ${isSearchExpanded || searchQuery ? 'w-full sm:w-64' : 'w-10 h-10'}`}>
+            <button 
+              type="button"
+              onClick={() => {
+                setIsSearchExpanded(true);
+                setTimeout(() => document.getElementById('task-search-input')?.focus(), 50);
+              }}
+              className={`absolute inset-0 flex items-center justify-center transition-opacity ${isSearchExpanded || searchQuery ? 'opacity-0 pointer-events-none' : 'opacity-100 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 bg-white/60 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl z-10'}`}
+              aria-label="Expand search"
+            >
+              <Search className="w-4 h-4 text-gray-500" />
+            </button>
+            <div className={`relative transition-all duration-300 ${isSearchExpanded || searchQuery ? 'opacity-100 w-full' : 'opacity-0 w-0 overflow-hidden pointer-events-none'}`}>
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              <input
+                id="task-search-input"
+                type="text"
+                placeholder="Search tasks..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onBlur={() => { if (!searchQuery) setIsSearchExpanded(false); }}
+                className="w-full h-10 pl-9 pr-4 py-2.5 text-sm bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+              />
+            </div>
           </div>
           
           {/* Tag Filter */}
