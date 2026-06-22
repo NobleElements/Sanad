@@ -23,8 +23,11 @@ export default function Dashboard() {
     transactions: recentTransactions, 
     budgetSummary, 
     fetchFinanceData, 
-    addTransaction
+    addTransaction,
+    currencies
   } = useFinanceStore();
+
+  const defaultCurrency = currencies?.find(c => c.isDefault) || { symbol: '$' };
 
   // Book store
   const { currentRead, fetchCurrentRead, logProgress } = useBookStore();
@@ -143,7 +146,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
         <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
           <h3 className="text-sm text-slate-500 font-semibold uppercase">Spent Today</h3>
-          <p className="text-2xl font-bold">${totalSpentToday.toFixed(2)}</p>
+          <p className="text-2xl font-bold">{defaultCurrency.symbol}{totalSpentToday.toFixed(2)}</p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
           <h3 className="text-sm text-slate-500 font-semibold uppercase">Today's Goals</h3>
@@ -289,7 +292,7 @@ export default function Dashboard() {
                 <div className="flex justify-between text-sm mb-1">
                   <span className="text-slate-500">Left this month</span>
                   <span className={`font-semibold ${budgetSummary.monthlyBudget - budgetSummary.totalSpent < 0 ? 'text-red-500' : 'text-slate-700'}`}>
-                    ${(budgetSummary.monthlyBudget - budgetSummary.totalSpent).toFixed(2)}
+                    {defaultCurrency.symbol}{(budgetSummary.monthlyBudget - budgetSummary.totalSpent).toFixed(2)}
                   </span>
                 </div>
                 {budgetSummary.monthlyBudget > 0 && (
@@ -320,7 +323,7 @@ export default function Dashboard() {
                        </div>
                      </div>
                      <div className="text-sm font-semibold text-slate-700 flex-shrink-0">
-                       ${tx.amount.toFixed(2)}
+                       {defaultCurrency.symbol}{tx.amount.toFixed(2)}
                      </div>
                    </div>
                  ))}
@@ -349,7 +352,7 @@ export default function Dashboard() {
               <div>
                 <label className="block text-sm text-slate-600 mb-1 font-medium">Amount</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">{defaultCurrency.symbol}</span>
                   <input
                     type="number"
                     step="0.01"
