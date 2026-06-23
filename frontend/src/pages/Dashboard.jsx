@@ -27,7 +27,7 @@ export default function Dashboard() {
     currencies
   } = useFinanceStore();
 
-  const defaultCurrency = currencies?.find(c => c.isDefault) || { symbol: '$' };
+  const defaultCurrency = currencies?.find(c => c.isDefault) || { symbol: '' };
 
   // Book store
   const { currentRead, fetchCurrentRead, logProgress } = useBookStore();
@@ -146,7 +146,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
         <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 dark:text-slate-100">
           <h3 className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-500 font-semibold uppercase">Spent Today</h3>
-          <p className="text-2xl font-bold">{defaultCurrency.symbol}{totalSpentToday.toFixed(2)}</p>
+          <p className="text-2xl font-bold">{currencies && (defaultCurrency.symbol + totalSpentToday.toFixed(2))}</p>
         </div>
         <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 dark:text-slate-100">
           <h3 className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-500 font-semibold uppercase">Today's Goals</h3>
