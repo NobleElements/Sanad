@@ -270,8 +270,36 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Showcase 3: Thoughts */}
+          {/* Showcase 3: Calendar */}
           <div className="flex flex-col lg:flex-row items-center gap-16">
+            <div className="lg:w-1/2">
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">Plan your days</h2>
+              <p className="text-lg text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
+                Visualize your schedule with a unified calendar view. See your upcoming tasks, habits, and daily goals all in one place.
+              </p>
+              <ul className="space-y-4">
+                {['Monthly and weekly views', 'Integrated tasks and habits', 'Quick scheduling'].map((item, i) => (
+                  <li key={i} className="flex items-center text-gray-700 dark:text-gray-300">
+                    <Calendar className="w-5 h-5 text-rose-500 mr-3" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="lg:w-1/2">
+              <div className="rounded-xl overflow-hidden shadow-xl border border-gray-200 dark:border-gray-700">
+                <img 
+                  src="/screenshots/calendar.png" 
+                  alt="Calendar Feature" 
+                  className="w-full h-auto"
+                  onError={(e) => { e.target.src = 'https://placehold.co/1280x720/1e293b/ffffff?text=Calendar+Screenshot+Pending' }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Showcase 4: Thoughts */}
+          <div className="flex flex-col lg:flex-row-reverse items-center gap-16">
             <div className="lg:w-1/2">
               <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">Capture every idea</h2>
               <p className="text-lg text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
@@ -298,8 +326,8 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Showcase 4: Finance */}
-          <div className="flex flex-col lg:flex-row-reverse items-center gap-16">
+          {/* Showcase 5: Finance */}
+          <div className="flex flex-col lg:flex-row items-center gap-16">
             <div className="lg:w-1/2">
               <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">Take control of your money</h2>
               <p className="text-lg text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
@@ -326,8 +354,8 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Showcase 5: Files */}
-          <div className="flex flex-col lg:flex-row items-center gap-16">
+          {/* Showcase 6: Files */}
+          <div className="flex flex-col lg:flex-row-reverse items-center gap-16">
             <div className="lg:w-1/2">
               <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">Your personal cloud</h2>
               <p className="text-lg text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
