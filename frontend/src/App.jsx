@@ -4,6 +4,7 @@ import { Menu } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
 import Tasks from './pages/Tasks';
+import Calendar from './pages/Calendar';
 import FinanceDashboard from './pages/FinanceDashboard';
 import Notebook from './pages/Notebook';
 import Thoughts from './pages/Thoughts';
@@ -12,6 +13,7 @@ import Habits from './pages/Habits';
 import FileManager from './components/FileManager/FileManager';
 import AuthOverlay from './components/AuthOverlay';
 import ToastContainer from './components/ToastContainer';
+import NotificationManager from './components/NotificationManager';
 import useAuthStore from './store/useAuthStore';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminSettings from './pages/AdminSettings';
@@ -66,6 +68,7 @@ function App() {
           {children}
         </div>
       </div>
+      <NotificationManager />
       <ToastContainer />
     </div>
   );
@@ -92,6 +95,7 @@ function App() {
         <Route path="/thoughts" element={<ProtectedRoute><AppLayout><Thoughts /></AppLayout></ProtectedRoute>} />
         <Route path="/tasks" element={<ProtectedRoute><AppLayout><Tasks /></AppLayout></ProtectedRoute>} />
         <Route path="/tasks/:taskId" element={<ProtectedRoute><AppLayout><Tasks /></AppLayout></ProtectedRoute>} />
+        <Route path="/calendar" element={<ProtectedRoute><AppLayout><Calendar /></AppLayout></ProtectedRoute>} />
         <Route path="/finance" element={<ProtectedRoute><AppLayout><FinanceDashboard /></AppLayout></ProtectedRoute>} />
         <Route path="/notebook" element={<ProtectedRoute><AppLayout><Notebook /></AppLayout></ProtectedRoute>} />
         <Route path="/notebook/:noteId" element={<ProtectedRoute><AppLayout><Notebook /></AppLayout></ProtectedRoute>} />

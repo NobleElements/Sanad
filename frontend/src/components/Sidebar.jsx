@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Lightbulb, CheckSquare, Book, DollarSign, BookOpen, Menu, LogOut, Repeat, Folder, Shield, CreditCard } from 'lucide-react';
+import { LayoutDashboard, Lightbulb, CheckSquare, Calendar as CalendarIcon, Book, DollarSign, BookOpen, Menu, LogOut, Repeat, Folder, Shield, CreditCard } from 'lucide-react';
 import useAuthStore from '../store/useAuthStore';
+import useCalendarStore from '../store/useCalendarStore';
 
 export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }) {
   const location = useLocation();
@@ -12,20 +13,23 @@ export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }) {
   // Auto collapse on small screens
   useEffect(() => {
     const handleResize = () => {
+      const calendarSettings = useCalendarStore.getState().settings;
+      const isCalendarAndAutoCollapse = location.pathname === '/calendar' && calendarSettings?.autoCollapseNav;
+      
       if (window.innerWidth >= 768) {
         setIsMobileMenuOpen && setIsMobileMenuOpen(false);
       }
       if (window.innerWidth < 1024 && window.innerWidth >= 768) {
         setIsCollapsed(true);
       } else if (window.innerWidth >= 1024) {
-        setIsCollapsed(false);
+        setIsCollapsed(isCalendarAndAutoCollapse);
       }
     };
     window.addEventListener('resize', handleResize);
     // initial check
     handleResize();
     return () => window.removeEventListener('resize', handleResize);
-  }, [setIsMobileMenuOpen]);
+  }, [setIsMobileMenuOpen, location.pathname]);
 
   const getLinkClass = (path) => {
     const isActive = location.pathname === path;
@@ -90,6 +94,10 @@ export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }) {
         <Link to="/tasks" className={getLinkClass('/tasks')} title="Tasks" onClick={handleLinkClick}>
           <CheckSquare className="w-5 h-5 flex-shrink-0" />
           {(!isCollapsed || window.innerWidth < 768) && <span className="font-medium">Tasks</span>}
+        </Link>
+        <Link to="/calendar" className={getLinkClass('/calendar')} title="Calendar" onClick={handleLinkClick}>
+          <CalendarIcon className="w-5 h-5 flex-shrink-0" />
+          {(!isCollapsed || window.innerWidth < 768) && <span className="font-medium">Calendar</span>}
         </Link>
         <Link to="/notebook" className={getLinkClass('/notebook')} title="Notebook" onClick={handleLinkClick}>
           <Book className="w-5 h-5 flex-shrink-0" />

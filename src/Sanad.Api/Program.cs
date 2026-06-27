@@ -133,6 +133,7 @@ api.MapUploadEndpoints();
 api.MapThoughtEndpoints();
 api.MapGoalEndpoints();
 api.MapTaskEndpoints();
+api.MapCalendarEndpoints();
 
 api.MapFinanceEndpoints();
 api.MapNotebookEndpoints();
