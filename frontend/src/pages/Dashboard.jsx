@@ -261,7 +261,10 @@ export default function Dashboard() {
                  <div className="flex-1 min-w-0">
                    <p className="font-medium text-slate-800 dark:text-slate-200 truncate" title={currentRead.period.book.title}>{currentRead.period.book.title}</p>
                    <p className="text-sm text-slate-600 dark:text-slate-400 dark:text-slate-500 truncate mb-1">Ch: {currentRead.currentChapter || 'Not Started'}</p>
-                   <p className="text-xs text-amber-600 font-medium bg-amber-50 inline-block px-2 py-0.5 rounded mb-2">{currentRead.pagesLeftInChapter} pages left</p>
+                   <div className="flex flex-wrap gap-2 mb-2">
+                     <p className="text-xs text-amber-600 dark:text-amber-500 font-medium bg-amber-50 dark:bg-amber-500/10 inline-block px-2 py-0.5 rounded">{currentRead.pagesLeftInChapter} pages left</p>
+                     <p className="text-xs text-indigo-600 dark:text-indigo-400 font-medium bg-indigo-50 dark:bg-indigo-500/10 inline-block px-2 py-0.5 rounded">Pg. {currentRead.currentPage} / {currentRead.period.book.totalPages}</p>
+                   </div>
                    <div className="flex gap-2">
                       <input type="number" id="logPageInput" className="w-16 border border-slate-300 dark:border-slate-600 rounded p-1.5 text-sm focus:outline-none focus:border-indigo-500 dark:bg-slate-700 dark:text-slate-100" placeholder="Pg" />
                       <button onClick={() => {

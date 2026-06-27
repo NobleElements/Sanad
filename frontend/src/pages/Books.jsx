@@ -219,6 +219,7 @@ export default function Books() {
                         return displayedBooks.map(b => {
                         const p = latestPeriodByBook[b.id];
                         const activePeriod = (p && p.status !== 'Completed') ? p : null;
+                        const highestPage = p?.logs?.length > 0 ? Math.max(...p.logs.map(l => l.endPage)) : 0;
 
                         return viewMode === 'grid' ? (
                         <div key={b.id} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden flex flex-col hover:shadow-lg transition group">
@@ -231,7 +232,8 @@ export default function Books() {
                             </div>
                             <div className="p-4 flex flex-col flex-1">
                                 <button onClick={() => openEditBook(b)} className="font-semibold text-sm text-slate-800 dark:text-slate-200 mb-1 line-clamp-2 text-left hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-400 dark:text-indigo-400 dark:hover:text-indigo-400 hover:underline transition" title={b.title}>{b.title}</button>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-500 mb-4">{b.author}</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-500 mb-2">{b.author}</p>
+                                <p className="text-xs font-medium text-indigo-600 dark:text-indigo-400 mb-4 bg-indigo-50 dark:bg-indigo-500/10 inline-block px-2 py-0.5 rounded self-start">Pg. {highestPage} / {b.totalPages}</p>
                                 
                                 <div className="mt-auto">
                                     {activePeriod ? (
@@ -273,7 +275,10 @@ export default function Books() {
                                 <div className="flex-1 min-w-0">
                                     <button onClick={() => openEditBook(b)} className="font-semibold text-slate-800 dark:text-slate-200 truncate hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-400 dark:text-indigo-400 dark:hover:text-indigo-400 hover:underline transition block text-left w-full">{b.title}</button>
                                     <p className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-500 truncate mb-1">{b.author}</p>
-                                    <p className="text-xs text-slate-400 dark:text-slate-500">{b.totalPages} pages</p>
+                                    <div className="flex gap-2 items-center">
+                                        <p className="text-xs text-slate-400 dark:text-slate-500">{b.totalPages} pages</p>
+                                        <p className="text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-2 py-0.5 rounded">Pg. {highestPage} / {b.totalPages}</p>
+                                    </div>
                                 </div>
                             </div>
                             <div className="w-full sm:w-64 shrink-0">
@@ -398,7 +403,10 @@ export default function Books() {
                                             </div>
                                         )}
                                         <h3 className="font-bold text-2xl text-slate-800 dark:text-slate-200 mb-1">{p.book.title}</h3>
-                                        <p className="text-slate-500 dark:text-slate-400 dark:text-slate-500 mb-4">{p.book.author} • {p.book.totalPages} pages</p>
+                                        <p className="text-slate-500 dark:text-slate-400 dark:text-slate-500 mb-2">{p.book.author} • {p.book.totalPages} pages</p>
+                                        <div className="mb-4">
+                                            <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-2 py-1 rounded">Reached Pg. {p.logs?.length > 0 ? Math.max(...p.logs.map(l => l.endPage)) : (p.status === 'Completed' ? p.book.totalPages : 0)} / {p.book.totalPages}</span>
+                                        </div>
                                         
                                         <div className="flex flex-wrap justify-center md:justify-start gap-4 text-sm text-slate-600 dark:text-slate-400 dark:text-slate-500">
                                             <div className="bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 dark:text-slate-100">
