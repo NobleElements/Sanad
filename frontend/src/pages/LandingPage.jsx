@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { LayoutDashboard, CheckSquare, BrainCircuit, Wallet, BookOpen, HardDrive, ArrowRight, Code, Check, Terminal, Copy } from 'lucide-react';
+import { LayoutDashboard, CheckSquare, BrainCircuit, Wallet, BookOpen, HardDrive, ArrowRight, Code, Check, Terminal, Copy, Calendar } from 'lucide-react';
 import { API_URL } from '../config';
 import { formatBytes } from '../utils/formatUtils';
 
@@ -202,9 +202,9 @@ export default function LandingPage() {
               description="Securely store, organize, and access your personal files from anywhere, completely self-hosted."
             />
             <FeatureCard 
-              icon={LayoutDashboard}
-              title="Customizable Dashboard"
-              description="Get a bird's-eye view of your day with customizable widgets that put what matters front and center."
+              icon={Calendar}
+              title="Calendar"
+              description="Visualize your scheduled tasks and daily habits in a unified calendar view to plan your time effectively."
             />
           </div>
         </div>
@@ -222,7 +222,7 @@ export default function LandingPage() {
                 Organize your life with our comprehensive task management system. Support for priorities, due dates, subtasks, and rich-text descriptions ensures nothing falls through the cracks.
               </p>
               <ul className="space-y-4">
-                {['Drag & drop reordering', 'Rich text editor for descriptions', 'Habit tracking integration'].map((item, i) => (
+                {['Drag & drop reordering', 'Rich text editor for descriptions', 'Projects, Comments and Attachments'].map((item, i) => (
                   <li key={i} className="flex items-center text-gray-700 dark:text-gray-300">
                     <CheckSquare className="w-5 h-5 text-blue-500 mr-3" />
                     {item}
