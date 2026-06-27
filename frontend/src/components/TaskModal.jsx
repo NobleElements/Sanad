@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Save, Paperclip, MessageSquare, AlertCircle, Tag, FolderKanban, Timer, Download, Trash2, Loader2 } from 'lucide-react';
+import { X, Save, Paperclip, MessageSquare, AlertCircle, Tag, FolderKanban, Timer, Download, Trash2, Loader2, Edit2 } from 'lucide-react';
 import TipTapEditor from './TipTapEditor';
 import { API_BASE } from '../config';
 import ProjectSelector from './ProjectSelector';
 import useTaskStore from '../store/useTaskStore';
 import useConfirmStore from '../store/useConfirmStore';
 import { extractImagesFromHtml, deleteImages } from '../utils/imageUtils';
+import PromptModal from './common/PromptModal';
 
 import { getTagColor } from '../utils/colorUtils';
 export default function TaskModal() {
@@ -21,6 +22,7 @@ export default function TaskModal() {
   const [minutes, setMinutes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [isRenameProjectModalOpen, setIsRenameProjectModalOpen] = useState(false);
   const uploadedSessionImages = useRef([]);
 
   const { 
@@ -297,14 +299,49 @@ export default function TaskModal() {
 
           {/* Project */}
           <div className="flex items-center gap-4">
-            <label className="flex items-center gap-1.5 text-sm font-medium text-gray-500 dark:text-gray-400 w-20">
+            <label className="flex items-center gap-1.5 text-sm font-medium text-gray-500 dark:text-gray-400 w-20 shrink-0">
               <FolderKanban className="w-3.5 h-3.5" />
               Project
             </label>
-            <ProjectSelector 
-              value={project}
-              onChange={setProject}
-            />
+            <div className="flex-1 flex items-center gap-1 min-w-0">
+              <ProjectSelector 
+                value={project}
+                onChange={setProject}
+                className="flex-1"
+              />
+              {project && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setIsRenameProjectModalOpen(true)}
+                    className="p-1.5 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 shrink-0"
+                    title="Rename Project"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      useConfirmStore.getState().showConfirm({
+                        title: 'Delete Project',
+                        message: `Are you sure you want to delete the project "${project}"? This will remove the project from all associated tasks.`,
+                        confirmText: 'Delete Project',
+                        onConfirm: async () => {
+                          const success = await useTaskStore.getState().deleteProject(project);
+                          if (success) {
+                            setProject('');
+                          }
+                        }
+                      });
+                    }}
+                    className="p-1.5 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 shrink-0"
+                    title="Delete Project"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </>
+              )}
+            </div>
           </div>
 
           {/* Tags */}
@@ -565,6 +602,26 @@ export default function TaskModal() {
           </div>
         </div>
       </div>
+
+      <PromptModal
+        isOpen={isRenameProjectModalOpen}
+        title="Rename Project"
+        message={`Enter new name for project "${project}":`}
+        initialValue={project}
+        confirmText="Rename Project"
+        onConfirm={async (newName) => {
+          if (newName && newName.trim() !== '' && newName !== project) {
+            const success = await useTaskStore.getState().renameProject(project, newName.trim());
+            if (success) {
+              setProject(newName.trim());
+              setIsRenameProjectModalOpen(false);
+            }
+          } else {
+            setIsRenameProjectModalOpen(false);
+          }
+        }}
+        onCancel={() => setIsRenameProjectModalOpen(false)}
+      />
     </>
   );
 }

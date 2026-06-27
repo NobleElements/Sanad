@@ -242,6 +242,42 @@ const useTaskStore = create((set, get) => ({
 
   closeTaskModal: () => {
     set({ isTaskModalOpen: false, activeTask: null, activeTaskDetails: null });
+  },
+
+  renameProject: async (oldName, newName) => {
+    try {
+      const res = await fetch(`${API_URL}/tasks/projects/rename`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ oldName, newName })
+      });
+      if (res.ok) {
+        await get().fetchTasks();
+        useUIStore.getState().showSuccess('Project renamed');
+        return true;
+      }
+      throw new Error('Failed to rename project');
+    } catch (err) {
+      useUIStore.getState().showError('Failed to rename project');
+      return false;
+    }
+  },
+
+  deleteProject: async (projectName) => {
+    try {
+      const res = await fetch(`${API_URL}/tasks/projects/${encodeURIComponent(projectName)}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        await get().fetchTasks();
+        useUIStore.getState().showSuccess('Project deleted');
+        return true;
+      }
+      throw new Error('Failed to delete project');
+    } catch (err) {
+      useUIStore.getState().showError('Failed to delete project');
+      return false;
+    }
   }
 }));
 

@@ -219,7 +219,7 @@ export default function FinanceDashboard() {
 
   return (
     <div className="flex-1 p-8 overflow-y-auto bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-6xl">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 w-full lg:w-auto">
             <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-slate-200">Financial Tracking</h1>

@@ -357,7 +357,7 @@ export default function Tasks() {
                                               <div className="flex flex-wrap items-center gap-2 mt-2">
                                                 {/* Project Badge */}
                                                 {task.project && (
-                                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-500/10 text-xs font-medium text-indigo-600 dark:text-indigo-400">
+                                                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${getTagColor(task.project)}`}>
                                                     <FolderKanban className="w-3 h-3" />
                                                     {task.project}
                                                   </span>
@@ -410,7 +410,7 @@ export default function Tasks() {
                                             </p>
                                             <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
                                               {task.project && (
-                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${getTagColor(task.project)}`}>
                                                   {task.project}
                                                 </span>
                                               )}

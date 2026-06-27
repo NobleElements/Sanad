@@ -14,6 +14,8 @@ public static class TaskEndpoints
         app.MapPut("/api/tasks/{id}", UpdateTask);
         app.MapPatch("/api/tasks/{id}/status", UpdateTaskStatus);
         app.MapPatch("/api/tasks/reorder", ReorderTasks);
+        app.MapPut("/api/tasks/projects/rename", RenameProject);
+        app.MapDelete("/api/tasks/projects/{projectName}", DeleteProject);
         app.MapDelete("/api/tasks/{id}", DeleteTask);
         app.MapPost("/api/tasks/{id}/comments", CreateTaskComment);
         app.MapPost("/api/tasks/{id}/attachments", CreateTaskAttachment);
@@ -205,7 +207,41 @@ public static class TaskEndpoints
 
         return Results.NoContent();
     }
+
+    public static async Task<IResult> RenameProject(SanadDbContext db, RenameProjectRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.OldName) || string.IsNullOrWhiteSpace(request.NewName))
+            return Results.BadRequest("Old and new project names are required");
+
+        var tasks = await db.TaskItems.Where(t => t.Project == request.OldName).ToListAsync();
+        foreach(var task in tasks)
+        {
+            task.Project = request.NewName.Trim();
+            task.UpdatedAt = DateTime.UtcNow;
+        }
+        
+        await db.SaveChangesAsync();
+        return Results.NoContent();
+    }
+
+    public static async Task<IResult> DeleteProject(SanadDbContext db, string projectName)
+    {
+        if (string.IsNullOrWhiteSpace(projectName))
+            return Results.BadRequest("Project name is required");
+
+        var tasks = await db.TaskItems.Where(t => t.Project == projectName).ToListAsync();
+        foreach(var task in tasks)
+        {
+            task.Project = null;
+            task.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await db.SaveChangesAsync();
+        return Results.NoContent();
+    }
 }
+
+public record RenameProjectRequest(string OldName, string NewName);
 
 public record StatusUpdateRequest(Models.TaskStatus Status);
 
