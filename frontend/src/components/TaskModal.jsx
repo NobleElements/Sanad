@@ -4,6 +4,7 @@ import TipTapEditor from './TipTapEditor';
 import { API_BASE } from '../config';
 import ProjectSelector from './ProjectSelector';
 import useTaskStore from '../store/useTaskStore';
+import useConfirmStore from '../store/useConfirmStore';
 import { extractImagesFromHtml, deleteImages } from '../utils/imageUtils';
 
 import { getTagColor } from '../utils/colorUtils';
@@ -28,6 +29,7 @@ export default function TaskModal() {
     getTaskDetails, addTaskComment, deleteTaskComment, 
     uploadTaskAttachment, deleteTaskAttachment, deleteTask
   } = useTaskStore();
+  const { showConfirm } = useConfirmStore();
 
   const [newComment, setNewComment] = useState('');
   const [isAddingComment, setIsAddingComment] = useState(false);
@@ -140,14 +142,20 @@ export default function TaskModal() {
 
   const handleDeleteTask = async () => {
     if (!activeTask?.id || activeTask.isNew) return;
-    if (confirm('Are you sure you want to delete this task?')) {
-      try {
-        await deleteTask(activeTask.id);
-        onClose(); // Close the modal
-      } catch (err) {
-        setError('Failed to delete task.');
+    showConfirm({
+      title: 'Delete Task',
+      message: 'Are you sure you want to delete this task?',
+      confirmText: 'Delete',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await deleteTask(activeTask.id);
+          onClose(); // Close the modal
+        } catch (err) {
+          setError('Failed to delete task.');
+        }
       }
-    }
+    });
   };
 
   const handleCloseModal = async () => {
@@ -429,8 +437,13 @@ export default function TaskModal() {
                               <button
                                 type="button"
                                 onClick={() => {
-                                  if (!window.confirm('Are you sure you want to delete this?')) return;
-                                  deleteTaskAttachment(activeTask.id, att.id || att._id);
+                                  showConfirm({
+                                    title: 'Delete Attachment',
+                                    message: 'Are you sure you want to delete this attachment?',
+                                    confirmText: 'Delete',
+                                    variant: 'danger',
+                                    onConfirm: () => deleteTaskAttachment(activeTask.id, att.id || att._id)
+                                  });
                                 }}
                                 className="p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
                               >
@@ -495,8 +508,13 @@ export default function TaskModal() {
                               <button
                                 type="button"
                                 onClick={() => {
-                                  if (!window.confirm('Are you sure you want to delete this?')) return;
-                                  deleteTaskComment(activeTask.id, comment.id || comment._id);
+                                  showConfirm({
+                                    title: 'Delete Comment',
+                                    message: 'Are you sure you want to delete this comment?',
+                                    confirmText: 'Delete',
+                                    variant: 'danger',
+                                    onConfirm: () => deleteTaskComment(activeTask.id, comment.id || comment._id)
+                                  });
                                 }}
                                 className="p-1.5 text-gray-400 md:opacity-0 group-hover:opacity-100 hover:text-red-600 dark:hover:text-red-400 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-all flex-shrink-0"
                               >

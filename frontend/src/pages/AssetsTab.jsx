@@ -3,10 +3,12 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { Trash2, GripVertical } from 'lucide-react';
 import useFinanceStore from '../store/useFinanceStore';
+import useConfirmStore from '../store/useConfirmStore';
 import CurrencyManager from '../components/CurrencyManager';
 
 export default function AssetsTab() {
   const { assets, currencies, assetHistory: history, assetChartLines: chartLines, fetchAssets, addAsset, updateAsset, deleteAsset: storeDeleteAsset, isLoaded } = useFinanceStore();
+  const { showConfirm } = useConfirmStore();
   
   useEffect(() => {
     fetchAssets();
@@ -87,8 +89,15 @@ export default function AssetsTab() {
   };
 
   const deleteAsset = async (id) => {
-    if (!confirm('Are you sure you want to delete this asset?')) return;
-    await storeDeleteAsset(id);
+    showConfirm({
+      title: 'Delete Asset',
+      message: 'Are you sure you want to delete this asset?',
+      confirmText: 'Delete',
+      variant: 'danger',
+      onConfirm: async () => {
+        await storeDeleteAsset(id);
+      }
+    });
   };
 
   const defaultCurrency = currencies.find(c => c.isDefault) || { symbol: '$' };

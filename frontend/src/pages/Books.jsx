@@ -7,10 +7,12 @@ import PlanModal from '../components/PlanModal';
 import LogModal from '../components/LogModal';
 import CachedImage from '../components/CachedImage';
 import usePageTitle from '../hooks/usePageTitle';
+import useConfirmStore from '../store/useConfirmStore';
 
 export default function Books() {
   usePageTitle('Reading');
   const { books, periods, fetchBooks, fetchPeriods, searchBooks, searchResults, addBook, deleteBook, startReadingPeriod, currentRead, fetchCurrentRead, setPeriodStatus, deletePeriod } = useBookStore();
+  const { showConfirm } = useConfirmStore();
   
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'shelf';
@@ -93,9 +95,15 @@ export default function Books() {
   };
 
   const handleStopReading = async (periodId) => {
-    if (window.confirm("Are you sure you want to stop reading this book? Your progress and logs will be saved.")) {
-      await setPeriodStatus(periodId, 'Stopped');
-    }
+    showConfirm({
+      title: 'Stop Reading',
+      message: 'Are you sure you want to stop reading this book? Your progress and logs will be saved.',
+      confirmText: 'Stop Reading',
+      variant: 'danger',
+      onConfirm: async () => {
+        await setPeriodStatus(periodId, 'Stopped');
+      }
+    });
   };
 
 
@@ -418,9 +426,13 @@ export default function Books() {
                                         </button>
                                         <button 
                                             onClick={() => {
-                                                if (window.confirm("Are you sure you want to permanently delete this entire journey and all its logs?")) {
-                                                    deletePeriod(p.id);
-                                                }
+                                                showConfirm({
+                                                    title: 'Delete Journey',
+                                                    message: 'Are you sure you want to permanently delete this entire journey and all its logs?',
+                                                    confirmText: 'Delete',
+                                                    variant: 'danger',
+                                                    onConfirm: () => deletePeriod(p.id)
+                                                });
                                             }}
                                             className="w-full md:w-auto px-6 py-2.5 bg-white dark:bg-slate-800 border border-red-100 hover:border-red-300 hover:text-red-600 dark:text-red-400 text-slate-500 dark:text-slate-400 dark:text-slate-500 rounded-xl font-medium transition text-sm flex justify-center items-center gap-2"
                                         >

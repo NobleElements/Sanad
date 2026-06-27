@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import TipTapEditor from '../components/TipTapEditor';
 import { Plus, Search, FolderOpen, FileText, Trash2, Pencil, X, Check, BookOpen } from 'lucide-react';
 import useNotebookStore from '../store/useNotebookStore';
+import useConfirmStore from '../store/useConfirmStore';
 import { timeAgo } from '../utils/dateUtils';
 import usePageTitle from '../hooks/usePageTitle';
 import { extractImagesFromHtml, deleteImages } from '../utils/imageUtils';
@@ -21,6 +22,7 @@ export default function Notebook() {
     renameNotebook: storeRenameNotebook, deleteNotebook: storeDeleteNotebook,
     createNote: storeCreateNote, updateNote, deleteNote: storeDeleteNote, uploadImage
   } = useNotebookStore();
+  const { showConfirm } = useConfirmStore();
 
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -186,13 +188,20 @@ export default function Notebook() {
   };
 
   const deleteNotebook = async (id) => {
-    if (!confirm('Delete this notebook and all its notes?')) return;
-    const success = await storeDeleteNotebook(id);
-    if (success && selectedNotebookId === id) {
-      setSelectedNotebookId(null);
-      setSelectedNote(null);
-      navigate('/notebook');
-    }
+    showConfirm({
+      title: 'Delete Notebook',
+      message: 'Delete this notebook and all its notes?',
+      confirmText: 'Delete',
+      variant: 'danger',
+      onConfirm: async () => {
+        const success = await storeDeleteNotebook(id);
+        if (success && selectedNotebookId === id) {
+          setSelectedNotebookId(null);
+          setSelectedNote(null);
+          navigate('/notebook');
+        }
+      }
+    });
   };
 
   // --- Note CRUD ---

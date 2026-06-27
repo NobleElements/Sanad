@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import useBookStore from '../store/useBookStore';
+import useConfirmStore from '../store/useConfirmStore';
 import { X, CheckCircle, BookOpen } from 'lucide-react';
 
 export default function LogModal({ period, onClose }) {
@@ -8,6 +9,15 @@ export default function LogModal({ period, onClose }) {
     
     const [endPage, setEndPage] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const { showConfirm } = useConfirmStore();
+
+    const doSubmit = async (page) => {
+        setIsSubmitting(true);
+        await logProgress(period.id, highestPage, page);
+        setIsSubmitting(false);
+        onClose();
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -19,15 +29,17 @@ export default function LogModal({ period, onClose }) {
         }
 
         if (period.book.totalPages > 0 && page > period.book.totalPages) {
-            if (!window.confirm(`You are logging page ${page}, but the book only has ${period.book.totalPages} pages. Is this correct?`)) {
-                return;
-            }
+            showConfirm({
+                title: 'Confirm Page Number',
+                message: `You are logging page ${page}, but the book only has ${period.book.totalPages} pages. Is this correct?`,
+                confirmText: 'Yes, proceed',
+                variant: 'danger',
+                onConfirm: () => doSubmit(page)
+            });
+            return;
         }
 
-        setIsSubmitting(true);
-        await logProgress(period.id, highestPage, page);
-        setIsSubmitting(false);
-        onClose();
+        doSubmit(page);
     };
 
     return (

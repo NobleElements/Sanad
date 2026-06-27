@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, Fragment } from 'react';
 import { Loader2, Search } from 'lucide-react';
 import useThoughtsStore from '../store/useThoughtsStore';
+import useConfirmStore from '../store/useConfirmStore';
 
 import { parseUTCDate, timeAgo } from '../utils/dateUtils';
 import { linkify } from '../utils/textUtils';
@@ -9,6 +10,7 @@ import usePageTitle from '../hooks/usePageTitle';
 export default function Thoughts() {
   usePageTitle('Thoughts');
   const { thoughts, hasMore, isLoaded, fetchThoughts, addThought, updateThought, deleteThought: storeDeleteThought } = useThoughtsStore();
+  const { showConfirm } = useConfirmStore();
   
   const [loadingMore, setLoadingMore] = useState(false);
 
@@ -97,8 +99,15 @@ export default function Thoughts() {
   };
 
   const deleteThought = async (id) => {
-    if (!confirm('Are you sure you want to delete this thought?')) return;
-    await storeDeleteThought(id);
+    showConfirm({
+      title: 'Delete Thought',
+      message: 'Are you sure you want to delete this thought?',
+      confirmText: 'Delete',
+      variant: 'danger',
+      onConfirm: async () => {
+        await storeDeleteThought(id);
+      }
+    });
   };
 
   return (

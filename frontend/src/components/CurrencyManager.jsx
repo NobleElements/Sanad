@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Trash2, Star } from 'lucide-react';
 import useFinanceStore from '../store/useFinanceStore';
+import useConfirmStore from '../store/useConfirmStore';
 
 export default function CurrencyManager() {
   const { currencies, addCurrency, updateCurrency, deleteCurrency, setDefaultCurrency } = useFinanceStore();
+  const { showConfirm } = useConfirmStore();
 
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
@@ -34,8 +36,15 @@ export default function CurrencyManager() {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to delete this currency?')) return;
-    await deleteCurrency(id);
+    showConfirm({
+      title: 'Delete Currency',
+      message: 'Are you sure you want to delete this currency?',
+      confirmText: 'Delete',
+      variant: 'danger',
+      onConfirm: async () => {
+        await deleteCurrency(id);
+      }
+    });
   };
 
   const defaultCurrency = currencies.find(c => c.isDefault);

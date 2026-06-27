@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
 import AssetsTab from './AssetsTab';
 import useFinanceStore from '../store/useFinanceStore';
+import useConfirmStore from '../store/useConfirmStore';
 import CategorySelector from '../components/CategorySelector';
 import usePageTitle from '../hooks/usePageTitle';
 
@@ -20,6 +21,7 @@ export default function FinanceDashboard() {
     currentMonth, currentYear, setDate, fetchFinanceData, isLoaded, addCurrency,
     addTransaction, updateTransaction, deleteTransaction, createCategory, updateCategory, updateBudget 
   } = useFinanceStore();
+  const { showConfirm } = useConfirmStore();
 
   const defaultCurrency = currencies.find(c => c.isDefault) || { symbol: '$' };
 
@@ -91,8 +93,15 @@ export default function FinanceDashboard() {
   };
 
   const handleDeleteTransaction = async (id) => {
-    if (!confirm('Are you sure you want to delete this transaction?')) return;
-    await deleteTransaction(id);
+    showConfirm({
+      title: 'Delete Transaction',
+      message: 'Are you sure you want to delete this transaction?',
+      confirmText: 'Delete',
+      variant: 'danger',
+      onConfirm: async () => {
+        await deleteTransaction(id);
+      }
+    });
   };
 
 

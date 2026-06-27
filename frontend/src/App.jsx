@@ -14,6 +14,7 @@ import FileManager from './components/FileManager/FileManager';
 import AuthOverlay from './components/AuthOverlay';
 import ToastContainer from './components/ToastContainer';
 import NotificationManager from './components/NotificationManager';
+import GlobalConfirmModal from './components/common/GlobalConfirmModal';
 import useAuthStore from './store/useAuthStore';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminSettings from './pages/AdminSettings';
@@ -70,6 +71,7 @@ function App() {
       </div>
       <NotificationManager />
       <ToastContainer />
+      <GlobalConfirmModal />
     </div>
   );
 

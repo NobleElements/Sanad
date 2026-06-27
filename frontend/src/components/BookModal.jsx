@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Trash2 } from 'lucide-react';
 import useBookStore from '../store/useBookStore';
+import useConfirmStore from '../store/useConfirmStore';
 
 export default function BookModal({ book, onClose }) {
   const { addBook, updateBook, deleteBook } = useBookStore();
@@ -34,13 +35,21 @@ export default function BookModal({ book, onClose }) {
     setIsSubmitting(false);
     onClose();
   };
+  const { showConfirm } = useConfirmStore();
+
   const handleDelete = async () => {
-    if (window.confirm("Are you sure you want to delete this book? This will remove reading history too.")) {
-      setIsSubmitting(true);
-      await deleteBook(book.id);
-      setIsSubmitting(false);
-      onClose();
-    }
+    showConfirm({
+      title: 'Delete Book',
+      message: 'Are you sure you want to delete this book? This will remove reading history too.',
+      confirmText: 'Delete',
+      variant: 'danger',
+      onConfirm: async () => {
+        setIsSubmitting(true);
+        await deleteBook(book.id);
+        setIsSubmitting(false);
+        onClose();
+      }
+    });
   };
 
   return (

@@ -4,11 +4,13 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import EmojiPicker from 'emoji-picker-react';
 import { format, subDays, startOfDay, isSameDay, subMonths, eachDayOfInterval } from 'date-fns';
 import useHabitStore from '../store/useHabitStore';
+import useConfirmStore from '../store/useConfirmStore';
 import usePageTitle from '../hooks/usePageTitle';
 
 export default function Habits() {
   usePageTitle('Habits');
   const { habits, isLoaded, fetchHabits, createHabit, deleteHabit, toggleHabitLog, reorderHabits } = useHabitStore();
+  const { showConfirm } = useConfirmStore();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newHabit, setNewHabit] = useState({ name: '', icon: '🌟', frequency: 'Daily' });
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -149,9 +151,15 @@ export default function Habits() {
                                   </button>
                                   <button
                                     onClick={() => {
-                                      if (confirm('Are you sure you want to delete this habit?')) {
-                                        deleteHabit(habit.id);
-                                      }
+                                      showConfirm({
+                                        title: 'Delete Habit',
+                                        message: 'Are you sure you want to delete this habit?',
+                                        confirmText: 'Delete',
+                                        variant: 'danger',
+                                        onConfirm: () => {
+                                          deleteHabit(habit.id);
+                                        }
+                                      });
                                     }}
                                     className="p-1.5 sm:p-2 text-red-400 hover:text-red-600 dark:text-red-400 hover:bg-red-50 dark:bg-red-500/10 rounded-lg transition-colors"
                                     title="Delete Habit"

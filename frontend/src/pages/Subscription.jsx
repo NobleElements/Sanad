@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
 import useAuthStore from '../store/useAuthStore';
 import useSubscriptionStore from '../store/useSubscriptionStore';
+import useConfirmStore from '../store/useConfirmStore';
 import { formatBytes } from '../utils/formatUtils';
 import usePageTitle from '../hooks/usePageTitle';
 import { initializePaddle } from '@paddle/paddle-js';
@@ -10,6 +11,7 @@ import { API_URL } from '../config';
 export default function Subscription() {
   usePageTitle('Subscription');
   const { tiers, storageData, loading, fetchSubscriptionData } = useSubscriptionStore();
+  const { showConfirm } = useConfirmStore();
   const { tierId, tierStartedAt, tierExpiresAt, paddleSubscriptionStatus, apiKey, rerollApiKey, changePassword, checkAuthStatus } = useAuthStore();
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [passwordData, setPasswordData] = useState({ current: '', new: '', confirm: '' });
@@ -142,48 +144,62 @@ export default function Subscription() {
   };
 
   const handleCancelSubscription = async () => {
-    if (!confirm('Are you sure you want to cancel your auto-renewal? You will keep your tier until the current period expires.')) return;
-    try {
-      const res = await fetch(`${API_URL}/subscription/cancel`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${useAuthStore.getState().token}`
+    showConfirm({
+      title: 'Cancel Auto-Renewal',
+      message: 'Are you sure you want to cancel your auto-renewal? You will keep your tier until the current period expires.',
+      confirmText: 'Cancel Subscription',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`${API_URL}/subscription/cancel`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${useAuthStore.getState().token}`
+            }
+          });
+          const data = await res.json();
+          if (res.ok) {
+            alert(data.message);
+            checkAuthStatus();
+          } else {
+            alert(data.message || 'Failed to cancel.');
+          }
+        } catch (e) {
+          alert('Network error.');
         }
-      });
-      const data = await res.json();
-      if (res.ok) {
-        alert(data.message);
-        checkAuthStatus();
-      } else {
-        alert(data.message || 'Failed to cancel.');
       }
-    } catch (e) {
-      alert('Network error.');
-    }
+    });
   };
 
   const handleChangeTier = async (newTierId) => {
-    if (!confirm('Are you sure you want to change your plan?')) return;
-    try {
-      const res = await fetch(`${API_URL}/subscription/change-tier`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${useAuthStore.getState().token}`
-        },
-        body: JSON.stringify({ tierId: newTierId })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        alert(data.message);
-        checkAuthStatus();
-        fetchSubscriptionData();
-      } else {
-        alert(data.message || 'Failed to change tier.');
+    showConfirm({
+      title: 'Change Plan',
+      message: 'Are you sure you want to change your plan?',
+      confirmText: 'Change Plan',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`${API_URL}/subscription/change-tier`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${useAuthStore.getState().token}`
+            },
+            body: JSON.stringify({ tierId: newTierId })
+          });
+          const data = await res.json();
+          if (res.ok) {
+            alert(data.message);
+            checkAuthStatus();
+            fetchSubscriptionData();
+          } else {
+            alert(data.message || 'Failed to change tier.');
+          }
+        } catch (e) {
+          alert('Network error.');
+        }
       }
-    } catch (e) {
-      alert('Network error.');
-    }
+    });
   };
 
   if (loading) return <div className="p-8">Loading subscription data...</div>;
