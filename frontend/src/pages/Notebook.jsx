@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import TipTapEditor from '../components/TipTapEditor';
-import { Plus, Search, FolderOpen, FileText, Trash2, Pencil, X, Check, BookOpen } from 'lucide-react';
+import { Plus, Search, FolderOpen, FileText, Trash2, Pencil, X, Check, BookOpen, ArrowUp, ArrowDown, ListFilter } from 'lucide-react';
 import useNotebookStore from '../store/useNotebookStore';
 import useConfirmStore from '../store/useConfirmStore';
 import { timeAgo } from '../utils/dateUtils';
@@ -25,6 +25,10 @@ export default function Notebook() {
   const { showConfirm } = useConfirmStore();
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [notebookSortBy, setNotebookSortBy] = useState('editDate');
+  const [notebookSortDir, setNotebookSortDir] = useState('desc');
+  const [noteSortBy, setNoteSortBy] = useState('editDate');
+  const [noteSortDir, setNoteSortDir] = useState('desc');
 
   // UI state
   const [isCreatingNotebook, setIsCreatingNotebook] = useState(false);
@@ -41,6 +45,7 @@ export default function Notebook() {
   const uploadedSessionImagesRef = useRef([]);
   const initialImagesRef = useRef([]);
   const isSavingRef = useRef(false);
+  const isInitializingRef = useRef(false);
 
 
 
@@ -67,12 +72,14 @@ export default function Notebook() {
       if (targetNoteId) {
         const note = await fetchNote(targetNoteId);
         if (note) {
+          isInitializingRef.current = true;
           setSelectedNotebookId(note.notebookId);
           fetchNotes(note.notebookId);
           setNoteTitle(note.title);
           setNoteContent(note.content || '');
           initialImagesRef.current = extractImagesFromHtml(note.content || '');
           uploadedSessionImagesRef.current = [];
+          setTimeout(() => { isInitializingRef.current = false; }, 500);
         }
       }
 
@@ -88,6 +95,7 @@ export default function Notebook() {
     if (selectedNote?.id !== urlNoteId) {
       fetchNote(urlNoteId).then(note => {
         if (note) {
+          isInitializingRef.current = true;
           setNoteTitle(note.title);
           setNoteContent(note.content || '');
           initialImagesRef.current = extractImagesFromHtml(note.content || '');
@@ -96,6 +104,7 @@ export default function Notebook() {
             setSelectedNotebookId(note.notebookId);
             fetchNotes(note.notebookId);
           }
+          setTimeout(() => { isInitializingRef.current = false; }, 500);
         }
       });
     }
@@ -159,11 +168,14 @@ export default function Notebook() {
 
   const handleTitleChange = (newTitle) => {
     setNoteTitle(newTitle);
+    if (isInitializingRef.current) return;
     debouncedSave(newTitle, noteContent, selectedNote?.id);
   };
 
   const handleContentChange = (newContent) => {
+    if (newContent === noteContent) return;
     setNoteContent(newContent);
+    if (isInitializingRef.current) return;
     debouncedSave(noteTitle, newContent, selectedNote?.id);
   };
 
@@ -213,10 +225,12 @@ export default function Notebook() {
       navigate(`/notebook/${note.id}`);
       fetchNote(note.id).then(fetchedNote => {
         if (fetchedNote) {
+          isInitializingRef.current = true;
           setNoteTitle(fetchedNote.title);
           setNoteContent(fetchedNote.content || '');
           initialImagesRef.current = extractImagesFromHtml(fetchedNote.content || '');
           uploadedSessionImagesRef.current = [];
+          setTimeout(() => { isInitializingRef.current = false; }, 500);
         }
       });
     }
@@ -272,7 +286,28 @@ export default function Notebook() {
     }
   }, [isCreatingNotebook]);
 
+  const getNotebookEditDate = (nb) => {
+    if (!nb.notes || nb.notes.length === 0) return new Date(nb.createdAt || 0).getTime();
+    return Math.max(...nb.notes.map(n => new Date(n.updatedAt).getTime()));
+  };
+
+  const sortedNotebooks = [...notebooks].sort((a, b) => {
+    let cmp = 0;
+    if (notebookSortBy === 'createDate') cmp = new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
+    else if (notebookSortBy === 'title') cmp = (a.name || '').localeCompare(b.name || '');
+    else cmp = getNotebookEditDate(a) - getNotebookEditDate(b);
+    return notebookSortDir === 'desc' ? -cmp : cmp;
+  });
+
   const displayedNotes = searchResults !== null ? searchResults : notes;
+  
+  const sortedNotes = [...displayedNotes].sort((a, b) => {
+    let cmp = 0;
+    if (noteSortBy === 'createDate') cmp = new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
+    else if (noteSortBy === 'title') cmp = (a.title || '').localeCompare(b.title || '');
+    else cmp = new Date(a.updatedAt || 0).getTime() - new Date(b.updatedAt || 0).getTime();
+    return noteSortDir === 'desc' ? -cmp : cmp;
+  });
 
   return (
     <div className="flex-1 flex flex-col md:flex-row h-full overflow-hidden">
@@ -304,7 +339,30 @@ export default function Notebook() {
         {searchResults === null && (
           <div className="p-3 border-b border-slate-200 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-100">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-500 uppercase tracking-wider">Notebooks</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Notebooks</h3>
+                <div className="flex items-center gap-0.5">
+                  <div className="relative p-1 hover:bg-slate-100 dark:hover:bg-slate-600 rounded text-slate-400 dark:text-slate-500 transition-colors cursor-pointer" title="Sort by">
+                    <ListFilter className="w-3.5 h-3.5" />
+                    <select
+                      value={notebookSortBy}
+                      onChange={(e) => setNotebookSortBy(e.target.value)}
+                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                    >
+                      <option value="editDate">Edit Date</option>
+                      <option value="createDate">Create Date</option>
+                      <option value="title">Name</option>
+                    </select>
+                  </div>
+                  <button
+                    onClick={() => setNotebookSortDir(prev => prev === 'asc' ? 'desc' : 'asc')}
+                    className="p-1 hover:bg-slate-100 dark:hover:bg-slate-600 rounded text-slate-400 dark:text-slate-500 transition-colors"
+                    title={notebookSortDir === 'asc' ? 'Ascending' : 'Descending'}
+                  >
+                    {notebookSortDir === 'asc' ? <ArrowUp className="w-3.5 h-3.5" /> : <ArrowDown className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+              </div>
               <button
                 onClick={() => setIsCreatingNotebook(true)}
                 className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-400 transition-colors"
@@ -339,7 +397,7 @@ export default function Notebook() {
               {notebooks.length === 0 && !isCreatingNotebook && (
                 <p className="text-xs text-slate-400 dark:text-slate-500 italic py-1">No notebooks yet</p>
               )}
-              {notebooks.map(nb => (
+              {sortedNotebooks.map(nb => (
                 <div
                   key={nb.id}
                   className={`group flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-colors text-sm ${
@@ -390,9 +448,32 @@ export default function Notebook() {
         {/* Notes list */}
         <div className="flex-1 overflow-y-auto p-3">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-              {searchResults !== null ? `Results (${searchResults.length})` : 'Notes'}
-            </h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                {searchResults !== null ? `Results (${searchResults.length})` : 'Notes'}
+              </h3>
+              <div className="flex items-center gap-0.5">
+                <div className="relative p-1 hover:bg-slate-100 dark:hover:bg-slate-600 rounded text-slate-400 dark:text-slate-500 transition-colors cursor-pointer" title="Sort by">
+                  <ListFilter className="w-3.5 h-3.5" />
+                  <select
+                    value={noteSortBy}
+                    onChange={(e) => setNoteSortBy(e.target.value)}
+                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                  >
+                    <option value="editDate">Edit Date</option>
+                    <option value="createDate">Create Date</option>
+                    <option value="title">Title</option>
+                  </select>
+                </div>
+                <button
+                  onClick={() => setNoteSortDir(prev => prev === 'asc' ? 'desc' : 'asc')}
+                  className="p-1 hover:bg-slate-100 dark:hover:bg-slate-600 rounded text-slate-400 dark:text-slate-500 transition-colors"
+                  title={noteSortDir === 'asc' ? 'Ascending' : 'Descending'}
+                >
+                  {noteSortDir === 'asc' ? <ArrowUp className="w-3.5 h-3.5" /> : <ArrowDown className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+            </div>
             {searchResults === null && selectedNotebookId && (
               <button
                 onClick={createNote}
@@ -409,7 +490,7 @@ export default function Notebook() {
                 {searchResults !== null ? 'No results found' : selectedNotebookId ? 'No notes yet' : 'Select a notebook'}
               </p>
             )}
-            {displayedNotes.map(note => (
+            {sortedNotes.map(note => (
               <div
                 key={note.id}
                 className={`group flex items-center gap-2 px-2 py-2 rounded-lg cursor-pointer transition-colors text-sm ${
@@ -423,10 +504,12 @@ export default function Notebook() {
                   navigate(`/notebook/${note.id}`);
                   fetchNote(note.id).then(fetchedNote => {
                     if (fetchedNote) {
+                      isInitializingRef.current = true;
                       setNoteTitle(fetchedNote.title);
                       setNoteContent(fetchedNote.content || '');
                       initialImagesRef.current = extractImagesFromHtml(fetchedNote.content || '');
                       uploadedSessionImagesRef.current = [];
+                      setTimeout(() => { isInitializingRef.current = false; }, 500);
                     }
                   });
                   if (searchResults !== null) {

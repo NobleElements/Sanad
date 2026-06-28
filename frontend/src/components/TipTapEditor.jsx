@@ -338,7 +338,7 @@ export default function TipTapEditor({ content, onChange, onImageUpload }) {
 
   useEffect(() => {
     if (editor && content !== editor.getHTML()) {
-      editor.commands.setContent(content || '');
+      editor.commands.setContent(content || '', false);
     }
   }, [content, editor]);
 

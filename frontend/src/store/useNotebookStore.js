@@ -24,6 +24,13 @@ const useNotebookStore = create((set, get) => ({
   },
 
   fetchNotes: async (notebookId) => {
+    const state = get();
+    const nb = state.notebooks.find(n => n.id === notebookId);
+    if (nb && nb.notes) {
+      set({ notes: nb.notes });
+      return nb.notes;
+    }
+    
     try {
       const res = await fetch(`${API_URL}/notebooks/${notebookId}/notes`);
       if (res.ok) {
@@ -52,6 +59,20 @@ const useNotebookStore = create((set, get) => ({
   },
 
   fetchLatestNote: async () => {
+    const state = get();
+    if (state.notebooks.length > 0) {
+      let latest = null;
+      for (const nb of state.notebooks) {
+        if (!nb.notes) continue;
+        for (const note of nb.notes) {
+          if (!latest || new Date(note.updatedAt) > new Date(latest.updatedAt)) {
+            latest = note;
+          }
+        }
+      }
+      if (latest) return latest;
+    }
+
     try {
       const res = await fetch(`${API_URL}/notes/latest`);
       if (res.ok && res.status !== 204) {
@@ -113,7 +134,7 @@ const useNotebookStore = create((set, get) => ({
       if (res.ok) {
         const updated = await res.json();
         set((state) => ({
-          notebooks: state.notebooks.map(nb => nb.id === id ? updated : nb)
+          notebooks: state.notebooks.map(nb => nb.id === id ? { ...updated, notes: nb.notes || [] } : nb)
         }));
         return true;
       }
@@ -148,8 +169,12 @@ const useNotebookStore = create((set, get) => ({
       });
       if (res.ok) {
         const note = await res.json();
+        const newNoteMetadata = { id: note.id, title: note.title, notebookId: note.notebookId, createdAt: note.createdAt, updatedAt: note.updatedAt };
         set((state) => ({
-          notes: [{ id: note.id, title: note.title, notebookId: note.notebookId, createdAt: note.createdAt, updatedAt: note.updatedAt }, ...state.notes]
+          notes: [newNoteMetadata, ...state.notes],
+          notebooks: state.notebooks.map(nb => 
+            nb.id === notebookId ? { ...nb, notes: [newNoteMetadata, ...(nb.notes || [])] } : nb
+          )
         }));
         return note;
       }
@@ -168,11 +193,20 @@ const useNotebookStore = create((set, get) => ({
         body: JSON.stringify({ title, content }),
       });
       if (res.ok) {
-        set((state) => ({
-          notes: state.notes.map(n =>
-            n.id === id ? { ...n, title, updatedAt: new Date().toISOString() } : n
-          )
-        }));
+        const updatedTime = new Date().toISOString();
+        set((state) => {
+          const updatedNotes = state.notes.map(n =>
+            n.id === id ? { ...n, title, updatedAt: updatedTime } : n
+          );
+          const updatedNotebooks = state.notebooks.map(nb => {
+            if (!nb.notes) return nb;
+            return {
+              ...nb,
+              notes: nb.notes.map(n => n.id === id ? { ...n, title, updatedAt: updatedTime } : n)
+            };
+          });
+          return { notes: updatedNotes, notebooks: updatedNotebooks };
+        });
         return true;
       }
       throw new Error('Failed to update note');
@@ -186,7 +220,16 @@ const useNotebookStore = create((set, get) => ({
     try {
       const res = await fetch(`${API_URL}/notes/${id}`, { method: 'DELETE' });
       if (res.ok) {
-        set((state) => ({ notes: state.notes.filter(n => n.id !== id) }));
+        set((state) => ({ 
+          notes: state.notes.filter(n => n.id !== id),
+          notebooks: state.notebooks.map(nb => {
+            if (!nb.notes) return nb;
+            return {
+              ...nb,
+              notes: nb.notes.filter(n => n.id !== id)
+            };
+          })
+        }));
         return true;
       }
       throw new Error('Failed to delete note');

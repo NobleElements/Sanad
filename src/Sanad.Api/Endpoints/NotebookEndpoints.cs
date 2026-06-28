@@ -30,14 +30,36 @@ public static class NotebookEndpoints
     }
 
     static async Task<IResult> GetNotebooks(SanadDbContext db) =>
-        Results.Ok(await db.Notebooks.OrderBy(n => n.SortOrder).ThenBy(n => n.Name).ToListAsync());
+        Results.Ok(await db.Notebooks
+            .Include(n => n.Notes)
+            .OrderBy(n => n.SortOrder).ThenBy(n => n.Name)
+            .Select(n => new {
+                n.Id,
+                n.Name,
+                n.SortOrder,
+                n.CreatedAt,
+                Notes = n.Notes.OrderByDescending(note => note.UpdatedAt).Select(note => new {
+                    note.Id,
+                    note.Title,
+                    note.NotebookId,
+                    note.CreatedAt,
+                    note.UpdatedAt
+                })
+            })
+            .ToListAsync());
 
     static async Task<IResult> CreateNotebook(SanadDbContext db, Notebook input)
     {
         if (string.IsNullOrWhiteSpace(input.Name)) return Results.BadRequest("Name is required");
         db.Notebooks.Add(input);
         await db.SaveChangesAsync();
-        return Results.Created($"/api/notebooks/{input.Id}", input);
+        return Results.Created($"/api/notebooks/{input.Id}", new {
+            input.Id,
+            input.Name,
+            input.SortOrder,
+            input.CreatedAt,
+            Notes = Array.Empty<object>()
+        });
     }
 
     static async Task<IResult> UpdateNotebook(SanadDbContext db, Guid id, Notebook updated)
