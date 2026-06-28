@@ -11,6 +11,8 @@ import Thoughts from './pages/Thoughts';
 import Books from './pages/Books';
 import Habits from './pages/Habits';
 import FileManager from './components/FileManager/FileManager';
+import SharedLinksView from './pages/SharedLinksView';
+import PublicShareView from './pages/PublicShareView';
 import AuthOverlay from './components/AuthOverlay';
 import ToastContainer from './components/ToastContainer';
 import NotificationManager from './components/NotificationManager';
@@ -105,6 +107,8 @@ function App() {
         <Route path="/habits" element={<ProtectedRoute><AppLayout><Habits /></AppLayout></ProtectedRoute>} />
         <Route path="/files" element={<ProtectedRoute><AppLayout><FileManager /></AppLayout></ProtectedRoute>} />
         <Route path="/files/:folderId" element={<ProtectedRoute><AppLayout><FileManager /></AppLayout></ProtectedRoute>} />
+        <Route path="/shared-links" element={<ProtectedRoute><AppLayout><SharedLinksView /></AppLayout></ProtectedRoute>} />
+        <Route path="/share/:token" element={<PublicShareView />} />
         <Route path="/subscription" element={<ProtectedRoute><AppLayout><Subscription /></AppLayout></ProtectedRoute>} />
         
         <Route 

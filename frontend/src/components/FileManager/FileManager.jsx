@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useFileManagerStore } from '../../store/fileManagerStore';
-import { Folder as FolderIcon, File as FileIcon, ChevronRight, Home, FolderPlus, Download, Trash2, MoreVertical, Search, Grid, List, ArrowUp, ArrowDown, Clock, Type, HardDrive, FileText, Video, Music, Archive, Code, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { Folder as FolderIcon, File as FileIcon, ChevronRight, Home, FolderPlus, Download, Trash2, MoreVertical, Search, Grid, List, ArrowUp, ArrowDown, Clock, Type, HardDrive, FileText, Video, Music, Archive, Code, Image as ImageIcon, Loader2, Share2, Globe } from 'lucide-react';
 import FileUploader from './FileUploader';
 import FilePreview from './FilePreview';
+import ShareModal from './ShareModal';
 import TransferProgress from './TransferProgress';
 import { BYTES_PER_KB } from '../../config';
 import usePageTitle from '../../hooks/usePageTitle';
@@ -33,6 +34,7 @@ const FileManager = () => {
   const [previewFile, setPreviewFile] = useState(null);
   const [newFolderName, setNewFolderName] = useState('');
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+  const [shareModalItem, setShareModalItem] = useState(null);
   
   const [viewMode, setViewModeState] = useState(() => localStorage.getItem('fileManager_viewMode') || 'grid');
 
@@ -128,6 +130,14 @@ const FileManager = () => {
               <FolderPlus size={16} /> New Folder
             </button>
           )}
+
+          <button 
+            onClick={() => navigate('/shared-links')}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded text-sm font-medium transition-colors text-blue-600 dark:text-blue-400"
+            title="Manage Shared Links"
+          >
+            <Globe size={16} /> Shared Links
+          </button>
           
           {currentFolderId && (
             <button 
@@ -228,13 +238,22 @@ const FileManager = () => {
                       </div>
                       <span className="font-medium truncate">{folder.name}</span>
                     </div>
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); deleteItem(folder.id, true); }}
-                      className="p-1.5 text-red-500 opacity-0 group-hover:opacity-100 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-all"
-                      title="Delete Folder"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    <div className="flex items-center">
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); setShareModalItem({ id: folder.id, type: 'folder', name: folder.name }); }}
+                        className="p-1.5 text-blue-500 opacity-0 group-hover:opacity-100 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-all mr-1"
+                        title="Share Folder"
+                      >
+                        <Share2 size={16} />
+                      </button>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); deleteItem(folder.id, true); }}
+                        className="p-1.5 text-red-500 opacity-0 group-hover:opacity-100 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-all"
+                        title="Delete Folder"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </div>
                 ))}
 
@@ -254,13 +273,22 @@ const FileManager = () => {
                         <span className="text-xs text-gray-400">{formatSize(file.sizeBytes)} • {new Date(file.uploadDate).toLocaleDateString()}</span>
                       </div>
                     </div>
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); deleteItem(file.id, false); }}
-                      className="p-1.5 text-red-500 opacity-0 group-hover:opacity-100 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-all shrink-0"
-                      title="Delete File"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    <div className="flex items-center shrink-0">
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); setShareModalItem({ id: file.id, type: 'file', name: file.name }); }}
+                        className="p-1.5 text-blue-500 opacity-0 group-hover:opacity-100 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-all mr-1"
+                        title="Share File"
+                      >
+                        <Share2 size={16} />
+                      </button>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); deleteItem(file.id, false); }}
+                        className="p-1.5 text-red-500 opacity-0 group-hover:opacity-100 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-all"
+                        title="Delete File"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -288,7 +316,14 @@ const FileManager = () => {
                       </div>
                       <div className="text-right text-sm text-gray-400">-</div>
                       <div className="text-right text-sm text-gray-400">{new Date(folder.createdAt || Date.now()).toLocaleDateString()}</div>
-                      <div className="flex justify-end">
+                      <div className="flex justify-end gap-1">
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); setShareModalItem({ id: folder.id, type: 'folder', name: folder.name }); }}
+                          className="p-1.5 text-blue-500 opacity-0 group-hover:opacity-100 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-all"
+                          title="Share Folder"
+                        >
+                          <Share2 size={16} />
+                        </button>
                         <button 
                           onClick={(e) => { e.stopPropagation(); deleteItem(folder.id, true); }}
                           className="p-1.5 text-red-500 opacity-0 group-hover:opacity-100 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-all"
@@ -313,7 +348,14 @@ const FileManager = () => {
                       </div>
                       <div className="text-right text-sm text-gray-500 dark:text-gray-400">{formatSize(file.sizeBytes)}</div>
                       <div className="text-right text-sm text-gray-500 dark:text-gray-400">{new Date(file.uploadDate).toLocaleDateString()}</div>
-                      <div className="flex justify-end">
+                      <div className="flex justify-end gap-1">
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); setShareModalItem({ id: file.id, type: 'file', name: file.name }); }}
+                          className="p-1.5 text-blue-500 opacity-0 group-hover:opacity-100 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-all"
+                          title="Share File"
+                        >
+                          <Share2 size={16} />
+                        </button>
                         <button 
                           onClick={(e) => { e.stopPropagation(); deleteItem(file.id, false); }}
                           className="p-1.5 text-red-500 opacity-0 group-hover:opacity-100 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-all shrink-0"
@@ -342,6 +384,7 @@ const FileManager = () => {
 
       <FilePreview file={previewFile} files={files} onNavigate={setPreviewFile} onClose={() => setPreviewFile(null)} />
       <TransferProgress />
+      <ShareModal item={shareModalItem} onClose={() => setShareModalItem(null)} />
     </div>
   );
 };

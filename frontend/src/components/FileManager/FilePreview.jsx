@@ -2,7 +2,7 @@ import React, { useEffect, useCallback } from 'react';
 import { X, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import VideoPlayer from './VideoPlayer'
 
-const FilePreview = ({ file, files = [], onClose, onNavigate }) => {
+const FilePreview = ({ file, files = [], onClose, onNavigate, urlResolver }) => {
   if (!file) return null;
 
   const navigateFile = useCallback((direction) => {
@@ -38,7 +38,8 @@ const FilePreview = ({ file, files = [], onClose, onNavigate }) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [navigateFile, onClose]);
 
-  const fileUrl = `/api/files/${file.id}/download`;
+  const resolveUrl = urlResolver || ((f) => `/api/files/${f.id}/download`);
+  const fileUrl = resolveUrl(file);
   const inlineUrl = `${fileUrl}?inline=true`;
 
   const renderContent = () => {

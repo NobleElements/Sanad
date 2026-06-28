@@ -14,6 +14,7 @@ public class AdminDbContext : DbContext, IDataProtectionKeyContext
     public DbSet<SubscriptionHistory> SubscriptionHistories => Set<SubscriptionHistory>();
     public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
     public DbSet<DataProtectionKey> DataProtectionKeys { get; set; } = null!;
+    public DbSet<SharedLink> SharedLinks => Set<SharedLink>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -43,6 +44,12 @@ public class AdminDbContext : DbContext, IDataProtectionKeyContext
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<SubscriptionHistory>()
+            .HasOne(s => s.User)
+            .WithMany()
+            .HasForeignKey(s => s.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<SharedLink>()
             .HasOne(s => s.User)
             .WithMany()
             .HasForeignKey(s => s.UserId)

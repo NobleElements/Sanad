@@ -146,6 +146,8 @@ api.MapFileEndpoints();
 api.MapStorageEndpoints();
 api.MapSubscriptionEndpoints();
 
+app.MapShareEndpoints();
+
 // Admin Endpoints
 api.MapAdminEndpoints();
 api.MapAdminSettingsEndpoints();
