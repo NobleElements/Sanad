@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { API_URL } from '../config';
 import useConfirmStore from './useConfirmStore';
+import useUIStore from './useUIStore';
 
 const useAdminStore = create((set, get) => ({
   dashboardData: {
@@ -103,13 +104,13 @@ const useAdminStore = create((set, get) => ({
       });
       if (res.ok) {
         get().fetchData(queryParamsStr);
-        alert(`Storage recalculated for ${username}.`);
+        useUIStore.getState().addToast(`Storage recalculated for ${username}.`, 'success');
       } else {
-        alert("Failed to recalculate storage.");
+        useUIStore.getState().addToast("Failed to recalculate storage.", 'error');
       }
     } catch (e) {
       console.error(e);
-      alert("Error recalculating storage.");
+      useUIStore.getState().addToast("Error recalculating storage.", 'error');
     }
   },
 
@@ -126,13 +127,13 @@ const useAdminStore = create((set, get) => ({
           });
           if (res.ok) {
             get().fetchData(queryParamsStr);
-            alert("Storage recalculated for all users.");
+            useUIStore.getState().addToast("Storage recalculated for all users.", 'success');
           } else {
-            alert("Failed to recalculate storage for all users.");
+            useUIStore.getState().addToast("Failed to recalculate storage for all users.", 'error');
           }
         } catch (e) {
           console.error(e);
-          alert("Error recalculating storage.");
+          useUIStore.getState().addToast("Error recalculating storage.", 'error');
         }
       }
     });
