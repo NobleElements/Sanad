@@ -652,4 +652,168 @@ public class McpEndpoints
     {
         return await _fileManager.DownloadFolderToLocalAsync(folderId, destinationDirectory);
     }
+
+    // --- Calendar Categories Tools ---
+    [McpServerTool, Description("Get all calendar event categories")]
+    public async Task<List<EventCategory>> GetEventCategories()
+    {
+        return await _db.EventCategories.OrderBy(c => c.Name).ToListAsync();
+    }
+
+    [McpServerTool, Description("Create a new calendar event category")]
+    public async Task<EventCategory> CreateEventCategory(string name, string colorCode)
+    {
+        var category = new EventCategory { Id = Guid.NewGuid(), Name = name, ColorCode = colorCode, CreatedAt = DateTime.UtcNow };
+        _db.EventCategories.Add(category);
+        await _db.SaveChangesAsync();
+        return category;
+    }
+
+    [McpServerTool, Description("Update an existing calendar event category")]
+    public async Task<EventCategory?> UpdateEventCategory(Guid id, string name, string colorCode)
+    {
+        var category = await _db.EventCategories.FindAsync(id);
+        if (category == null) return null;
+        
+        category.Name = name;
+        category.ColorCode = colorCode;
+        await _db.SaveChangesAsync();
+        return category;
+    }
+
+    [McpServerTool, Description("Delete a calendar event category by ID")]
+    public async Task<bool> DeleteEventCategory(Guid id)
+    {
+        var category = await _db.EventCategories.FindAsync(id);
+        if (category == null) return false;
+
+        var events = await _db.CalendarEvents.Where(e => e.CategoryId == id).ToListAsync();
+        foreach (var evt in events)
+        {
+            evt.CategoryId = null;
+        }
+
+        _db.EventCategories.Remove(category);
+        await _db.SaveChangesAsync();
+        return true;
+    }
+
+    // --- Calendar Events Tools ---
+    [McpServerTool, Description("Get calendar events optionally filtered by start and end dates")]
+    public async Task<List<CalendarEvent>> GetCalendarEvents(DateTime? start = null, DateTime? end = null)
+    {
+        var query = _db.CalendarEvents
+            .Include(e => e.Category)
+            .Include(e => e.TaskItem)
+            .AsQueryable();
+
+        if (start.HasValue)
+        {
+            query = query.Where(e => (e.EndDate >= start.Value) || e.RecurrenceRule != null);
+        }
+        if (end.HasValue)
+        {
+            query = query.Where(e => (e.StartDate <= end.Value) || e.RecurrenceRule != null);
+        }
+
+        return await query.ToListAsync();
+    }
+
+    [McpServerTool, Description("Create a new calendar event")]
+    public async Task<CalendarEvent> CreateCalendarEvent(string title, string? description, DateTime startDate, DateTime endDate, bool isAllDay, string? recurrenceRule, int? notificationPreference, Guid? categoryId, Guid? taskItemId)
+    {
+        var evt = new CalendarEvent
+        {
+            Id = Guid.NewGuid(),
+            Title = title,
+            Description = description,
+            StartDate = startDate,
+            EndDate = endDate,
+            IsAllDay = isAllDay,
+            RecurrenceRule = recurrenceRule,
+            NotificationPreference = notificationPreference,
+            CategoryId = categoryId,
+            TaskItemId = taskItemId,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        _db.CalendarEvents.Add(evt);
+
+        if (evt.TaskItemId.HasValue)
+        {
+            var task = await _db.TaskItems.FindAsync(evt.TaskItemId.Value);
+            if (task != null)
+            {
+                task.StartDate = evt.StartDate;
+                task.EndDate = evt.EndDate;
+                task.UpdatedAt = DateTime.UtcNow;
+            }
+        }
+
+        await _db.SaveChangesAsync();
+        
+        return await _db.CalendarEvents
+            .Include(e => e.Category)
+            .Include(e => e.TaskItem)
+            .FirstOrDefaultAsync(e => e.Id == evt.Id) ?? evt;
+    }
+
+    [McpServerTool, Description("Update an existing calendar event")]
+    public async Task<CalendarEvent?> UpdateCalendarEvent(Guid id, string title, string? description, DateTime startDate, DateTime endDate, bool isAllDay, string? recurrenceRule, int? notificationPreference, Guid? categoryId, Guid? taskItemId)
+    {
+        var evt = await _db.CalendarEvents.FindAsync(id);
+        if (evt == null) return null;
+
+        evt.Title = title;
+        evt.Description = description;
+        evt.StartDate = startDate;
+        evt.EndDate = endDate;
+        evt.IsAllDay = isAllDay;
+        evt.RecurrenceRule = recurrenceRule;
+        evt.NotificationPreference = notificationPreference;
+        evt.CategoryId = categoryId;
+        evt.TaskItemId = taskItemId;
+        evt.UpdatedAt = DateTime.UtcNow;
+
+        if (evt.TaskItemId.HasValue)
+        {
+            var task = await _db.TaskItems.FindAsync(evt.TaskItemId.Value);
+            if (task != null)
+            {
+                task.StartDate = evt.StartDate;
+                task.EndDate = evt.EndDate;
+                task.UpdatedAt = DateTime.UtcNow;
+            }
+        }
+
+        await _db.SaveChangesAsync();
+        
+        return await _db.CalendarEvents
+            .Include(e => e.Category)
+            .Include(e => e.TaskItem)
+            .FirstOrDefaultAsync(e => e.Id == evt.Id) ?? evt;
+    }
+
+    [McpServerTool, Description("Delete a calendar event by ID")]
+    public async Task<bool> DeleteCalendarEvent(Guid id)
+    {
+        var evt = await _db.CalendarEvents.FindAsync(id);
+        if (evt == null) return false;
+        
+        if (evt.TaskItemId.HasValue)
+        {
+            var task = await _db.TaskItems.FindAsync(evt.TaskItemId.Value);
+            if (task != null)
+            {
+                task.StartDate = null;
+                task.EndDate = null;
+                task.UpdatedAt = DateTime.UtcNow;
+            }
+        }
+
+        _db.CalendarEvents.Remove(evt);
+        await _db.SaveChangesAsync();
+        return true;
+    }
 }
