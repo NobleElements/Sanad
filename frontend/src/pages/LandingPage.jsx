@@ -496,6 +496,78 @@ export default function LandingPage() {
         </div>
       )}
 
+      {/* Comparisons Section */}
+      <div id="comparisons" className="bg-white dark:bg-gray-900 py-24 border-t border-gray-100 dark:border-gray-800">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">How Sanad Compares</h2>
+            <p className="text-lg text-gray-600 dark:text-gray-400">See why users are choosing a unified personal workspace.</p>
+          </div>
+          
+          <div className="space-y-4">
+            <details className="group bg-slate-50 dark:bg-gray-800/50 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <summary className="flex justify-between items-center font-medium cursor-pointer list-none p-6 text-gray-900 dark:text-white text-lg">
+                <span>Sanad vs Notion</span>
+                <span className="transition group-open:rotate-180">
+                  <svg fill="none" height="24" shapeRendering="geometricPrecision" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
+                </span>
+              </summary>
+              <div className="text-gray-600 dark:text-gray-400 p-6 pt-0 leading-relaxed">
+                Notion is a highly flexible workspace, but it often requires you to build your own systems from scratch. Sanad provides a structured, out-of-the-box experience tailored for personal management—including dedicated modules for tasks, habits, finances, calendar, and file storage. Furthermore, Sanad is self-hosted, ensuring complete control over your data privacy.
+              </div>
+            </details>
+
+            <details className="group bg-slate-50 dark:bg-gray-800/50 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <summary className="flex justify-between items-center font-medium cursor-pointer list-none p-6 text-gray-900 dark:text-white text-lg">
+                <span>Sanad vs Obsidian</span>
+                <span className="transition group-open:rotate-180">
+                  <svg fill="none" height="24" shapeRendering="geometricPrecision" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
+                </span>
+              </summary>
+              <div className="text-gray-600 dark:text-gray-400 p-6 pt-0 leading-relaxed">
+                While Obsidian is exceptional for connected notes and local markdown files, it relies heavily on community plugins to add features like task management or calendars. Sanad delivers a cohesive, all-in-one application out-of-the-box, combining notes, a full task manager, finance tracking, and file storage into a single unified dashboard.
+              </div>
+            </details>
+
+            <details className="group bg-slate-50 dark:bg-gray-800/50 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <summary className="flex justify-between items-center font-medium cursor-pointer list-none p-6 text-gray-900 dark:text-white text-lg">
+                <span>Sanad vs TickTick</span>
+                <span className="transition group-open:rotate-180">
+                  <svg fill="none" height="24" shapeRendering="geometricPrecision" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
+                </span>
+              </summary>
+              <div className="text-gray-600 dark:text-gray-400 p-6 pt-0 leading-relaxed">
+                TickTick is great for tasks and habits, but it stops there. Sanad takes your productivity further by integrating a robust rich-text notebook, a self-hosted file manager, and a comprehensive finance tracker, giving you a holistic view of your entire life in one place.
+              </div>
+            </details>
+
+            <details className="group bg-slate-50 dark:bg-gray-800/50 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <summary className="flex justify-between items-center font-medium cursor-pointer list-none p-6 text-gray-900 dark:text-white text-lg">
+                <span>Sanad vs Todoist</span>
+                <span className="transition group-open:rotate-180">
+                  <svg fill="none" height="24" shapeRendering="geometricPrecision" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
+                </span>
+              </summary>
+              <div className="text-gray-600 dark:text-gray-400 p-6 pt-0 leading-relaxed">
+                Todoist is a focused and powerful task manager. However, managing your life often requires more than just to-dos. Sanad brings your tasks, calendar, daily habits, personal notes, and financial transactions into a single, beautifully designed self-hosted platform.
+              </div>
+            </details>
+
+            <details className="group bg-slate-50 dark:bg-gray-800/50 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <summary className="flex justify-between items-center font-medium cursor-pointer list-none p-6 text-gray-900 dark:text-white text-lg">
+                <span>Sanad vs Amplenote</span>
+                <span className="transition group-open:rotate-180">
+                  <svg fill="none" height="24" shapeRendering="geometricPrecision" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
+                </span>
+              </summary>
+              <div className="text-gray-600 dark:text-gray-400 p-6 pt-0 leading-relaxed">
+                Amplenote integrates notes, tasks, and a calendar effectively. Sanad expands on this concept by adding complete file management, detailed finance tracking, and habit streaks. Additionally, Sanad's self-hostable nature and multi-tenancy support offer unparalleled data sovereignty.
+              </div>
+            </details>
+          </div>
+        </div>
+      </div>
+
       {/* Footer */}
       <footer className="bg-white dark:bg-gray-900 py-12 border-t border-gray-100 dark:border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center">

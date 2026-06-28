@@ -100,5 +100,42 @@ cd src/Sanad.Api
 dotnet run
 ```
 
+## Comparisons
+
+<details>
+<summary><strong>Sanad vs Notion</strong></summary>
+<br>
+Notion is a highly flexible workspace, but it often requires you to build your own systems from scratch. Sanad provides a structured, out-of-the-box experience tailored for personal management—including dedicated modules for tasks, habits, finances, calendar, and file storage. Furthermore, Sanad is self-hosted, ensuring complete control over your data privacy.
+  
+</details>
+
+<details>
+<summary><strong>Sanad vs Obsidian</strong></summary>
+<br>
+While Obsidian is exceptional for connected notes and local markdown files, it relies heavily on community plugins to add features like task management or calendars. Sanad delivers a cohesive, all-in-one application out-of-the-box, combining notes, a full task manager, finance tracking, and file storage into a single unified dashboard.
+  
+</details>
+
+<details>
+<summary><strong>Sanad vs TickTick</strong></summary>
+<br>
+TickTick is great for tasks and habits, but it stops there. Sanad takes your productivity further by integrating a robust rich-text notebook, a self-hosted file manager, and a comprehensive finance tracker, giving you a holistic view of your entire life in one place.
+  
+</details>
+
+<details>
+<summary><strong>Sanad vs Todoist</strong></summary>
+<br>
+Todoist is a focused and powerful task manager. However, managing your life often requires more than just to-dos. Sanad brings your tasks, calendar, daily habits, personal notes, and financial transactions into a single, beautifully designed self-hosted platform.
+  
+</details>
+
+<details>
+<summary><strong>Sanad vs Amplenote</strong></summary>
+<br>
+Amplenote integrates notes, tasks, and a calendar effectively. Sanad expands on this concept by adding complete file management, detailed finance tracking, and habit streaks. Additionally, Sanad's self-hostable nature and multi-tenancy support offer unparalleled data sovereignty.
+  
+</details>
+
 ## License
 This project is licensed under the MIT License.
