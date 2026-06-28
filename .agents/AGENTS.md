@@ -47,6 +47,13 @@
 - **Component Organization**: Place reusable, domain-agnostic components in `frontend/src/components/common/`. Page-level components should reside directly in `frontend/src/pages/`.
 - **Rich Text Editing**: Use TipTap (`@tiptap/react`) for any rich text or markdown editing features.
 
+### Rich Text Editing (TipTap) & Autosave
+- **Initialization Shielding**: TipTap extensions (like TaskLists) often perform invisible DOM fixups upon initialization that trigger `onUpdate`/`onChange` events. If a component has auto-save functionality, these events will falsely trigger an immediate auto-save upon loading a document, corrupting the "last updated" timestamp.
+- **Solution**: 
+  1. Always use an `isInitializingRef` guard (with a ~500ms timeout) wrapping the initial data population logic (e.g. inside the `fetch` resolution). 
+  2. Inside your `onChange` handler, use `if (isInitializingRef.current) return;` to safely ignore these programmatic events.
+  3. When programmatically setting content using TipTap's API, explicitly pass `false` for `emitUpdate` (e.g., `editor.commands.setContent(content, false)`).
+
 ## Backend Conventions
 
 ### Architecture & Patterns
