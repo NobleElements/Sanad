@@ -33,7 +33,7 @@ const useCalendarStore = create((set, get) => ({
   }),
   
   viewDate: new Date(),
-  viewMode: localStorage.getItem('calendarViewMode') || 'month',
+  viewMode: localStorage.getItem('calendarViewMode') || 'week',
 
   setViewDate: (date) => set({ viewDate: date }),
   setViewMode: (mode) => {

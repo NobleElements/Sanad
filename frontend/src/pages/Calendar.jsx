@@ -3,7 +3,7 @@ import {
   format, addDays, subDays, startOfWeek, endOfWeek, startOfMonth, 
   endOfMonth, addWeeks, subWeeks, addMonths, subMonths, addYears, subYears, isSameDay
 } from 'date-fns';
-import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, PanelLeftClose, PanelLeft, LayoutList, Search, Bell, Settings, PanelRightClose } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, PanelLeftClose, PanelLeft, LayoutList, Search, Bell, Settings, PanelRightClose, ChevronDown } from 'lucide-react';
 import useCalendarStore from '../store/useCalendarStore';
 import useTaskStore from '../store/useTaskStore';
 import CalendarGrid from '../components/Calendar/CalendarGrid';
@@ -18,9 +18,25 @@ export default function Calendar() {
     events, fetchEvents, viewDate, setViewDate, viewMode, setViewMode, categories, fetchCategories,
     todoTasks, fetchTodoTasks
   } = useCalendarStore();
+  const [showTaskSidebar, setShowTaskSidebar] = useState(() => {
+    const saved = localStorage.getItem('calendarTaskSidebar');
+    if (saved !== null) return saved === 'true';
+    return window.innerWidth > 768;
+  });
   
-  const [showTaskSidebar, setShowTaskSidebar] = useState(true);
-  const [showLeftSidebar, setShowLeftSidebar] = useState(true);
+  const [showLeftSidebar, setShowLeftSidebar] = useState(() => {
+    const saved = localStorage.getItem('calendarLeftSidebar');
+    if (saved !== null) return saved === 'true';
+    return window.innerWidth > 768;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('calendarTaskSidebar', showTaskSidebar);
+  }, [showTaskSidebar]);
+
+  useEffect(() => {
+    localStorage.setItem('calendarLeftSidebar', showLeftSidebar);
+  }, [showLeftSidebar]);
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [selectedDateSlot, setSelectedDateSlot] = useState(null);
@@ -178,6 +194,8 @@ export default function Calendar() {
     setIsEventModalOpen(true);
   };
   
+
+
   const filteredTasks = todoTasks.filter(t => {
     if (taskSearch && !t.title.toLowerCase().includes(taskSearch.toLowerCase())) return false;
     if (taskProjectFilter && t.project !== taskProjectFilter) return false;
@@ -227,13 +245,32 @@ export default function Calendar() {
               </h2>
             </div>
 
-            <div className="flex items-center gap-3">
-              <div className="flex bg-slate-100 dark:bg-slate-900 rounded p-1">
+            <div className="flex items-center gap-2 sm:gap-3">
+              {/* Mobile View Toggle */}
+              <div className="relative md:hidden">
+                <select
+                  value={viewMode}
+                  onChange={(e) => setViewMode(e.target.value)}
+                  className="appearance-none bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 px-3 py-1.5 pr-8 rounded text-sm font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 capitalize cursor-pointer text-slate-700 dark:text-slate-200"
+                >
+                  <option value="today">Day</option>
+                  <option value="3days">3 Days</option>
+                  <option value="week">Week</option>
+                  <option value="month">Month</option>
+                  <option value="year">Year</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-500">
+                  <ChevronDown className="w-4 h-4" />
+                </div>
+              </div>
+
+              {/* Desktop View Toggle */}
+              <div className="hidden md:flex bg-slate-100 dark:bg-slate-900 rounded p-1">
                 {['today', '3days', 'week', 'month', 'year'].map(mode => (
                   <button
                     key={mode}
                     onClick={() => setViewMode(mode)}
-                    className={`px-3 py-1 rounded text-sm capitalize ${viewMode === mode ? 'bg-white dark:bg-slate-700 shadow-sm font-medium' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
+                    className={`px-3 py-1 rounded text-sm capitalize ${viewMode === mode ? 'bg-white dark:bg-slate-700 shadow-sm font-medium text-slate-800 dark:text-slate-100' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
                   >
                     {mode === 'today' ? 'Day' : mode === '3days' ? '3 Days' : mode}
                   </button>
@@ -242,9 +279,9 @@ export default function Calendar() {
 
               <button 
                 onClick={() => { setSelectedEvent(null); setSelectedDateSlot(new Date()); setIsEventModalOpen(true); }}
-                className="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-sm font-medium transition-colors"
+                className="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-sm font-medium transition-colors whitespace-nowrap"
               >
-                <Plus className="w-4 h-4" /> Add Event
+                <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Add Event</span>
               </button>
 
               <button 
@@ -258,7 +295,7 @@ export default function Calendar() {
               {!showTaskSidebar && (
                 <button 
                   onClick={() => setShowTaskSidebar(true)} 
-                  className="ml-2 flex items-center gap-1 px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-sm font-medium text-slate-600 dark:text-slate-300"
+                  className="ml-2 hidden md:flex items-center gap-1 px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-sm font-medium text-slate-600 dark:text-slate-300"
                 >
                   <LayoutList className="w-4 h-4" /> Tasks
                 </button>
@@ -281,9 +318,11 @@ export default function Calendar() {
           </div>
         </div>
 
+
+
         {/* Task Sidebar (Right) */}
         {showTaskSidebar && (
-          <div className="w-72 border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 flex flex-col transition-all shrink-0">
+          <div className="hidden md:flex w-72 border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 flex-col transition-all shrink-0">
             <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center pb-[23px]">
               <h2 className="font-semibold flex items-center gap-2"><LayoutList className="w-5 h-5" /> Tasks</h2>
               <button onClick={() => setShowTaskSidebar(false)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-500">
