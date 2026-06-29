@@ -139,15 +139,27 @@ const useCalendarStore = create((set, get) => ({
 
   fetchTodoTasks: async () => {
     try {
-      // 0 is the enum value for ToDo
-      const response = await fetch(`${API_URL}/tasks?status=0`, {
-        headers: getHeaders(),
+      // 0 is ToDo, 1 is In Progress
+      const [resTodo, resInProgress] = await Promise.all([
+        fetch(`${API_URL}/tasks?status=0`, { headers: getHeaders() }),
+        fetch(`${API_URL}/tasks?status=1`, { headers: getHeaders() })
+      ]);
+      if (!resTodo.ok || !resInProgress.ok) throw new Error('Failed to fetch tasks');
+      
+      const dataTodo = await resTodo.json();
+      const dataInProgress = await resInProgress.json();
+      
+      const combined = [...dataTodo, ...dataInProgress];
+      
+      // Sort to match backend behavior: Order ascending, then CreatedAt descending
+      combined.sort((a, b) => {
+        if (a.order !== b.order) return a.order - b.order;
+        return new Date(b.createdAt) - new Date(a.createdAt);
       });
-      if (!response.ok) throw new Error('Failed to fetch todo tasks');
-      const data = await response.json();
-      set({ todoTasks: data });
+      
+      set({ todoTasks: combined });
     } catch (error) {
-      console.error('Error fetching todo tasks:', error);
+      console.error('Error fetching tasks:', error);
     }
   },
 
