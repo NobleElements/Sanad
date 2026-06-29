@@ -141,7 +141,7 @@ const useCalendarStore = create((set, get) => ({
     try {
       // 0 is ToDo, 1 is In Progress
       const [resTodo, resInProgress] = await Promise.all([
-        fetch(`${API_URL}/tasks?status=0`, { headers: getHeaders() }),
+        fetch(`${API_URL}/tasks?status=0&unscheduledOnly=true`, { headers: getHeaders() }),
         fetch(`${API_URL}/tasks?status=1`, { headers: getHeaders() })
       ]);
       if (!resTodo.ok || !resInProgress.ok) throw new Error('Failed to fetch tasks');

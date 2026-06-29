@@ -23,7 +23,7 @@ public static class TaskEndpoints
         app.MapDelete("/api/tasks/{id}/attachments/{attachmentId}", DeleteTaskAttachment);
     }
 
-    public static async Task<IResult> GetTasks(SanadDbContext db, string? project, Models.TaskStatus? status)
+    public static async Task<IResult> GetTasks(SanadDbContext db, string? project, Models.TaskStatus? status, bool? unscheduledOnly)
     {
         var query = db.TaskItems.AsQueryable();
         if (!string.IsNullOrEmpty(project))
@@ -31,8 +31,8 @@ public static class TaskEndpoints
         if (status.HasValue)
             query = query.Where(t => t.Status == status.Value);
             
-        // Hide scheduled tasks from general lists
-        query = query.Where(t => t.StartDate == null);
+        if (unscheduledOnly == true)
+            query = query.Where(t => t.StartDate == null);
         
         return Results.Ok(await query.OrderBy(t => t.Order).ThenByDescending(t => t.CreatedAt).ToListAsync());
     }
