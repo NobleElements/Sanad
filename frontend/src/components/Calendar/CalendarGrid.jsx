@@ -47,6 +47,15 @@ export default function CalendarGrid({ viewMode, viewDate, onEventClick, onSlotC
 
     const handlePointerUp = () => {
       // Commit creation
+      const distance = Math.abs(dragCreateState.currentY - dragCreateState.startY);
+      const isTap = distance < 5;
+
+      // The user wants to ignore sloppy taps/scrolls. Only create if tap, or drag >= 30px (30 mins).
+      if (!isTap && distance < 30) {
+        setDragCreateState(null);
+        return;
+      }
+
       const startY = Math.min(dragCreateState.startY, dragCreateState.currentY);
       const endY = Math.max(dragCreateState.startY, dragCreateState.currentY);
       
@@ -55,7 +64,7 @@ export default function CalendarGrid({ viewMode, viewDate, onEventClick, onSlotC
       
       // If it wasn't a drag (just a click), default to 1 hour length
       let endHour, endMin;
-      if (!dragCreateState.isActive) {
+      if (isTap) {
         endHour = startHour + 1;
         endMin = startMin;
       } else {
@@ -78,14 +87,20 @@ export default function CalendarGrid({ viewMode, viewDate, onEventClick, onSlotC
       setDragCreateState(null);
     };
 
+    const handlePointerCancel = () => {
+      setDragCreateState(null);
+    };
+
     window.addEventListener('pointermove', handlePointerMove, { passive: false });
     window.addEventListener('pointerup', handlePointerUp);
+    window.addEventListener('pointercancel', handlePointerCancel);
     
     document.body.style.userSelect = 'none';
 
     return () => {
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
+      window.removeEventListener('pointercancel', handlePointerCancel);
       document.body.style.userSelect = '';
     };
   }, [dragCreateState, onSlotClick]);
@@ -153,8 +168,13 @@ export default function CalendarGrid({ viewMode, viewDate, onEventClick, onSlotC
       setResizingState(null);
     };
 
-    window.addEventListener('pointermove', handlePointerMove);
+    const handlePointerCancel = () => {
+      setResizingState(null);
+    };
+
+    window.addEventListener('pointermove', handlePointerMove, { passive: false });
     window.addEventListener('pointerup', handlePointerUp);
+    window.addEventListener('pointercancel', handlePointerCancel);
 
     // Disable body text selection during resize
     document.body.style.userSelect = 'none';
@@ -162,6 +182,7 @@ export default function CalendarGrid({ viewMode, viewDate, onEventClick, onSlotC
     return () => {
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
+      window.removeEventListener('pointercancel', handlePointerCancel);
       document.body.style.userSelect = '';
     };
   }, [resizingState, updateEvent]);
