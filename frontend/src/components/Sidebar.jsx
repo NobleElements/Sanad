@@ -78,7 +78,7 @@ export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }) {
           </button>
         </div>
       
-      <nav className="flex flex-col gap-2 flex-1 px-3 overflow-y-auto">
+      <nav className="flex flex-col gap-2 flex-1 px-3 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         <Link to="/" className={getLinkClass('/')} title="Dashboard" onClick={handleLinkClick}>
           <LayoutDashboard className="w-5 h-5 flex-shrink-0" />
           {(!isCollapsed || window.innerWidth < 768) && <span className="font-medium">Dashboard</span>}
