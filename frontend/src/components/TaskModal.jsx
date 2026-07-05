@@ -246,19 +246,39 @@ export default function TaskModal() {
       />
 
       <div 
-        className={`fixed inset-0 m-auto z-50 w-[95%] sm:w-full max-w-2xl h-fit max-h-[90vh] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl transform transition-all duration-200 flex flex-col overflow-hidden ${isOpen ? 'scale-100 opacity-100 pointer-events-auto' : 'scale-95 opacity-0 pointer-events-none'}`}
+        className={`fixed inset-0 sm:m-auto z-50 w-full sm:w-full max-w-2xl h-[100dvh] sm:h-fit max-h-none sm:max-h-[90vh] bg-white dark:bg-gray-900 rounded-none sm:rounded-2xl shadow-2xl transform transition-all duration-200 flex flex-col overflow-hidden ${isOpen ? 'scale-100 opacity-100 pointer-events-auto' : 'scale-95 opacity-0 pointer-events-none'}`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 dark:border-gray-800">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-            {activeTask.isNew ? 'Create Task' : 'Edit Task'}
-          </h2>
-          <button 
-            onClick={handleCloseModal}
-            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+        <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-gray-100 dark:border-gray-800 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Mobile Close */}
+            <button 
+              onClick={handleCloseModal}
+              className="sm:hidden p-1.5 -ml-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              {activeTask.isNew ? 'Create Task' : 'Edit Task'}
+            </h2>
+          </div>
+          <div className="flex items-center gap-2">
+            {/* Mobile Save */}
+            <button
+              onClick={handleSave}
+              disabled={isSaving || !title.trim()}
+              className="sm:hidden px-4 py-1.5 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+            >
+              {isSaving ? 'Saving...' : 'Save'}
+            </button>
+            {/* Desktop Close */}
+            <button 
+              onClick={handleCloseModal}
+              className="hidden sm:block p-2 -mr-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Content */}
@@ -572,7 +592,7 @@ export default function TaskModal() {
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30 flex justify-between items-center">
+        <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30 flex justify-between items-center shrink-0">
           <div>
             {!activeTask?.isNew && (
               <button
@@ -580,11 +600,13 @@ export default function TaskModal() {
                 className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
               >
                 <Trash2 className="w-4 h-4" />
-                Delete Task
+                <span className="hidden sm:inline">Delete Task</span>
+                <span className="sm:hidden">Delete</span>
               </button>
             )}
           </div>
-          <div className="flex justify-end gap-3">
+          {/* Desktop Actions */}
+          <div className="hidden sm:flex justify-end gap-3">
             <button
               onClick={handleCloseModal}
               className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
