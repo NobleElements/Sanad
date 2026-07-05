@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { useSearchParams } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
+import { timeAgo } from '../utils/dateUtils';
 import AssetsTab from './AssetsTab';
 import useFinanceStore from '../store/useFinanceStore';
 import useConfirmStore from '../store/useConfirmStore';
@@ -471,11 +472,17 @@ export default function FinanceDashboard() {
               <h2 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-200">Recent Transactions</h2>
               <div className="flex flex-col gap-2">
                 {transactions.map(tx => (
-                  <div key={tx.id} className="group flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-900 rounded border border-slate-100 transition-colors hover:bg-slate-100 dark:hover:bg-slate-700 dark:text-slate-100">
-                    <div className="flex items-center gap-3">
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: tx.category?.colorHex || '#CBD5E1' }}></div>
-                      <span className="font-medium text-slate-800 dark:text-slate-200">{tx.description || 'No description'}</span>
-                      <span className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-500">{tx.category?.name}</span>
+                  <div key={tx.id} className="group flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-100 transition-colors hover:bg-slate-100 dark:hover:bg-slate-700 dark:text-slate-100">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: tx.category?.colorHex || '#CBD5E1' }}></div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">
+                          {tx.description || 'No description'}
+                        </div>
+                        <div className="text-xs text-slate-400 dark:text-slate-500">
+                          {tx.category?.name} · {timeAgo(tx.date)}
+                        </div>
+                      </div>
                     </div>
                     <div className="flex items-center gap-4">
                       {editingTxId === tx.id ? (
