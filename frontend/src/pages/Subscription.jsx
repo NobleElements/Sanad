@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { AlertTriangle, X } from 'lucide-react';
+import { AlertTriangle, X, Download } from 'lucide-react';
 import useAuthStore from '../store/useAuthStore';
 import useSubscriptionStore from '../store/useSubscriptionStore';
 import useConfirmStore from '../store/useConfirmStore';
 import { formatBytes } from '../utils/formatUtils';
+import { useFileManagerStore } from '../store/fileManagerStore';
+import TransferProgress from '../components/FileManager/TransferProgress';
 import usePageTitle from '../hooks/usePageTitle';
 import { initializePaddle } from '@paddle/paddle-js';
 import { API_URL } from '../config';
@@ -202,6 +204,109 @@ export default function Subscription() {
     });
   };
 
+  const handleDownloadDatabase = async () => {
+    try {
+      if (!window.showSaveFilePicker) {
+        alert("Your browser does not support the File System Access API.");
+        return;
+      }
+      const handle = await window.showSaveFilePicker({
+        suggestedName: 'sanad_backup.db',
+        types: [{ description: 'SQLite Database', accept: { 'application/x-sqlite3': ['.db'] } }]
+      });
+      const writable = await handle.createWritable();
+      
+      const id = crypto.randomUUID();
+      useFileManagerStore.setState(state => ({
+        transfers: [...state.transfers, {
+          id, name: 'Downloading Database Backup', type: 'download', progress: 0, status: 'active',
+          speed: 0, loaded: 0, total: 100, isPaused: false
+        }]
+      }));
+
+      const res = await fetch(`${API_URL}/subscription/backup/database`, {
+        headers: { 'Authorization': `Bearer ${useAuthStore.getState().token}` }
+      });
+      if (res.ok && res.body) {
+        useFileManagerStore.setState(state => ({
+          transfers: state.transfers.map(t => t.id === id ? { ...t, progress: 50 } : t)
+        }));
+        await res.body.pipeTo(writable);
+        useFileManagerStore.setState(state => ({
+          transfers: state.transfers.map(t => t.id === id ? { ...t, status: 'done', progress: 100 } : t)
+        }));
+      } else {
+        await writable.close();
+        useFileManagerStore.setState(state => ({
+          transfers: state.transfers.map(t => t.id === id ? { ...t, status: 'error' } : t)
+        }));
+        alert('Failed to download database.');
+      }
+    } catch (e) {
+      if (e.name !== 'AbortError') console.error(e);
+    }
+  };
+
+  const handleDownloadAttachments = async () => {
+    try {
+      if (!window.showDirectoryPicker) {
+        alert("Your browser does not support the File System Access API.");
+        return;
+      }
+      const dirHandle = await window.showDirectoryPicker();
+      const res = await fetch(`${API_URL}/subscription/backup/attachments`, {
+        headers: { 'Authorization': `Bearer ${useAuthStore.getState().token}` }
+      });
+      if (!res.ok) {
+        alert('Failed to fetch attachments list.');
+        return;
+      }
+      const files = await res.json();
+      if (files.length === 0) {
+        alert('No attachments found.');
+        return;
+      }
+      
+      const id = crypto.randomUUID();
+      useFileManagerStore.setState(state => ({
+        transfers: [...state.transfers, {
+          id, name: 'Downloading Attachments', type: 'download', progress: 0, status: 'active',
+          speed: 0, loaded: 0, total: 100, isPaused: false
+        }]
+      }));
+
+      let downloaded = 0;
+      const totalFiles = files.length;
+      for (const fileName of files) {
+        const fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
+        const writable = await fileHandle.createWritable();
+        const fileRes = await fetch(`${API_URL}/attachments/${fileName}`, {
+          headers: { 'Authorization': `Bearer ${useAuthStore.getState().token}` }
+        });
+        if (fileRes.ok && fileRes.body) {
+          await fileRes.body.pipeTo(writable);
+        } else {
+          await writable.close();
+        }
+        downloaded++;
+        const progress = Math.round((downloaded / totalFiles) * 100);
+        useFileManagerStore.setState(state => ({
+          transfers: state.transfers.map(t => t.id === id ? { ...t, progress } : t)
+        }));
+      }
+      
+      useFileManagerStore.setState(state => ({
+        transfers: state.transfers.map(t => t.id === id ? { ...t, status: 'done', progress: 100 } : t)
+      }));
+    } catch (e) {
+      if (e.name !== 'AbortError') console.error(e);
+    }
+  };
+
+  const handleDownloadFiles = async () => {
+    await useFileManagerStore.getState().downloadFolder(null, 'Sanad_Files');
+  };
+
   if (loading) return <div className="p-8">Loading subscription data...</div>;
 
   const usagePercent = Math.min(100, (storageData.diskUsed / storageData.diskLimitBytes) * 100);
@@ -255,6 +360,36 @@ export default function Subscription() {
             className="px-3 py-1 text-sm bg-slate-800 text-slate-100 rounded hover:bg-slate-700 transition-colors whitespace-nowrap"
           >
             Reroll Key
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm rounded-xl p-6 mb-8 dark:text-slate-100">
+        <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-200 mb-2">Data Export</h2>
+        <p className="text-sm text-slate-600 dark:text-slate-400 dark:text-slate-500 mb-4">
+          Download a backup of your data directly to your device.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <button
+            onClick={handleDownloadDatabase}
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 rounded-lg transition-colors font-medium text-sm border border-slate-200 dark:border-slate-600 shadow-sm"
+          >
+            <Download size={16} />
+            Database Backup
+          </button>
+          <button
+            onClick={handleDownloadAttachments}
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 rounded-lg transition-colors font-medium text-sm border border-slate-200 dark:border-slate-600 shadow-sm"
+          >
+            <Download size={16} />
+            All Attachments
+          </button>
+          <button
+            onClick={handleDownloadFiles}
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 rounded-lg transition-colors font-medium text-sm border border-slate-200 dark:border-slate-600 shadow-sm"
+          >
+            <Download size={16} />
+            All Files
           </button>
         </div>
       </div>
@@ -522,6 +657,7 @@ export default function Subscription() {
         </div>
       )}
 
+      <TransferProgress />
     </div>
   );
 }

@@ -142,6 +142,44 @@ public static class SubscriptionEndpoints
             var transactions = await paddleService.GetCustomerTransactionsAsync(user.PaddleCustomerId);
             return Results.Ok(transactions);
         });
+
+        group.MapGet("/backup/database", async (SanadDbContext db, HttpContext context) =>
+        {
+            var username = context.User.Identity?.Name;
+            if (string.IsNullOrEmpty(username)) return Results.Unauthorized();
+
+            var connection = db.Database.GetDbConnection() as Microsoft.Data.Sqlite.SqliteConnection;
+            if (connection == null) return Results.BadRequest("Database is not SQLite");
+
+            if (connection.State != System.Data.ConnectionState.Open)
+            {
+                await connection.OpenAsync();
+            }
+
+            var tempPath = Path.GetTempFileName();
+            using (var dest = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={tempPath}"))
+            {
+                dest.Open();
+                connection.BackupDatabase(dest);
+            }
+            
+            return Results.Stream(new FileStream(tempPath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.DeleteOnClose), "application/octet-stream", "sanad_backup.db");
+        });
+
+        group.MapGet("/backup/attachments", async (HttpContext context) =>
+        {
+            var username = context.User.Identity?.Name;
+            if (string.IsNullOrEmpty(username)) return Results.Unauthorized();
+
+            var attachmentsDir = Path.Combine(Directory.GetCurrentDirectory(), "Data", username, "attachments");
+            if (!Directory.Exists(attachmentsDir))
+            {
+                return Results.Ok(new string[0]);
+            }
+            
+            var files = Directory.GetFiles(attachmentsDir).Select(Path.GetFileName).ToArray();
+            return Results.Ok(files);
+        });
     }
 }
 
