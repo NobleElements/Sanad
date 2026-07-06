@@ -20,7 +20,10 @@ export default function FinanceDashboard() {
   const { 
     currencies, categories, transactions, budgetSummary: summary, 
     currentMonth, currentYear, setDate, fetchFinanceData, isLoaded, addCurrency,
-    addTransaction, updateTransaction, deleteTransaction, createCategory, updateCategory, updateBudget 
+    addTransaction, updateTransaction, deleteTransaction, createCategory, updateCategory, updateBudget,
+    transactionSearchQuery, setTransactionSearchQuery,
+    transactionFilterCategoryId, setTransactionFilterCategory,
+    transactionsHasMore, loadMoreTransactions
   } = useFinanceStore();
   const { showConfirm } = useConfirmStore();
 
@@ -469,7 +472,25 @@ export default function FinanceDashboard() {
 
             {/* Recent Transactions */}
             <div className="mt-8 bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:text-slate-100">
-              <h2 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-200">Recent Transactions</h2>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200">Recent Transactions</h2>
+                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                  <input
+                    type="text"
+                    placeholder="Search by description..."
+                    value={transactionSearchQuery}
+                    onChange={(e) => setTransactionSearchQuery(e.target.value)}
+                    className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded p-2 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full sm:w-48"
+                  />
+                  <div className="w-full sm:w-48 relative">
+                    <CategorySelector
+                      value={transactionFilterCategoryId}
+                      onChange={setTransactionFilterCategory}
+                      placeholder="All Categories"
+                    />
+                  </div>
+                </div>
+              </div>
               <div className="flex flex-col gap-2">
                 {transactions.map(tx => (
                   <div key={tx.id} className="group flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-100 transition-colors hover:bg-slate-100 dark:hover:bg-slate-700 dark:text-slate-100">
@@ -518,7 +539,18 @@ export default function FinanceDashboard() {
                     </div>
                   </div>
                 ))}
-                {transactions.length === 0 && <p className="text-slate-500 dark:text-slate-400 dark:text-slate-500">No transactions yet.</p>}
+                {transactions.length === 0 && <p className="text-slate-500 dark:text-slate-400 dark:text-slate-500">No transactions found.</p>}
+                
+                {transactionsHasMore && (
+                  <div className="flex justify-center mt-4">
+                    <button
+                      onClick={loadMoreTransactions}
+                      className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-semibold transition-colors"
+                    >
+                      Load More
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </>

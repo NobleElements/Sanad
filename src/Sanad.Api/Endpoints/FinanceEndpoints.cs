@@ -49,20 +49,49 @@ public static class FinanceEndpoints
         return Results.Ok(category);
     }
 
-    public static async Task<IResult> GetTransactions(SanadDbContext db, int? month, int? year)
+    public static async Task<IResult> GetTransactions(
+        SanadDbContext db, 
+        int? month, 
+        int? year, 
+        int page = 1, 
+        int pageSize = 15,
+        string? search = null,
+        Guid? categoryId = null)
     {
         var targetMonth = month ?? DateTime.UtcNow.Month;
         var targetYear = year ?? DateTime.UtcNow.Year;
         var startDate = new DateTime(targetYear, targetMonth, 1, 0, 0, 0, DateTimeKind.Utc);
         var endDate = startDate.AddMonths(1);
 
-        var transactions = await db.Transactions
+        var query = db.Transactions
             .Include(t => t.Category)
-            .Where(t => t.Date >= startDate && t.Date < endDate)
+            .Where(t => t.Date >= startDate && t.Date < endDate);
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var searchLower = search.ToLower();
+            query = query.Where(t => t.Description != null && t.Description.ToLower().Contains(searchLower));
+        }
+
+        if (categoryId.HasValue)
+        {
+            query = query.Where(t => t.CategoryId == categoryId.Value);
+        }
+
+        var totalCount = await query.CountAsync();
+
+        var items = await query
             .OrderByDescending(t => t.Date)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
             
-        return Results.Ok(transactions);
+        return Results.Ok(new 
+        {
+            Items = items,
+            TotalCount = totalCount,
+            HasMore = totalCount > page * pageSize
+        });
     }
 
     public static async Task<IResult> CreateTransaction(SanadDbContext db, Transaction transaction)

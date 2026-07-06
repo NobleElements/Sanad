@@ -13,9 +13,24 @@ const useFinanceStore = create((set, get) => ({
   currentMonth: new Date().getMonth() + 1,
   currentYear: new Date().getFullYear(),
 
+  transactionsPage: 1,
+  transactionsHasMore: false,
+  transactionSearchQuery: '',
+  transactionFilterCategoryId: '',
+
   setDate: (month, year) => {
-    set({ currentMonth: month, currentYear: year });
+    set({ currentMonth: month, currentYear: year, transactionsPage: 1 });
     get().fetchFinanceData();
+  },
+
+  setTransactionSearchQuery: (query) => {
+    set({ transactionSearchQuery: query, transactionsPage: 1 });
+    get().fetchTransactions(false);
+  },
+
+  setTransactionFilterCategory: (categoryId) => {
+    set({ transactionFilterCategoryId: categoryId, transactionsPage: 1 });
+    get().fetchTransactions(false);
   },
 
   fetchCurrencies: async () => {
@@ -32,23 +47,51 @@ const useFinanceStore = create((set, get) => ({
   fetchFinanceData: async () => {
     const { currentMonth, currentYear } = get();
     try {
-      const [sumRes, catRes, txRes] = await Promise.all([
+      const [sumRes, catRes] = await Promise.all([
         fetch(`${API_URL}/finances/summary?month=${currentMonth}&year=${currentYear}`),
-        fetch(`${API_URL}/finances/categories`),
-        fetch(`${API_URL}/finances/transactions?month=${currentMonth}&year=${currentYear}`)
+        fetch(`${API_URL}/finances/categories`)
       ]);
 
-      if (sumRes.ok && catRes.ok && txRes.ok) {
+      if (sumRes.ok && catRes.ok) {
         const sumData = await sumRes.json();
         const catData = await catRes.json();
-        const txData = await txRes.json();
         await get().fetchCurrencies();
-        set({ budgetSummary: sumData, categories: catData, transactions: txData, isLoaded: true });
+        set({ budgetSummary: sumData, categories: catData });
+        await get().fetchTransactions(false);
+        set({ isLoaded: true });
       } else {
         useUIStore.getState().showError('Failed to load financial data');
       }
     } catch (err) {
       useUIStore.getState().showError('Network error loading finance data');
+    }
+  },
+
+  fetchTransactions: async (append = false) => {
+    const { currentMonth, currentYear, transactionsPage, transactionSearchQuery, transactionFilterCategoryId, transactions } = get();
+    try {
+      let url = `${API_URL}/finances/transactions?month=${currentMonth}&year=${currentYear}&page=${transactionsPage}&pageSize=15`;
+      if (transactionSearchQuery) url += `&search=${encodeURIComponent(transactionSearchQuery)}`;
+      if (transactionFilterCategoryId) url += `&categoryId=${transactionFilterCategoryId}`;
+
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        set({
+          transactions: append ? [...transactions, ...data.items] : data.items,
+          transactionsHasMore: data.hasMore
+        });
+      }
+    } catch (err) {
+      useUIStore.getState().showError('Failed to fetch transactions');
+    }
+  },
+
+  loadMoreTransactions: () => {
+    const { transactionsPage, transactionsHasMore } = get();
+    if (transactionsHasMore) {
+      set({ transactionsPage: transactionsPage + 1 });
+      get().fetchTransactions(true);
     }
   },
 
