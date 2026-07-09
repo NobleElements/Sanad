@@ -14,7 +14,8 @@ import { Color } from '@tiptap/extension-color';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { common, createLowlight } from 'lowlight';
 import { useEffect, useRef, useCallback, useState } from 'react';
-import { Bold, Italic, Strikethrough, List, ListOrdered, CheckSquare, Code, ImagePlus, Link as LinkIcon, Table as TableIcon, Trash2, Plus, Minus, Columns, Rows } from 'lucide-react';
+import { Bold, Italic, Strikethrough, List, ListOrdered, CheckSquare, Code, ImagePlus, Link as LinkIcon, Table as TableIcon, Trash2, Plus, Minus, Columns, Rows, PilcrowLeft, PilcrowRight } from 'lucide-react';
+import { TextDirection } from './TextDirection';
 
 const FontSize = Extension.create({
   name: 'fontSize',
@@ -79,6 +80,7 @@ const MenuBar = ({ editor, onImageUpload, currentFontSize }) => {
   const toggleOrderedList = () => editor.chain().focus().toggleOrderedList().run();
   const toggleTaskList = () => editor.chain().focus().toggleTaskList().run();
   const toggleCodeBlock = () => editor.chain().focus().toggleCodeBlock().run();
+  const toggleTextDirection = () => editor.chain().focus().toggleTextDirection().run();
   const insertTable = () => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
 
   const setLink = useCallback(() => {
@@ -130,6 +132,12 @@ const MenuBar = ({ editor, onImageUpload, currentFontSize }) => {
       </button>
       <button onClick={toggleStrike} className={btnClass(editor.isActive('strike'))} aria-label="Strikethrough">
         <Strikethrough className="w-4 h-4" />
+      </button>
+
+      <div className="w-px h-4 bg-gray-300 dark:bg-gray-600 mx-1" />
+
+      <button onClick={toggleTextDirection} className={btnClass(editor.isActive({ dir: 'rtl' }))} aria-label="Toggle Text Direction">
+        {editor.isActive({ dir: 'rtl' }) ? <PilcrowRight className="w-4 h-4" /> : <PilcrowLeft className="w-4 h-4" />}
       </button>
 
       <div className="w-px h-4 bg-gray-300 dark:bg-gray-600 mx-1" />
@@ -241,6 +249,7 @@ export default function TipTapEditor({ content, onChange, onImageUpload }) {
       Color,
       TextStyle,
       FontSize,
+      TextDirection,
     ],
     content: content || '',
     onUpdate: ({ editor }) => {
@@ -385,6 +394,10 @@ export default function TipTapEditor({ content, onChange, onImageUpload }) {
               </button>
               <button onClick={() => editor.chain().focus().toggleStrike().run()} className={`p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${editor.isActive('strike') ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10' : 'text-gray-600 dark:text-gray-400'}`} aria-label="Strikethrough">
                 <Strikethrough className="w-4 h-4" />
+              </button>
+              <div className="w-px h-4 bg-gray-300 dark:bg-gray-600 mx-1" />
+              <button onClick={() => editor.chain().focus().toggleTextDirection().run()} className={`p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${editor.isActive({ dir: 'rtl' }) ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10' : 'text-gray-600 dark:text-gray-400'}`} aria-label="Toggle Text Direction">
+                {editor.isActive({ dir: 'rtl' }) ? <PilcrowRight className="w-4 h-4" /> : <PilcrowLeft className="w-4 h-4" />}
               </button>
               <div className="w-px h-4 bg-gray-300 dark:bg-gray-600 mx-1" />
               <button onClick={() => editor.chain().focus().toggleCodeBlock().run()} className={`p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${editor.isActive('codeBlock') ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10' : 'text-gray-600 dark:text-gray-400'}`} aria-label="Code Block">
