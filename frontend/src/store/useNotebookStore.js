@@ -216,6 +216,47 @@ const useNotebookStore = create((set, get) => ({
     }
   },
 
+  moveNote: async (id, newNotebookId) => {
+    const state = get();
+    let currentNote = state.selectedNote?.id === id ? state.selectedNote : state.notes.find(n => n.id === id);
+    if (!currentNote) {
+      for (const nb of state.notebooks) {
+        if (nb.notes) {
+          const found = nb.notes.find(n => n.id === id);
+          if (found) { currentNote = found; break; }
+        }
+      }
+    }
+    
+    if (!currentNote) return false;
+    
+    try {
+      const res = await fetch(`${API_URL}/notes/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+           title: currentNote.title, 
+           content: currentNote.content,
+           notebookId: newNotebookId 
+        }),
+      });
+      if (res.ok) {
+         await get().fetchNotebooks();
+         if (state.selectedNotebookId) {
+             await get().fetchNotes(state.selectedNotebookId);
+         }
+         if (state.selectedNote?.id === id) {
+             set({ selectedNote: { ...state.selectedNote, notebookId: newNotebookId } });
+         }
+         return true;
+      }
+      return false;
+    } catch (e) {
+      console.error('Failed to move note:', e);
+      return false;
+    }
+  },
+
   deleteNote: async (id) => {
     try {
       const res = await fetch(`${API_URL}/notes/${id}`, { method: 'DELETE' });

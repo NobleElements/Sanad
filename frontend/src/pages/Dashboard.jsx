@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { X } from 'lucide-react';
 import { API_BASE, API_URL } from '../config';
 import useFinanceStore from '../store/useFinanceStore';
 import useThoughtsStore from '../store/useThoughtsStore';
@@ -338,67 +339,98 @@ export default function Dashboard() {
 
       {/* Quick Spend Modal */}
       {showSpendModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowSpendModal(false)} />
-          <div className="relative bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-md mx-4 p-6 animate-fadeInUp dark:text-slate-100">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">Quick Spend</h3>
-              <button
-                type="button"
-                onClick={() => setShowSpendModal(false)}
-                className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400 dark:text-slate-500 transition-colors text-xl leading-none"
-              >
-                ×
-              </button>
+        <>
+          <div 
+            className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 transition-opacity duration-200" 
+            onClick={() => setShowSpendModal(false)}
+            aria-hidden="true" 
+          />
+          <div className="fixed inset-0 sm:m-auto z-50 w-full sm:max-w-md h-[100dvh] sm:h-fit max-h-none sm:max-h-[90vh] bg-white dark:bg-slate-800 rounded-none sm:rounded-2xl shadow-2xl transform transition-all duration-200 flex flex-col overflow-hidden animate-fadeInUp dark:text-slate-100 border-0 sm:border border-slate-200 dark:border-slate-700">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-slate-100 dark:border-slate-700 shrink-0">
+              <div className="flex items-center gap-2 sm:gap-3">
+                {/* Mobile Close */}
+                <button
+                  type="button"
+                  onClick={() => setShowSpendModal(false)}
+                  className="sm:hidden p-1.5 -ml-1.5 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+                <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">Quick Spend</h3>
+              </div>
+              <div className="flex items-center gap-2">
+                {/* Mobile Save */}
+                <button
+                  type="button"
+                  onClick={handleLogSpend}
+                  disabled={isLoggingSpend || !spendCategoryId || !spendAmount}
+                  className="sm:hidden px-4 py-1.5 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+                >
+                  {isLoggingSpend ? 'Logging...' : 'Save'}
+                </button>
+                {/* Desktop Close */}
+                <button
+                  type="button"
+                  onClick={() => setShowSpendModal(false)}
+                  className="hidden sm:block p-2 -mr-2 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
-            <form onSubmit={handleLogSpend} className="flex flex-col gap-4">
-              <div>
-                <label className="block text-sm text-slate-600 dark:text-slate-400 dark:text-slate-500 mb-1 font-medium">Amount</label>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5">
+              <form onSubmit={handleLogSpend} className="flex flex-col gap-4">
+                <div>
+                  <label className="block text-sm text-slate-600 dark:text-slate-400 dark:text-slate-500 mb-1 font-medium">Amount</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 text-sm">{defaultCurrency.symbol}</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      placeholder="0.00"
+                      value={spendAmount}
+                      onChange={(e) => setSpendAmount(e.target.value)}
+                      className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 pl-7 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none dark:bg-slate-700 dark:text-slate-100"
+                      required
+                      disabled={isLoggingSpend}
+                      autoFocus
+                    />
+                  </div>
+                </div>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 text-sm">{defaultCurrency.symbol}</span>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0.01"
-                    placeholder="0.00"
-                    value={spendAmount}
-                    onChange={(e) => setSpendAmount(e.target.value)}
-                    className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 pl-7 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none dark:bg-slate-700 dark:text-slate-100"
-                    required
+                  <label className="block text-sm text-slate-600 dark:text-slate-400 dark:text-slate-500 mb-1 font-medium">Category</label>
+                  <CategorySelector 
+                    value={spendCategoryId}
+                    onChange={setSpendCategoryId}
                     disabled={isLoggingSpend}
-                    autoFocus
                   />
                 </div>
-              </div>
-              <div className="relative">
-                <label className="block text-sm text-slate-600 dark:text-slate-400 dark:text-slate-500 mb-1 font-medium">Category</label>
-                <CategorySelector 
-                  value={spendCategoryId}
-                  onChange={setSpendCategoryId}
-                  disabled={isLoggingSpend}
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-slate-600 dark:text-slate-400 dark:text-slate-500 mb-1 font-medium">Description</label>
-                <input
-                  type="text"
-                  placeholder="What was it for?"
-                  value={spendDesc}
-                  onChange={(e) => setSpendDesc(e.target.value)}
-                  className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none dark:bg-slate-700 dark:text-slate-100"
-                  disabled={isLoggingSpend}
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={isLoggingSpend || !spendCategoryId}
-                className="w-full bg-emerald-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed mt-1"
-              >
-                {isLoggingSpend ? 'Logging...' : 'Log Expense'}
-              </button>
-            </form>
+                <div>
+                  <label className="block text-sm text-slate-600 dark:text-slate-400 dark:text-slate-500 mb-1 font-medium">Description</label>
+                  <input
+                    type="text"
+                    placeholder="What was it for?"
+                    value={spendDesc}
+                    onChange={(e) => setSpendDesc(e.target.value)}
+                    className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none dark:bg-slate-700 dark:text-slate-100"
+                    disabled={isLoggingSpend}
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={isLoggingSpend || !spendCategoryId || !spendAmount}
+                  className="hidden sm:block w-full bg-emerald-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed mt-1"
+                >
+                  {isLoggingSpend ? 'Logging...' : 'Log Expense'}
+                </button>
+              </form>
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

@@ -131,6 +131,14 @@ public static class NotebookEndpoints
         if (note == null) return Results.NotFound();
         note.Title = updated.Title;
         note.Content = updated.Content;
+        if (updated.NotebookId != Guid.Empty && updated.NotebookId != note.NotebookId)
+        {
+            var newNotebookExists = await db.Notebooks.AnyAsync(n => n.Id == updated.NotebookId);
+            if (newNotebookExists)
+            {
+                note.NotebookId = updated.NotebookId;
+            }
+        }
         note.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
         return Results.Ok(note);

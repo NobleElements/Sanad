@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import TipTapEditor from '../components/TipTapEditor';
-import { Plus, Search, FolderOpen, FileText, Trash2, Pencil, X, Check, BookOpen, ArrowUp, ArrowDown, ListFilter } from 'lucide-react';
+import { Plus, Search, FolderOpen, FileText, Trash2, Pencil, X, Check, BookOpen, ArrowUp, ArrowDown, ListFilter, ChevronDown, Menu } from 'lucide-react';
 import useNotebookStore from '../store/useNotebookStore';
 import useConfirmStore from '../store/useConfirmStore';
 import { timeAgo } from '../utils/dateUtils';
@@ -20,7 +20,7 @@ export default function Notebook() {
     setSelectedNotebookId, setSelectedNote, setSearchResults,
     searchNotes, createNotebook: storeCreateNotebook,
     renameNotebook: storeRenameNotebook, deleteNotebook: storeDeleteNotebook,
-    createNote: storeCreateNote, updateNote, deleteNote: storeDeleteNote, uploadImage
+    createNote: storeCreateNote, updateNote, deleteNote: storeDeleteNote, uploadImage, moveNote
   } = useNotebookStore();
   const { showConfirm } = useConfirmStore();
 
@@ -32,6 +32,7 @@ export default function Notebook() {
 
   // UI state
   const [isCreatingNotebook, setIsCreatingNotebook] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(true);
   const [newNotebookName, setNewNotebookName] = useState('');
   const [editingNotebookId, setEditingNotebookId] = useState(null);
   const [editingNotebookName, setEditingNotebookName] = useState('');
@@ -109,6 +110,13 @@ export default function Notebook() {
       });
     }
   }, [urlNoteId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-close sidebar on mobile when a note is selected
+  useEffect(() => {
+    if (selectedNote?.id) {
+      setIsMobileSidebarOpen(false);
+    }
+  }, [selectedNote?.id]);
 
   // When user clicks a different notebook in the sidebar
   const switchNotebook = (notebookId) => {
@@ -310,11 +318,30 @@ export default function Notebook() {
   });
 
   return (
-    <div className="flex-1 flex flex-col md:flex-row h-full overflow-hidden">
+    <div className="flex-1 flex flex-col md:flex-row h-full overflow-hidden relative">
+      {/* Mobile Backdrop */}
+      {isMobileSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-900/50 z-40 md:hidden transition-opacity"
+          onClick={() => setIsMobileSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <div className="w-full md:w-[260px] h-[40%] md:h-full bg-white dark:bg-slate-800 border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-700 flex flex-col flex-shrink-0">
-        {/* Search */}
-        <div className="p-3 border-b border-slate-200 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-100">
+      <div className={`fixed inset-y-0 left-0 z-50 w-[85%] max-w-[320px] bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col flex-shrink-0 transition-transform duration-300 md:relative md:w-[260px] md:translate-x-0 ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        
+        {/* Mobile Header (Drawer Title) */}
+        <div className="md:hidden flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
+          <span className="font-semibold text-slate-700 dark:text-slate-200">Notebooks & Notes</span>
+          <button onClick={() => setIsMobileSidebarOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Sidebar Content */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Search */}
+          <div className="p-3 border-b border-slate-200 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-100">
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
             <input
@@ -400,6 +427,17 @@ export default function Notebook() {
               {sortedNotebooks.map(nb => (
                 <div
                   key={nb.id}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const draggedNoteId = e.dataTransfer.getData('noteId');
+                    if (draggedNoteId) {
+                      moveNote(draggedNoteId, nb.id);
+                    }
+                  }}
                   className={`group flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-colors text-sm ${
                     selectedNotebookId === nb.id
                       ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 font-medium'
@@ -407,7 +445,7 @@ export default function Notebook() {
                   }`}
                   onClick={() => switchNotebook(nb.id)}
                 >
-                  <FolderOpen className="w-4 h-4 flex-shrink-0 opacity-60" />
+                  <FolderOpen className="w-4 h-4 flex-shrink-0 opacity-60 pointer-events-none" />
                   {editingNotebookId === nb.id ? (
                     <input
                       type="text"
@@ -493,6 +531,11 @@ export default function Notebook() {
             {sortedNotes.map(note => (
               <div
                 key={note.id}
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.setData('noteId', note.id);
+                  e.dataTransfer.effectAllowed = 'move';
+                }}
                 className={`group flex items-center gap-2 px-2 py-2 rounded-lg cursor-pointer transition-colors text-sm ${
                   selectedNote?.id === note.id
                     ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300'
@@ -535,13 +578,38 @@ export default function Notebook() {
           </div>
         </div>
       </div>
+    </div>
 
-      {/* Main editor area */}
+    {/* Main editor area */}
       <div className="flex-1 flex flex-col overflow-hidden bg-slate-50 dark:bg-slate-900">
         {selectedNote ? (
           <>
             {/* Title bar */}
-            <div className="px-8 pt-8 pb-2">
+            <div className="px-4 md:px-8 pt-4 md:pt-8 pb-2">
+              <div className="flex items-center gap-2 mb-2">
+                <button 
+                   onClick={() => setIsMobileSidebarOpen(true)}
+                   className="md:hidden p-1.5 mr-1 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 bg-slate-100 dark:bg-slate-800 rounded-md"
+                >
+                   <Menu className="w-4 h-4" />
+                </button>
+                <div className="relative">
+                  <select
+                    value={selectedNote.notebookId}
+                    onChange={(e) => {
+                      if (e.target.value !== selectedNote.notebookId) {
+                        moveNote(selectedNote.id, e.target.value);
+                      }
+                    }}
+                    className="appearance-none bg-slate-100 dark:bg-slate-800/50 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-medium border border-transparent hover:border-slate-300 dark:hover:border-slate-600 rounded-md py-1 pl-2.5 pr-7 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors cursor-pointer"
+                  >
+                    {notebooks.map(nb => (
+                      <option key={nb.id} value={nb.id}>{nb.name}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-3.5 h-3.5 absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                </div>
+              </div>
               <input
                 type="text"
                 value={noteTitle}
@@ -565,7 +633,13 @@ export default function Notebook() {
           </>
         ) : (
           /* Empty state */
-          <div className="flex-1 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500">
+          <div className="flex-1 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 relative">
+            <button 
+               onClick={() => setIsMobileSidebarOpen(true)}
+               className="md:hidden absolute top-4 left-4 p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700"
+            >
+               <Menu className="w-5 h-5" />
+            </button>
             <BookOpen className="w-16 h-16 mb-4 opacity-30" />
             <h2 className="text-xl font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-500 mb-2">
               {notebooks.length === 0 ? 'Create your first notebook' : selectedNotebookId ? 'Create or select a note' : 'Select a notebook'}
