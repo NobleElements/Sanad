@@ -72,6 +72,12 @@ const useAuthStore = create((set, get) => ({
     try {
       await fetch(`${API_URL}/auth/logout`, { method: 'POST' });
       set({ authenticated: false, id: null, username: null, isAdmin: false, tierId: 1, apiKey: null, tierStartedAt: null, tierExpiresAt: null, paddleSubscriptionStatus: null });
+      
+      if ('caches' in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map(name => caches.delete(name)));
+      }
+      localStorage.removeItem('last_notes_sync');
     } catch (err) {
       console.error('Logout failed', err);
       useUIStore.getState().showError('Logout failed');
