@@ -93,6 +93,40 @@ const useNotebookStore = create((set, get) => ({
       set({ searchResults: null });
       return;
     }
+    
+    if (useUIStore.getState().isOffline && 'caches' in window) {
+      try {
+        const results = [];
+        const lowerQuery = query.toLowerCase();
+        const cache = await caches.open('api-cache');
+        const keys = await cache.keys();
+        const noteRequests = keys.filter(req => req.url.match(/\/api\/notes\/[a-f0-9-]+$/i));
+        
+        for (const req of noteRequests) {
+          const res = await cache.match(req);
+          if (res) {
+            const clone = res.clone();
+            const note = await clone.json();
+            if (note.title?.toLowerCase().includes(lowerQuery) || note.content?.toLowerCase().includes(lowerQuery)) {
+              results.push({
+                id: note.id,
+                title: note.title,
+                notebookId: note.notebookId,
+                createdAt: note.createdAt,
+                updatedAt: note.updatedAt
+              });
+            }
+          }
+        }
+        
+        results.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+        set({ searchResults: results.slice(0, 20) });
+        return;
+      } catch (e) {
+        console.error('Offline search failed:', e);
+      }
+    }
+
     try {
       const res = await fetch(`${API_URL}/notes/search?q=${encodeURIComponent(query)}`);
       if (res.ok) {
