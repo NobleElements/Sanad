@@ -64,7 +64,21 @@ export const warmUpApiCache = async () => {
   // We use Promise.allSettled so that one failure doesn't stop others
   Promise.allSettled(
     endpointsToCache.map(endpoint => 
-      fetch(`${API_URL}${endpoint}`).catch(err => console.warn(`Failed to cache ${endpoint}:`, err))
+      fetch(`${API_URL}${endpoint}`)
+        .then(async (res) => {
+          if (endpoint === '/notebooks' && res.ok) {
+            try {
+              const clone = res.clone();
+              const notebooks = await clone.json();
+              await Promise.allSettled(
+                notebooks.map(nb => fetch(`${API_URL}/notebooks/${nb.id}/notes`).catch(() => {}))
+              );
+            } catch (e) {
+              console.warn('Failed to parse notebooks for offline sync', e);
+            }
+          }
+        })
+        .catch(err => console.warn(`Failed to cache ${endpoint}:`, err))
     )
   ).then(() => {
     console.log('[Offline Sync] API cache warm up complete.');
