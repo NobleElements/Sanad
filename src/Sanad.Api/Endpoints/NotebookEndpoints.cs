@@ -21,9 +21,10 @@ public static class NotebookEndpoints
         app.MapPut("/api/notes/{id}", UpdateNote);
         app.MapDelete("/api/notes/{id}", DeleteNote);
 
-        // Search & latest
+        // Search, latest, sync
         app.MapGet("/api/notes/latest", GetLatestNote);
         app.MapGet("/api/notes/search", SearchNotes);
+        app.MapGet("/api/notes/sync", SyncNotes);
 
         // Image upload
         app.MapPost("/api/notes/{id}/images", UploadNoteImage);
@@ -181,6 +182,18 @@ public static class NotebookEndpoints
             .Take(20)
             .ToListAsync();
         return Results.Ok(results);
+    }
+
+    static async Task<IResult> SyncNotes(SanadDbContext db, DateTime? since)
+    {
+        var query = db.Notes.AsQueryable();
+        if (since.HasValue)
+        {
+            query = query.Where(n => n.UpdatedAt >= since.Value);
+        }
+        
+        var ids = await query.Select(n => n.Id).ToListAsync();
+        return Results.Ok(ids);
     }
 
     static async Task<IResult> UploadNoteImage(HttpRequest request, SanadDbContext db, Services.ITenantProvider tenantProvider, Services.DiskQuotaService quotaService, Guid id)
