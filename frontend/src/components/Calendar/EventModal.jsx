@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { X, Trash2, Calendar as CalendarIcon, Clock, Repeat, Tag, AlignLeft, Bell, Plus } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import useCalendarStore from '../../store/useCalendarStore';
+import useUIStore from '../../store/useUIStore';
 import ConfirmModal from '../common/ConfirmModal';
 
 export default function EventModal({ isOpen, onClose, eventToEdit, initialDate }) {
   const { createEvent, updateEvent, deleteEvent, categories, createCategory } = useCalendarStore();
+  const isOffline = useUIStore(state => state.isOffline);
   
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -275,8 +277,9 @@ export default function EventModal({ isOpen, onClose, eventToEdit, initialDate }
                 />
                 <button 
                   onClick={handleCreateCategory} 
-                  disabled={!newCatName || isSavingCat}
-                  className="px-3 py-1.5 bg-blue-600 text-white rounded text-sm font-medium disabled:opacity-50 hover:bg-blue-700"
+                  disabled={!newCatName || isSavingCat || isOffline}
+                  title={isOffline ? "Not available offline" : ""}
+                  className="px-3 py-1.5 bg-blue-600 text-white rounded text-sm font-medium disabled:opacity-50 hover:bg-blue-700 disabled:cursor-not-allowed"
                 >
                   Add
                 </button>
@@ -325,7 +328,12 @@ export default function EventModal({ isOpen, onClose, eventToEdit, initialDate }
 
         <div className="p-4 border-t border-slate-200 dark:border-slate-700 flex justify-between bg-slate-50 dark:bg-slate-800/50 shrink-0">
           {eventToEdit ? (
-            <button onClick={() => setIsConfirmDeleteOpen(true)} className="text-red-500 hover:text-red-600 p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors">
+            <button 
+              onClick={() => setIsConfirmDeleteOpen(true)} 
+              disabled={isOffline}
+              title={isOffline ? "Not available offline" : ""}
+              className="text-red-500 hover:text-red-600 p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <Trash2 className="w-5 h-5" />
             </button>
           ) : <div></div>}
@@ -334,7 +342,12 @@ export default function EventModal({ isOpen, onClose, eventToEdit, initialDate }
             <button onClick={onClose} className="px-4 py-2 text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors">
               Cancel
             </button>
-            <button onClick={handleSave} disabled={!title || !isDateValid} className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors">
+            <button 
+              onClick={handleSave} 
+              disabled={!title || !isDateValid || isOffline} 
+              title={isOffline ? "Not available offline" : ""}
+              className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
               Save
             </button>
           </div>

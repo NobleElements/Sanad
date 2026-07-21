@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import useBookStore from '../store/useBookStore';
 import useConfirmStore from '../store/useConfirmStore';
+import useUIStore from '../store/useUIStore';
 import { X, CheckCircle, BookOpen } from 'lucide-react';
 
 export default function LogModal({ period, onClose }) {
@@ -11,6 +12,7 @@ export default function LogModal({ period, onClose }) {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const { showConfirm } = useConfirmStore();
+    const isOffline = useUIStore(state => state.isOffline);
 
     const doSubmit = async (page) => {
         setIsSubmitting(true);
@@ -86,7 +88,12 @@ export default function LogModal({ period, onClose }) {
                             <button type="button" onClick={onClose} className="flex-1 px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 rounded-xl font-medium transition">
                                 Cancel
                             </button>
-                            <button type="submit" disabled={isSubmitting || !endPage} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white rounded-xl font-medium transition disabled:opacity-50">
+                            <button 
+                                type="submit" 
+                                disabled={isSubmitting || !endPage || isOffline} 
+                                title={isOffline ? "Not available offline" : ""}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white rounded-xl font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
                                 {isSubmitting ? 'Saving...' : <><CheckCircle className="w-5 h-5"/> Save Log</>}
                             </button>
                         </div>

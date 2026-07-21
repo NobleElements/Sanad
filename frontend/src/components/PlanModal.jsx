@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import useBookStore from '../store/useBookStore';
+import useUIStore from '../store/useUIStore';
 import { Trash2, Plus } from 'lucide-react';
 
 export default function PlanModal({ period, onClose }) {
   const { updatePlans } = useBookStore();
   const [plans, setPlans] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isOffline = useUIStore(state => state.isOffline);
 
   useEffect(() => {
     if (period && period.plans) {
@@ -49,18 +51,35 @@ export default function PlanModal({ period, onClose }) {
               <input type="number" min="1" value={p.startPage} onChange={e => updatePlan(idx, 'startPage', parseInt(e.target.value) || 0)} placeholder="Start" className="w-20 p-2 border rounded focus:ring focus:border-indigo-500 text-sm dark:bg-slate-700 dark:text-slate-100" />
               <span className="text-slate-400 dark:text-slate-500">-</span>
               <input type="number" min="1" value={p.endPage} onChange={e => updatePlan(idx, 'endPage', parseInt(e.target.value) || 0)} placeholder="End" className="w-20 p-2 border rounded focus:ring focus:border-indigo-500 text-sm dark:bg-slate-700 dark:text-slate-100" />
-              <button onClick={() => removePlan(idx)} className="p-2 text-slate-400 dark:text-slate-500 hover:text-red-500 dark:text-red-400 hover:bg-red-50 dark:bg-red-500/10 rounded transition"><Trash2 className="w-4 h-4"/></button>
+              <button 
+                onClick={() => removePlan(idx)} 
+                disabled={isOffline}
+                title={isOffline ? "Not available offline" : ""}
+                className="p-2 text-slate-400 dark:text-slate-500 hover:text-red-500 dark:text-red-400 hover:bg-red-50 dark:bg-red-500/10 rounded transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Trash2 className="w-4 h-4"/>
+              </button>
             </div>
           ))}
           {plans.length === 0 && <p className="text-sm text-slate-400 dark:text-slate-500 italic text-center py-4">No reading plan set. Add chapters to track progress.</p>}
-          <button onClick={addPlan} className="mt-2 py-2 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg text-slate-500 dark:text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-400 hover:border-indigo-300 hover:bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center gap-2 font-medium transition text-sm">
+          <button 
+            onClick={addPlan} 
+            disabled={isOffline}
+            title={isOffline ? "Not available offline" : ""}
+            className="mt-2 py-2 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg text-slate-500 dark:text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-400 hover:border-indigo-300 hover:bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center gap-2 font-medium transition text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             <Plus className="w-4 h-4"/> Add Session
           </button>
         </div>
         
         <div className="flex gap-3 justify-end mt-6 pt-4 border-t border-slate-100 dark:bg-slate-700 dark:text-slate-100">
           <button onClick={onClose} className="px-4 py-2 text-slate-600 dark:text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition font-medium">Cancel</button>
-          <button onClick={handleSave} disabled={isSubmitting} className="px-4 py-2 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white rounded transition font-medium">
+          <button 
+            onClick={handleSave} 
+            disabled={isSubmitting || isOffline} 
+            title={isOffline ? "Not available offline" : ""}
+            className="px-4 py-2 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white rounded transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             {isSubmitting ? 'Saving...' : 'Save Plan'}
           </button>
         </div>

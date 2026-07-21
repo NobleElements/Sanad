@@ -5,6 +5,7 @@ import EmojiPicker from 'emoji-picker-react';
 import { format, subDays, startOfDay, isSameDay, subMonths, eachDayOfInterval } from 'date-fns';
 import useHabitStore from '../store/useHabitStore';
 import useConfirmStore from '../store/useConfirmStore';
+import useUIStore from '../store/useUIStore';
 import usePageTitle from '../hooks/usePageTitle';
 
 export default function Habits() {
@@ -15,6 +16,7 @@ export default function Habits() {
   const [newHabit, setNewHabit] = useState({ name: '', icon: '🌟', frequency: 'Daily' });
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [expandedHabits, setExpandedHabits] = useState(new Set());
+  const isOffline = useUIStore(state => state.isOffline);
 
   useEffect(() => {
     fetchHabits();
@@ -38,6 +40,7 @@ export default function Habits() {
   };
 
   const onDragEnd = (result) => {
+    if (isOffline) return;
     if (!result.destination) return;
     if (result.destination.index === result.source.index) return;
     reorderHabits(result.source.index, result.destination.index);
@@ -70,7 +73,9 @@ export default function Habits() {
           </div>
           <button
             onClick={() => setIsAddModalOpen(true)}
-            className="bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 dark:bg-indigo-500 text-white text-sm sm:text-base px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg flex items-center gap-1.5 sm:gap-2 transition-colors font-medium shadow-sm"
+            disabled={isOffline}
+            title={isOffline ? "Not available offline" : ""}
+            className="bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 dark:bg-indigo-500 text-white text-sm sm:text-base px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg flex items-center gap-1.5 sm:gap-2 transition-colors font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
             Add Habit
@@ -85,7 +90,9 @@ export default function Habits() {
               <p className="text-slate-500 dark:text-slate-400 dark:text-slate-500 mb-6">Start building good routines today.</p>
               <button
                 onClick={() => setIsAddModalOpen(true)}
-                className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:text-indigo-300 font-medium"
+                disabled={isOffline}
+                title={isOffline ? "Not available offline" : ""}
+                className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:text-indigo-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Create your first habit
               </button>
@@ -129,12 +136,13 @@ export default function Habits() {
                                     return (
                                       <button
                                         key={date.toISOString()}
+                                        disabled={isOffline}
                                         onClick={() => toggleHabitLog(habit.id, format(date, 'yyyy-MM-dd'))}
-                                        className={`min-w-[28px] w-7 h-7 sm:w-8 sm:h-8 rounded-md flex items-center justify-center text-[10px] sm:text-xs font-medium transition-all cursor-pointer flex-shrink-0
+                                        className={`min-w-[28px] w-7 h-7 sm:w-8 sm:h-8 rounded-md flex items-center justify-center text-[10px] sm:text-xs font-medium transition-all cursor-pointer flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed
                                           ${completed ? 'bg-green-500 dark:bg-emerald-500 text-white shadow-sm' : 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600'}
                                           ${isToday && !completed ? 'ring-2 ring-indigo-200 dark:ring-indigo-500/50 ring-offset-1 dark:ring-offset-slate-800' : ''}
                                         `}
-                                        title={format(date, 'MMM d, yyyy')}
+                                        title={isOffline ? "Not available offline" : format(date, 'MMM d, yyyy')}
                                       >
                                         {completed ? <Check className="w-3 h-3 sm:w-4 sm:h-4" /> : format(date, 'd')}
                                       </button>
@@ -161,8 +169,9 @@ export default function Habits() {
                                         }
                                       });
                                     }}
-                                    className="p-1.5 sm:p-2 text-red-400 hover:text-red-600 dark:text-red-400 hover:bg-red-50 dark:bg-red-500/10 rounded-lg transition-colors"
-                                    title="Delete Habit"
+                                    disabled={isOffline}
+                                    className="p-1.5 sm:p-2 text-red-400 hover:text-red-600 dark:text-red-400 hover:bg-red-50 dark:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title={isOffline ? "Not available offline" : "Delete Habit"}
                                   >
                                     <Trash className="w-4 h-4 sm:w-5 sm:h-5" />
                                   </button>
@@ -180,11 +189,12 @@ export default function Habits() {
                                     return (
                                       <div
                                         key={date.toISOString()}
-                                        onClick={() => toggleHabitLog(habit.id, format(date, 'yyyy-MM-dd'))}
-                                        className={`w-4 h-4 rounded-[3px] cursor-pointer transition-colors
+                                        onClick={() => { if (!isOffline) toggleHabitLog(habit.id, format(date, 'yyyy-MM-dd')); }}
+                                        className={`w-4 h-4 rounded-[3px] transition-colors
+                                          ${isOffline ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
                                           ${completed ? 'bg-green-500 dark:bg-emerald-500 hover:bg-green-600 dark:hover:bg-emerald-600' : 'bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600'}
                                         `}
-                                        title={`${format(date, 'MMM d, yyyy')}${completed ? ' (Completed)' : ''}`}
+                                        title={isOffline ? "Not available offline" : `${format(date, 'MMM d, yyyy')}${completed ? ' (Completed)' : ''}`}
                                       />
                                     );
                                   })}
@@ -288,7 +298,8 @@ export default function Habits() {
               </button>
               <button
                 onClick={handleCreate}
-                disabled={!newHabit.name.trim()}
+                disabled={!newHabit.name.trim() || isOffline}
+                title={isOffline ? "Not available offline" : ""}
                 className="bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 dark:bg-indigo-500 disabled:bg-indigo-400 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg font-medium transition-colors shadow-sm"
               >
                 Create Habit

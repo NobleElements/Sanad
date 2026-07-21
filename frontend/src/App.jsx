@@ -17,7 +17,10 @@ import AuthOverlay from './components/AuthOverlay';
 import ToastContainer from './components/ToastContainer';
 import NotificationManager from './components/NotificationManager';
 import GlobalConfirmModal from './components/common/GlobalConfirmModal';
+import OfflineBanner from './components/common/OfflineBanner';
 import useAuthStore from './store/useAuthStore';
+import useUIStore from './store/useUIStore';
+import { warmUpApiCache } from './utils/offlineSync';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminSettings from './pages/AdminSettings';
 import StorageTiers from './pages/StorageTiers';
@@ -31,6 +34,7 @@ import RefundPolicy from './pages/RefundPolicy';
 
 function App() {
   const { loaded, authenticated, isAdmin, checkAuthStatus } = useAuthStore();
+  const setOfflineStatus = useUIStore(state => state.setOfflineStatus);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMigrating, setIsMigrating] = useState(false);
 
@@ -39,8 +43,25 @@ function App() {
     
     const handleMigrating = () => setIsMigrating(true);
     window.addEventListener('account_migrating', handleMigrating);
-    return () => window.removeEventListener('account_migrating', handleMigrating);
-  }, [checkAuthStatus]);
+
+    const handleOnline = () => setOfflineStatus(false);
+    const handleOffline = () => setOfflineStatus(true);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('account_migrating', handleMigrating);
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [checkAuthStatus, setOfflineStatus]);
+
+  useEffect(() => {
+    const isOffline = useUIStore.getState().isOffline;
+    if (authenticated && !isOffline) {
+      warmUpApiCache();
+    }
+  }, [authenticated]);
 
   if (!loaded) {
     return <div className="flex h-screen items-center justify-center bg-slate-50 dark:bg-slate-900">Loading...</div>;
@@ -51,29 +72,32 @@ function App() {
   }
 
   const AppLayout = ({ children }) => (
-    <div className="flex h-screen w-full bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-sans overflow-hidden">
-      <Sidebar 
-        isMobileMenuOpen={isMobileMenuOpen} 
-        setIsMobileMenuOpen={setIsMobileMenuOpen} 
-      />
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Mobile Top Bar */}
-        <div className="md:hidden flex items-center justify-between bg-slate-900 text-slate-100 p-4 border-b border-slate-800 dark:bg-slate-700 dark:text-slate-100">
-          <Link to="/" className="text-xl font-bold tracking-wider text-white">SANAD</Link>
-          <button 
-            onClick={() => setIsMobileMenuOpen(true)}
-            className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-slate-100 transition-colors"
-          >
-            <Menu className="w-6 h-6" />
-          </button>
+    <div className="flex flex-col h-screen w-full">
+      <OfflineBanner />
+      <div className="flex flex-1 w-full bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-sans overflow-hidden">
+        <Sidebar 
+          isMobileMenuOpen={isMobileMenuOpen} 
+          setIsMobileMenuOpen={setIsMobileMenuOpen} 
+        />
+        <div className="flex-1 flex flex-col min-w-0">
+          {/* Mobile Top Bar */}
+          <div className="md:hidden flex items-center justify-between bg-slate-900 text-slate-100 p-4 border-b border-slate-800 dark:bg-slate-700 dark:text-slate-100">
+            <Link to="/" className="text-xl font-bold tracking-wider text-white">SANAD</Link>
+            <button 
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-slate-100 transition-colors"
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            {children}
+          </div>
         </div>
-        <div className="flex-1 overflow-y-auto">
-          {children}
-        </div>
+        <NotificationManager />
+        <ToastContainer />
+        <GlobalConfirmModal />
       </div>
-      <NotificationManager />
-      <ToastContainer />
-      <GlobalConfirmModal />
     </div>
   );
 

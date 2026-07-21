@@ -3,6 +3,9 @@ import { create } from 'zustand';
 const useUIStore = create((set) => ({
   theme: 'light',
   toasts: [],
+  isOffline: typeof navigator !== 'undefined' ? !navigator.onLine : false,
+  
+  setOfflineStatus: (status) => set({ isOffline: status }),
   
   toggleTheme: () => set((state) => ({ theme: state.theme === 'light' ? 'dark' : 'light' })),
   

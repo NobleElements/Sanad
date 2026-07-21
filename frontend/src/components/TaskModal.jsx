@@ -4,6 +4,7 @@ import TipTapEditor from './TipTapEditor';
 import { API_BASE } from '../config';
 import ProjectSelector from './ProjectSelector';
 import useTaskStore from '../store/useTaskStore';
+import useUIStore from '../store/useUIStore';
 import useConfirmStore from '../store/useConfirmStore';
 import { extractImagesFromHtml, deleteImages } from '../utils/imageUtils';
 import PromptModal from './common/PromptModal';
@@ -32,6 +33,7 @@ export default function TaskModal() {
     uploadTaskAttachment, deleteTaskAttachment, deleteTask
   } = useTaskStore();
   const { showConfirm } = useConfirmStore();
+  const isOffline = useUIStore(state => state.isOffline);
 
   const [newComment, setNewComment] = useState('');
   const [isAddingComment, setIsAddingComment] = useState(false);
@@ -266,7 +268,8 @@ export default function TaskModal() {
             {/* Mobile Save */}
             <button
               onClick={handleSave}
-              disabled={isSaving || !title.trim()}
+              disabled={isSaving || !title.trim() || isOffline}
+              title={isOffline ? "Not available offline" : ""}
               className="sm:hidden px-4 py-1.5 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
             >
               {isSaving ? 'Saving...' : 'Save'}
@@ -451,7 +454,8 @@ export default function TaskModal() {
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    disabled={isUploadingAttachment}
+                    disabled={isUploadingAttachment || isOffline}
+                    title={isOffline ? "Not available offline" : ""}
                     className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium disabled:opacity-50 flex items-center gap-1"
                   >
                     {isUploadingAttachment ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Add File'}
@@ -493,6 +497,8 @@ export default function TaskModal() {
                               </a>
                               <button
                                 type="button"
+                                disabled={isOffline}
+                                title={isOffline ? "Not available offline" : ""}
                                 onClick={() => {
                                   showConfirm({
                                     title: 'Delete Attachment',
@@ -502,7 +508,7 @@ export default function TaskModal() {
                                     onConfirm: () => deleteTaskAttachment(activeTask.id, att.id || att._id)
                                   });
                                 }}
-                                className="p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                                className="p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
@@ -537,7 +543,8 @@ export default function TaskModal() {
                     <button
                       type="button"
                       onClick={handleAddComment}
-                      disabled={!newComment.trim() || isAddingComment}
+                      disabled={!newComment.trim() || isAddingComment || isOffline}
+                      title={isOffline ? "Not available offline" : ""}
                       className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
                       Comment
@@ -564,6 +571,8 @@ export default function TaskModal() {
                               </div>
                               <button
                                 type="button"
+                                disabled={isOffline}
+                                title={isOffline ? "Not available offline" : ""}
                                 onClick={() => {
                                   showConfirm({
                                     title: 'Delete Comment',
@@ -573,7 +582,7 @@ export default function TaskModal() {
                                     onConfirm: () => deleteTaskComment(activeTask.id, comment.id || comment._id)
                                   });
                                 }}
-                                className="p-1.5 text-gray-400 md:opacity-0 group-hover:opacity-100 hover:text-red-600 dark:hover:text-red-400 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-all flex-shrink-0"
+                                className="p-1.5 text-gray-400 md:opacity-0 group-hover:opacity-100 hover:text-red-600 dark:hover:text-red-400 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-all flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
@@ -597,7 +606,9 @@ export default function TaskModal() {
             {!activeTask?.isNew && (
               <button
                 onClick={handleDeleteTask}
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                disabled={isOffline}
+                title={isOffline ? "Not available offline" : ""}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Trash2 className="w-4 h-4" />
                 <span className="hidden sm:inline">Delete Task</span>
@@ -615,7 +626,8 @@ export default function TaskModal() {
             </button>
             <button
               onClick={handleSave}
-              disabled={isSaving || !title.trim()}
+              disabled={isSaving || !title.trim() || isOffline}
+              title={isOffline ? "Not available offline" : ""}
               className="inline-flex items-center gap-2 px-5 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
             >
               <Save className="w-4 h-4" />

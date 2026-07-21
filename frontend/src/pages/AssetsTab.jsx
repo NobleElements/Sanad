@@ -122,8 +122,8 @@ export default function AssetsTab() {
                     <LineChart data={history}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                         <XAxis dataKey="date" stroke="#94A3B8" fontSize={12} tickMargin={10} minTickGap={30} />
-                        <YAxis stroke="#94A3B8" fontSize={12} tickFormatter={(value) => `${defaultCurrency.symbol}${value}`} width={80} />
-                        <Tooltip formatter={(value, name) => [`${defaultCurrency.symbol}${value}`, name === 'netWorth' ? 'Net Worth' : name]} labelStyle={{ color: '#1E293B' }} />
+                        <YAxis stroke="#94A3B8" fontSize={12} tickFormatter={(value) => `${defaultCurrency.symbol}${Number(value).toFixed(2)}`} width={80} />
+                        <Tooltip formatter={(value, name) => [`${defaultCurrency.symbol}${Number(value).toFixed(2)}`, name === 'netWorth' ? 'Net Worth' : name]} labelStyle={{ color: '#1E293B' }} />
                         <Line type="monotone" dataKey="netWorth" stroke="#6366F1" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
                         {chartLines.map((name, index) => {
                             const colors = ['#10B981', '#F59E0B', '#3B82F6', '#EC4899', '#8B5CF6', '#14B8A6', '#F43F5E'];

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Trash2 } from 'lucide-react';
 import useBookStore from '../store/useBookStore';
+import useUIStore from '../store/useUIStore';
 import useConfirmStore from '../store/useConfirmStore';
 
 export default function BookModal({ book, onClose }) {
@@ -12,6 +13,7 @@ export default function BookModal({ book, onClose }) {
     totalPages: 0
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isOffline = useUIStore(state => state.isOffline);
 
   useEffect(() => {
     if (book) {
@@ -86,13 +88,24 @@ export default function BookModal({ book, onClose }) {
           
           <div className="flex gap-3 justify-between mt-4 items-center">
             {book ? (
-                <button type="button" onClick={handleDelete} className="p-2 text-red-500 dark:text-red-400 hover:bg-red-50 dark:bg-red-500/10 rounded transition" title="Delete Book">
+                <button 
+                  type="button" 
+                  onClick={handleDelete} 
+                  disabled={isOffline}
+                  title={isOffline ? "Not available offline" : "Delete Book"}
+                  className="p-2 text-red-500 dark:text-red-400 hover:bg-red-50 dark:bg-red-500/10 rounded transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                     <Trash2 className="w-5 h-5"/>
                 </button>
             ) : <div/>}
             <div className="flex gap-3">
                 <button type="button" onClick={onClose} className="px-4 py-2 text-slate-600 dark:text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition font-medium">Cancel</button>
-                <button type="submit" disabled={isSubmitting} className="px-4 py-2 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white rounded transition font-medium">
+                <button 
+                  type="submit" 
+                  disabled={isSubmitting || isOffline} 
+                  title={isOffline ? "Not available offline" : ""}
+                  className="px-4 py-2 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white rounded transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                 {isSubmitting ? 'Saving...' : 'Save Book'}
                 </button>
             </div>

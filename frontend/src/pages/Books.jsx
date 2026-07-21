@@ -8,11 +8,13 @@ import LogModal from '../components/LogModal';
 import CachedImage from '../components/CachedImage';
 import usePageTitle from '../hooks/usePageTitle';
 import useConfirmStore from '../store/useConfirmStore';
+import useUIStore from '../store/useUIStore';
 
 export default function Books() {
   usePageTitle('Reading');
   const { books, periods, fetchBooks, fetchPeriods, searchBooks, searchResults, addBook, deleteBook, startReadingPeriod, currentRead, fetchCurrentRead, setPeriodStatus, deletePeriod } = useBookStore();
   const { showConfirm } = useConfirmStore();
+  const isOffline = useUIStore(state => state.isOffline);
   
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'shelf';
@@ -193,7 +195,12 @@ export default function Books() {
                             <List className="w-4 h-4"/>
                         </button>
                     </div>
-                    <button onClick={openNewBook} className="flex items-center gap-2 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 dark:bg-indigo-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition ml-2">
+                    <button 
+                        onClick={openNewBook} 
+                        disabled={isOffline}
+                        title={isOffline ? "Not available offline" : ""}
+                        className="flex items-center gap-2 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 dark:bg-indigo-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition ml-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
                         <Plus className="w-4 h-4"/> Add Book
                     </button>
                 </div>
@@ -241,21 +248,21 @@ export default function Books() {
                                             {activePeriod.status === 'Reading' ? (
                                                 <button onClick={() => openLogModal(activePeriod)} className="text-xs font-bold bg-emerald-500 hover:bg-emerald-600 text-white py-1 px-2 rounded text-center shadow-sm transition">Log Progress</button>
                                             ) : (
-                                                <button onClick={() => handleSetReading(activePeriod.id)} className="text-xs font-medium bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 py-1 px-2 rounded text-center transition">Resume Reading</button>
+                                                <button onClick={() => handleSetReading(activePeriod.id)} disabled={isOffline} title={isOffline ? "Not available offline" : ""} className="text-xs font-medium bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 py-1 px-2 rounded text-center transition disabled:opacity-50 disabled:cursor-not-allowed">Resume Reading</button>
                                             )}
                                             {activePeriod.status !== 'Stopped' && (
                                                 <div className="flex gap-2">
                                                     <button onClick={() => openPlanModal(activePeriod)} className="flex-1 text-xs font-medium border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 dark:bg-slate-900 dark:hover:bg-slate-700/50 dark:bg-slate-900 text-slate-600 dark:text-slate-400 dark:text-slate-500 py-1 px-2 rounded text-center transition flex items-center justify-center gap-1">
                                                         <List className="w-3 h-3"/> Edit Plan
                                                     </button>
-                                                    <button onClick={() => handleStopReading(activePeriod.id)} className="text-xs font-medium border border-red-200 hover:bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 py-1 px-2 rounded text-center transition flex items-center justify-center" title="Stop Reading">
+                                                    <button onClick={() => handleStopReading(activePeriod.id)} disabled={isOffline} className="text-xs font-medium border border-red-200 hover:bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 py-1 px-2 rounded text-center transition flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed" title={isOffline ? "Not available offline" : "Stop Reading"}>
                                                         <XCircle className="w-4 h-4"/>
                                                     </button>
                                                 </div>
                                             )}
                                         </div>
                                     ) : (
-                                        <button onClick={() => handleStartReading(b)} className="w-full text-xs font-medium bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 dark:bg-indigo-500 text-white py-1.5 px-2 rounded text-center transition flex items-center justify-center gap-1">
+                                        <button onClick={() => handleStartReading(b)} disabled={isOffline} title={isOffline ? "Not available offline" : ""} className="w-full text-xs font-medium bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 dark:bg-indigo-500 text-white py-1.5 px-2 rounded text-center transition flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed">
                                             <Play className="w-3 h-3"/> Start Reading
                                         </button>
                                     )}
@@ -287,21 +294,21 @@ export default function Books() {
                                             {activePeriod.status === 'Reading' ? (
                                                 <button onClick={() => openLogModal(activePeriod)} className="flex-1 text-[10px] sm:text-xs font-bold bg-emerald-500 hover:bg-emerald-600 text-white py-2 px-2 rounded text-center flex items-center justify-center transition shadow-sm">Log Progress</button>
                                             ) : (
-                                                <button onClick={() => handleSetReading(activePeriod.id)} className="flex-1 text-[10px] sm:text-xs font-medium bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 py-2 px-2 rounded text-center transition flex items-center justify-center">Resume</button>
+                                                <button onClick={() => handleSetReading(activePeriod.id)} disabled={isOffline} title={isOffline ? "Not available offline" : ""} className="flex-1 text-[10px] sm:text-xs font-medium bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 py-2 px-2 rounded text-center transition flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed">Resume</button>
                                             )}
                                             {activePeriod.status !== 'Stopped' && (
                                                 <>
                                                     <button onClick={() => openPlanModal(activePeriod)} className="flex-1 text-[10px] sm:text-xs font-medium border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 dark:bg-slate-900 dark:hover:bg-slate-700/50 dark:bg-slate-900 text-slate-600 dark:text-slate-400 dark:text-slate-500 py-2 px-2 rounded text-center transition flex items-center justify-center gap-1">
                                                         <List className="w-3 h-3"/> Plan
                                                     </button>
-                                                    <button onClick={() => handleStopReading(activePeriod.id)} className="text-xs font-medium border border-red-200 hover:bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 py-2 px-3 rounded transition flex items-center justify-center" title="Stop Reading">
+                                                    <button onClick={() => handleStopReading(activePeriod.id)} disabled={isOffline} className="text-xs font-medium border border-red-200 hover:bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 py-2 px-3 rounded transition flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed" title={isOffline ? "Not available offline" : "Stop Reading"}>
                                                         <XCircle className="w-4 h-4"/>
                                                     </button>
                                                 </>
                                             )}
                                         </div>
                                     ) : (
-                                        <button onClick={() => handleStartReading(b)} className="w-full text-[10px] sm:text-xs font-medium bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 dark:bg-indigo-500 text-white py-2 px-4 rounded transition flex items-center justify-center gap-1">
+                                        <button onClick={() => handleStartReading(b)} disabled={isOffline} title={isOffline ? "Not available offline" : ""} className="w-full text-[10px] sm:text-xs font-medium bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 dark:bg-indigo-500 text-white py-2 px-4 rounded transition flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed">
                                             <Play className="w-3 h-3"/> Start Reading
                                         </button>
                                     )}
@@ -356,7 +363,12 @@ export default function Books() {
                                 )}
                                 <h3 className="font-semibold text-center text-sm text-slate-800 dark:text-slate-200 mb-1 line-clamp-2">{b.title}</h3>
                                 <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-500 text-center mb-4">{b.author}</p>
-                                <button onClick={() => handleAddFromSearch(b)} className="mt-auto w-full py-2 bg-slate-100 hover:bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2">
+                                <button 
+                                    onClick={() => handleAddFromSearch(b)} 
+                                    disabled={isOffline}
+                                    title={isOffline ? "Not available offline" : ""}
+                                    className="mt-auto w-full py-2 bg-slate-100 hover:bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
                                     <Plus className="w-4 h-4"/> Add to Shelf
                                 </button>
                             </div>
@@ -442,7 +454,9 @@ export default function Books() {
                                                     onConfirm: () => deletePeriod(p.id)
                                                 });
                                             }}
-                                            className="w-full md:w-auto px-6 py-2.5 bg-white dark:bg-slate-800 border border-red-100 hover:border-red-300 hover:text-red-600 dark:text-red-400 text-slate-500 dark:text-slate-400 dark:text-slate-500 rounded-xl font-medium transition text-sm flex justify-center items-center gap-2"
+                                            disabled={isOffline}
+                                            title={isOffline ? "Not available offline" : ""}
+                                            className="w-full md:w-auto px-6 py-2.5 bg-white dark:bg-slate-800 border border-red-100 hover:border-red-300 hover:text-red-600 dark:text-red-400 text-slate-500 dark:text-slate-400 dark:text-slate-500 rounded-xl font-medium transition text-sm flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             <Trash2 className="w-4 h-4"/> Delete
                                         </button>

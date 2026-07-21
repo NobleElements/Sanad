@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, Fragment } from 'react';
 import { Loader2, Search } from 'lucide-react';
 import useThoughtsStore from '../store/useThoughtsStore';
 import useConfirmStore from '../store/useConfirmStore';
+import useUIStore from '../store/useUIStore';
 
 import { parseUTCDate, timeAgo } from '../utils/dateUtils';
 import { linkify } from '../utils/textUtils';
@@ -11,6 +12,7 @@ export default function Thoughts() {
   usePageTitle('Thoughts');
   const { thoughts, hasMore, isLoaded, fetchThoughts, addThought, updateThought, deleteThought: storeDeleteThought } = useThoughtsStore();
   const { showConfirm } = useConfirmStore();
+  const isOffline = useUIStore(state => state.isOffline);
   
   const [loadingMore, setLoadingMore] = useState(false);
 
@@ -140,7 +142,8 @@ export default function Thoughts() {
             />
             <button 
               type="submit" 
-              disabled={isSubmitting || !newContent.trim()}
+              disabled={isSubmitting || !newContent.trim() || isOffline}
+              title={isOffline ? "Not available offline" : ""}
               className="self-end bg-indigo-600 dark:bg-indigo-500 text-white px-5 py-2 rounded-lg font-medium hover:bg-indigo-700 dark:hover:bg-indigo-600 dark:bg-indigo-500 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? 'Capturing...' : 'Capture Thought'}
@@ -189,13 +192,17 @@ export default function Thoughts() {
                             <>
                               <button
                                 onClick={() => startEdit(thought)}
-                                className="text-xs text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-400 dark:text-indigo-400 dark:hover:text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                                disabled={isOffline}
+                                title={isOffline ? "Not available offline" : ""}
+                                className="text-xs text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-400 dark:text-indigo-400 dark:hover:text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 Edit
                               </button>
                               <button
                                 onClick={() => deleteThought(thought.id)}
-                                className="text-xs text-slate-400 dark:text-slate-500 hover:text-red-600 dark:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                                disabled={isOffline}
+                                title={isOffline ? "Not available offline" : ""}
+                                className="text-xs text-slate-400 dark:text-slate-500 hover:text-red-600 dark:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 Delete
                               </button>
@@ -227,8 +234,9 @@ export default function Thoughts() {
                             </button>
                             <button
                               onClick={() => saveEdit(thought.id)}
-                              disabled={isSaving}
-                              className="px-3 py-1.5 text-sm bg-indigo-600 dark:bg-indigo-500 text-white rounded hover:bg-indigo-700 dark:hover:bg-indigo-600 dark:bg-indigo-500 transition disabled:opacity-50"
+                              disabled={isSaving || isOffline}
+                              title={isOffline ? "Not available offline" : ""}
+                              className="px-3 py-1.5 text-sm bg-indigo-600 dark:bg-indigo-500 text-white rounded hover:bg-indigo-700 dark:hover:bg-indigo-600 dark:bg-indigo-500 transition disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               {isSaving ? 'Saving...' : 'Save'}
                             </button>

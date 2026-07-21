@@ -20,6 +20,14 @@
 ### Landing Page Layout
 - When adding or removing "Showcase" feature sections on the landing page (`LandingPage.jsx`), always maintain the alternating layout pattern (`flex-col lg:flex-row` followed by `flex-col lg:flex-row-reverse`). Ensure that the classes of subsequent sections are updated accordingly so the visual rhythm is preserved.
 
+### Offline Mutating Actions
+- **Read-Only Enforcement**: Any UI element (button, form, icon) that triggers a data mutation (Create, Edit, Delete, Save, Log) must be disabled when the application is offline.
+- **Implementation**: 
+  1. Retrieve the global state: `const isOffline = useUIStore(state => state.isOffline);`
+  2. Apply the `disabled` prop: `disabled={isOffline || isSubmitting}`
+  3. Provide a clear tooltip using `title`: `title={isOffline ? "Not available offline" : "Original Tooltip"}`
+  4. Ensure proper Tailwind styling for the disabled state, such as `disabled:opacity-50 disabled:cursor-not-allowed`.
+
 ### Browser Popups & Modals
 - Do NOT use native browser popups like `window.prompt`, `window.alert`, or `window.confirm` for user interactions.
 - For confirmations, use the global store: `useConfirmStore.getState().showConfirm({...})`.
@@ -46,6 +54,11 @@
 - **Routing**: Use `react-router-dom` for client-side routing.
 - **Component Organization**: Place reusable, domain-agnostic components in `frontend/src/components/common/`. Page-level components should reside directly in `frontend/src/pages/`.
 - **Rich Text Editing**: Use TipTap (`@tiptap/react`) for any rich text or markdown editing features.
+
+### Progressive Web App (PWA) / Workbox
+- **Service Worker Route Matching**: When configuring `workbox.runtimeCaching` (e.g., in `vite-plugin-pwa`), do NOT use strictly anchored regular expressions like `/^\/api\//` to match API routes. The `request.url` evaluated by the Service Worker is often an absolute URL (e.g., `http://localhost:4173/api/...`), so an anchored regex will fail to match, completely breaking cache fallbacks and Network timeouts.
+- **Solution**: Use a non-anchored RegExp (e.g., `/\/api\//i`) or a callback function (e.g., `({ url }) => url.pathname.startsWith('/api/')`) to accurately intercept relative paths regardless of the host origin.
+- **Offline Cache Warm-Up**: When creating a new domain model or adding new GET API routes to the frontend, you MUST append the new endpoint URL to the `endpointsToCache` array inside `frontend/src/utils/offlineSync.js`. This ensures the endpoint is automatically pre-fetched and cached in the background when the app loads, keeping the offline read-only experience fully populated.
 
 ### Rich Text Editing (TipTap) & Autosave
 - **Initialization Shielding**: TipTap extensions (like TaskLists) often perform invisible DOM fixups upon initialization that trigger `onUpdate`/`onChange` events. If a component has auto-save functionality, these events will falsely trigger an immediate auto-save upon loading a document, corrupting the "last updated" timestamp.

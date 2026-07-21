@@ -4,6 +4,7 @@ import ReactDOM from 'react-dom';
 import { Plus, CheckCircle2, Circle, Clock, Tag, Loader2, GripVertical, Filter, FolderKanban, Timer, Eye, EyeOff, Search, LayoutGrid, List } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import useTaskStore from '../store/useTaskStore';
+import useUIStore from '../store/useUIStore';
 import { formatTime } from '../utils/dateUtils';
 import usePageTitle from '../hooks/usePageTitle';
 import TaskModal from '../components/TaskModal';
@@ -21,6 +22,7 @@ const COLUMNS = [
 export default function Tasks() {
   usePageTitle('Tasks');
   const { tasks, isLoaded, fetchTasks, updateTaskStatus, reorderTasks, openTaskModal, isTaskModalOpen, activeTask, closeTaskModal } = useTaskStore();
+  const isOffline = useUIStore(state => state.isOffline);
   const { taskId } = useParams();
   const navigate = useNavigate();
   
@@ -261,7 +263,9 @@ export default function Tasks() {
 
           <button
             onClick={() => openTaskModal({ title: '', content: '', status: 'ToDo', isNew: true, project: projectFilter || '' })}
-            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all shadow-sm hover:shadow-md dark:focus:ring-offset-gray-900 active:scale-95"
+            disabled={isOffline}
+            title={isOffline ? "Not available offline" : ""}
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all shadow-sm hover:shadow-md dark:focus:ring-offset-gray-900 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Plus className="w-5 h-5" />
             Create Task
