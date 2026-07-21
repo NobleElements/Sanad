@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { LayoutDashboard, CheckSquare, BrainCircuit, Wallet, BookOpen, HardDrive, ArrowRight, Code, Check, Terminal, Copy, Calendar } from 'lucide-react';
+import { LayoutDashboard, CheckSquare, BrainCircuit, Wallet, BookOpen, HardDrive, ArrowRight, Code, Check, Terminal, Copy, Calendar, WifiOff } from 'lucide-react';
 import { API_URL } from '../config';
 import { formatBytes } from '../utils/formatUtils';
 
@@ -206,6 +206,11 @@ export default function LandingPage() {
               title="Calendar"
               description="Visualize your scheduled tasks and daily habits in a unified calendar view to plan your time effectively."
             />
+            <FeatureCard 
+              icon={WifiOff}
+              title="Offline Ready"
+              description="Install as an app. Access and search your notes, calendar, and tasks even without an internet connection."
+            />
           </div>
         </div>
       </div>
@@ -377,6 +382,34 @@ export default function LandingPage() {
                   alt="Files Feature" 
                   className="w-full h-auto"
                   onError={(e) => { e.target.src = 'https://placehold.co/1280x720/1e293b/ffffff?text=Files+Screenshot+Pending' }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Showcase 7: Offline */}
+          <div className="flex flex-col lg:flex-row items-center gap-16">
+            <div className="lg:w-1/2">
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">Work anywhere, anytime</h2>
+              <p className="text-lg text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
+                Sanad is built as a Progressive Web App (PWA) with robust offline support. Whether you're on a plane or have spotty connection, your data is always accessible.
+              </p>
+              <ul className="space-y-4">
+                {['Instant loading from cache', 'Offline full-text search', 'Background delta sync'].map((item, i) => (
+                  <li key={i} className="flex items-center text-gray-700 dark:text-gray-300">
+                    <WifiOff className="w-5 h-5 text-sky-500 mr-3" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="lg:w-1/2">
+              <div className="rounded-xl overflow-hidden shadow-xl border border-gray-200 dark:border-gray-700">
+                <img 
+                  src="/screenshots/dashboard.png" 
+                  alt="Offline Feature" 
+                  className="w-full h-auto"
+                  onError={(e) => { e.target.src = 'https://placehold.co/1280x720/1e293b/ffffff?text=Offline+Screenshot+Pending' }}
                 />
               </div>
             </div>

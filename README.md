@@ -54,6 +54,7 @@ Sanad is a comprehensive personal management application designed to help you or
 - **Books & Reading Progress**: Manage your personal bookshelf, track current reads, log reading progress, and maintain reading plans.
 - **Habit Tracking**: Define daily, weekly, or monthly routines, visualize your consistency with a 90-day heat map, and build streaks.
 - **File Management**: Upload, organize, and preview files seamlessly. Includes full pagination, server-side sorting/filtering, recursive folder management, chunked uploads for large files, and direct browser-to-disk folder downloads.
+- **Offline-First PWA**: Install Sanad as an app on your phone or desktop. Access and search your notes, calendar, and tasks even without an internet connection using local caching and background delta sync.
 - **Multi-Tenancy**: Each user has their own separate database to ensure complete data isolation.
 - **MCP Builtin for AI Agents**: connect your favorite AI agents, allowing them to help you organize tasks, sort files, and track finances autonomously and securely.
 
