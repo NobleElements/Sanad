@@ -11,10 +11,16 @@ const syncNotesCache = async () => {
     if (response.ok) {
       const ids = await response.json();
       if (ids.length > 0) {
-        console.log(`[Offline Sync] Found ${ids.length} updated notes. Caching...`);
-        await Promise.allSettled(
-          ids.map(id => fetch(`${API_URL}/notes/${id}`).catch(() => {}))
-        );
+        console.log(`[Offline Sync] Found ${ids.length} updated notes. Caching in batches...`);
+        const batchSize = 5;
+        for (let i = 0; i < ids.length; i += batchSize) {
+          const batch = ids.slice(i, i + batchSize);
+          await Promise.allSettled(
+            batch.map(id => fetch(`${API_URL}/notes/${id}`).catch(() => {}))
+          );
+          // Optional short delay between batches to yield to UI
+          await new Promise(resolve => setTimeout(resolve, 50));
+        }
       }
       localStorage.setItem('last_notes_sync_v2', new Date().toISOString());
     }

@@ -94,7 +94,17 @@ const useNotebookStore = create((set, get) => ({
       return;
     }
     
-    if (useUIStore.getState().isOffline && 'caches' in window) {
+    try {
+      const res = await fetch(`${API_URL}/notes/search?q=${encodeURIComponent(query)}`);
+      if (res.ok) {
+        set({ searchResults: await res.json() });
+        return;
+      }
+    } catch (e) {
+      console.warn('Search network failed, falling back to cache:', e);
+    }
+    
+    if ('caches' in window) {
       try {
         const results = [];
         const lowerQuery = query.toLowerCase();
@@ -121,19 +131,9 @@ const useNotebookStore = create((set, get) => ({
         
         results.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
         set({ searchResults: results.slice(0, 20) });
-        return;
       } catch (e) {
         console.error('Offline search failed:', e);
       }
-    }
-
-    try {
-      const res = await fetch(`${API_URL}/notes/search?q=${encodeURIComponent(query)}`);
-      if (res.ok) {
-        set({ searchResults: await res.json() });
-      }
-    } catch (e) {
-      console.error('Search failed:', e);
     }
   },
 
