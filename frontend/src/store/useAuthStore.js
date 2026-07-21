@@ -78,6 +78,7 @@ const useAuthStore = create((set, get) => ({
         await Promise.all(cacheNames.map(name => caches.delete(name)));
       }
       localStorage.removeItem('last_notes_sync');
+      localStorage.removeItem('last_notes_sync_v2');
     } catch (err) {
       console.error('Logout failed', err);
       useUIStore.getState().showError('Logout failed');

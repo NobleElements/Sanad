@@ -4,7 +4,7 @@ let hasWarmedUp = false;
 
 const syncNotesCache = async () => {
   try {
-    const lastSync = localStorage.getItem('last_notes_sync');
+    const lastSync = localStorage.getItem('last_notes_sync_v2');
     const url = lastSync ? `/notes/sync?since=${encodeURIComponent(lastSync)}` : '/notes/sync';
     
     const response = await fetch(`${API_URL}${url}`);
@@ -16,7 +16,7 @@ const syncNotesCache = async () => {
           ids.map(id => fetch(`${API_URL}/notes/${id}`).catch(() => {}))
         );
       }
-      localStorage.setItem('last_notes_sync', new Date().toISOString());
+      localStorage.setItem('last_notes_sync_v2', new Date().toISOString());
     }
   } catch (err) {
     console.warn('[Offline Sync] Failed to sync notes cache:', err);
