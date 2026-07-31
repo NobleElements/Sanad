@@ -20,6 +20,7 @@ import GlobalConfirmModal from './components/common/GlobalConfirmModal';
 import OfflineBanner from './components/common/OfflineBanner';
 import useAuthStore from './store/useAuthStore';
 import useUIStore from './store/useUIStore';
+import useSettingsStore from './store/useSettingsStore';
 import { warmUpApiCache } from './utils/offlineSync';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminSettings from './pages/AdminSettings';
@@ -31,6 +32,7 @@ import MaintenancePage from './pages/MaintenancePage';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import RefundPolicy from './pages/RefundPolicy';
+import Settings from './pages/Settings';
 
 function App() {
   const { loaded, authenticated, isAdmin, checkAuthStatus } = useAuthStore();
@@ -59,6 +61,7 @@ function App() {
   useEffect(() => {
     const isOffline = useUIStore.getState().isOffline;
     if (authenticated && !isOffline) {
+      useSettingsStore.getState().fetchSettings();
       warmUpApiCache();
     }
   }, [authenticated]);
@@ -134,6 +137,7 @@ function App() {
         <Route path="/shared-links" element={<ProtectedRoute><AppLayout><SharedLinksView /></AppLayout></ProtectedRoute>} />
         <Route path="/share/:token" element={<PublicShareView />} />
         <Route path="/subscription" element={<ProtectedRoute><AppLayout><Subscription /></AppLayout></ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute><AppLayout><Settings /></AppLayout></ProtectedRoute>} />
         
         <Route 
           path="/admin" 

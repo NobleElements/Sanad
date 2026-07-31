@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Lightbulb, CheckSquare, Calendar as CalendarIcon, Book, DollarSign, BookOpen, Menu, LogOut, Repeat, Folder, Shield, CreditCard } from 'lucide-react';
+import { LayoutDashboard, Lightbulb, CheckSquare, Calendar as CalendarIcon, Book, DollarSign, BookOpen, Menu, LogOut, Repeat, Folder, Shield, CreditCard, Settings } from 'lucide-react';
 import useAuthStore from '../store/useAuthStore';
 import useCalendarStore from '../store/useCalendarStore';
+import useSettingsStore from '../store/useSettingsStore';
 
 export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }) {
   const location = useLocation();
   const logout = useAuthStore((state) => state.logout);
   const isAdmin = useAuthStore((state) => state.isAdmin);
+  const features = useSettingsStore((state) => state.features);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Auto collapse on small screens
@@ -83,40 +85,61 @@ export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }) {
           <LayoutDashboard className="w-5 h-5 flex-shrink-0" />
           {(!isCollapsed || window.innerWidth < 768) && <span className="font-medium">Dashboard</span>}
         </Link>
-        <Link to="/thoughts" className={getLinkClass('/thoughts')} title="Thoughts" onClick={handleLinkClick}>
-          <Lightbulb className="w-5 h-5 flex-shrink-0" />
-          {(!isCollapsed || window.innerWidth < 768) && <span className="font-medium">Thoughts</span>}
-        </Link>
-        <Link to="/habits" className={getLinkClass('/habits')} title="Habits" onClick={handleLinkClick}>
-          <Repeat className="w-5 h-5 flex-shrink-0" />
-          {(!isCollapsed || window.innerWidth < 768) && <span className="font-medium">Habits</span>}
-        </Link>
-        <Link to="/tasks" className={getLinkClass('/tasks')} title="Tasks" onClick={handleLinkClick}>
-          <CheckSquare className="w-5 h-5 flex-shrink-0" />
-          {(!isCollapsed || window.innerWidth < 768) && <span className="font-medium">Tasks</span>}
-        </Link>
-        <Link to="/calendar" className={getLinkClass('/calendar')} title="Calendar" onClick={handleLinkClick}>
-          <CalendarIcon className="w-5 h-5 flex-shrink-0" />
-          {(!isCollapsed || window.innerWidth < 768) && <span className="font-medium">Calendar</span>}
-        </Link>
-        <Link to="/notebook" className={getLinkClass('/notebook')} title="Notebook" onClick={handleLinkClick}>
-          <Book className="w-5 h-5 flex-shrink-0" />
-          {(!isCollapsed || window.innerWidth < 768) && <span className="font-medium">Notebook</span>}
-        </Link>
-        <Link to="/finance" className={getLinkClass('/finance')} title="Finance" onClick={handleLinkClick}>
-          <DollarSign className="w-5 h-5 flex-shrink-0" />
-          {(!isCollapsed || window.innerWidth < 768) && <span className="font-medium">Finance</span>}
-        </Link>
-        <Link to="/books" className={getLinkClass('/books')} title="Reading" onClick={handleLinkClick}>
-          <BookOpen className="w-5 h-5 flex-shrink-0" />
-          {(!isCollapsed || window.innerWidth < 768) && <span className="font-medium">Reading</span>}
-        </Link>
-        <Link to="/files" className={getLinkClass('/files')} title="Files" onClick={handleLinkClick}>
-          <Folder className="w-5 h-5 flex-shrink-0" />
-          {(!isCollapsed || window.innerWidth < 768) && <span className="font-medium">Files</span>}
-        </Link>
+        {features.thoughts && (
+          <Link to="/thoughts" className={getLinkClass('/thoughts')} title="Thoughts" onClick={handleLinkClick}>
+            <Lightbulb className="w-5 h-5 flex-shrink-0" />
+            {(!isCollapsed || window.innerWidth < 768) && <span className="font-medium">Thoughts</span>}
+          </Link>
+        )}
+        {features.habits && (
+          <Link to="/habits" className={getLinkClass('/habits')} title="Habits" onClick={handleLinkClick}>
+            <Repeat className="w-5 h-5 flex-shrink-0" />
+            {(!isCollapsed || window.innerWidth < 768) && <span className="font-medium">Habits</span>}
+          </Link>
+        )}
+        {features.tasks && (
+          <Link to="/tasks" className={getLinkClass('/tasks')} title="Tasks" onClick={handleLinkClick}>
+            <CheckSquare className="w-5 h-5 flex-shrink-0" />
+            {(!isCollapsed || window.innerWidth < 768) && <span className="font-medium">Tasks</span>}
+          </Link>
+        )}
+        {features.calendar && (
+          <Link to="/calendar" className={getLinkClass('/calendar')} title="Calendar" onClick={handleLinkClick}>
+            <CalendarIcon className="w-5 h-5 flex-shrink-0" />
+            {(!isCollapsed || window.innerWidth < 768) && <span className="font-medium">Calendar</span>}
+          </Link>
+        )}
+        {features.notebook && (
+          <Link to="/notebook" className={getLinkClass('/notebook')} title="Notebook" onClick={handleLinkClick}>
+            <Book className="w-5 h-5 flex-shrink-0" />
+            {(!isCollapsed || window.innerWidth < 768) && <span className="font-medium">Notebook</span>}
+          </Link>
+        )}
+        {features.finance && (
+          <Link to="/finance" className={getLinkClass('/finance')} title="Finance" onClick={handleLinkClick}>
+            <DollarSign className="w-5 h-5 flex-shrink-0" />
+            {(!isCollapsed || window.innerWidth < 768) && <span className="font-medium">Finance</span>}
+          </Link>
+        )}
+        {features.reading && (
+          <Link to="/books" className={getLinkClass('/books')} title="Reading" onClick={handleLinkClick}>
+            <BookOpen className="w-5 h-5 flex-shrink-0" />
+            {(!isCollapsed || window.innerWidth < 768) && <span className="font-medium">Reading</span>}
+          </Link>
+        )}
+        {features.files && (
+          <Link to="/files" className={getLinkClass('/files')} title="Files" onClick={handleLinkClick}>
+            <Folder className="w-5 h-5 flex-shrink-0" />
+            {(!isCollapsed || window.innerWidth < 768) && <span className="font-medium">Files</span>}
+          </Link>
+        )}
 
         <div className="my-2 border-t border-slate-800"></div>
+
+        <Link to="/settings" className={getLinkClass('/settings')} title="Settings" onClick={handleLinkClick}>
+          <Settings className="w-5 h-5 flex-shrink-0" />
+          {(!isCollapsed || window.innerWidth < 768) && <span className="font-medium">Settings</span>}
+        </Link>
 
         <Link to="/subscription" className={getLinkClass('/subscription')} title="Subscription & Limits" onClick={handleLinkClick}>
           <CreditCard className="w-5 h-5 flex-shrink-0" />

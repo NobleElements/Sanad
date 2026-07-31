@@ -145,6 +145,7 @@ api.MapFolderEndpoints();
 api.MapFileEndpoints();
 api.MapStorageEndpoints();
 api.MapSubscriptionEndpoints();
+api.MapSettingsEndpoints();
 
 app.MapShareEndpoints();
 

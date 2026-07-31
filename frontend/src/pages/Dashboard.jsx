@@ -12,9 +12,11 @@ import { timeAgo } from '../utils/dateUtils';
 import CategorySelector from '../components/CategorySelector';
 import usePageTitle from '../hooks/usePageTitle';
 import useTaskStore from '../store/useTaskStore';
+import useSettingsStore from '../store/useSettingsStore';
 
 export default function Dashboard() {
   usePageTitle('Dashboard');
+  const features = useSettingsStore((state) => state.features);
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -163,12 +165,15 @@ export default function Dashboard() {
       <h2 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6">Dashboard</h2>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 dark:text-slate-100">
-          <h3 className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-500 font-semibold uppercase">Spent Today</h3>
-          <p className="text-2xl font-bold">{currencies && (defaultCurrency.symbol + totalSpentToday.toFixed(2))}</p>
-        </div>
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 dark:text-slate-100">
-          <h3 className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-500 font-semibold uppercase">Today's Goals</h3>
+        {features.finance && (
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 dark:text-slate-100">
+            <h3 className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-500 font-semibold uppercase">Spent Today</h3>
+            <p className="text-2xl font-bold">{currencies && (defaultCurrency.symbol + totalSpentToday.toFixed(2))}</p>
+          </div>
+        )}
+        {features.todayGoal && (
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 dark:text-slate-100">
+            <h3 className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-500 font-semibold uppercase">Today's Goals</h3>
           {isEditingGoal ? (
             <div className="mt-2 flex items-center gap-2">
               <input
@@ -200,9 +205,11 @@ export default function Dashboard() {
               </button>
             </div>
           )}
-        </div>
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col max-h-[140px] dark:text-slate-100">
-          <div className="flex items-center justify-between mb-2">
+          </div>
+        )}
+        {features.habits && (
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col max-h-[140px] dark:text-slate-100">
+            <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-500 font-semibold uppercase">Today's Habits</h3>
             <a href="/habits" className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 font-medium">All →</a>
           </div>
@@ -230,14 +237,16 @@ export default function Dashboard() {
                  ))}
                </div>
             )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
       
       <div className="flex flex-col lg:flex-row gap-6 md:gap-8">
         <div className="w-full lg:w-2/3 flex flex-col gap-6">
           {/* Thoughts Input */}
-          <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 dark:text-slate-100">
+          {features.thoughts && (
+            <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 dark:text-slate-100">
             <h3 className="text-lg font-semibold mb-4 text-slate-700 dark:text-slate-300">What's on your mind?</h3>
             <form onSubmit={handleSubmit} className="flex flex-col gap-3">
               <textarea 
@@ -256,10 +265,12 @@ export default function Dashboard() {
                 {isSubmitting ? 'Capturing...' : 'Capture'}
               </button>
             </form>
-          </div>
+            </div>
+          )}
 
           {/* Quick Task Widget */}
-          <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 dark:text-slate-100">
+          {features.tasks && (
+            <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 dark:text-slate-100">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300">Quick Task</h3>
               <a href="/tasks" className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 font-medium">All Tasks →</a>
@@ -281,12 +292,13 @@ export default function Dashboard() {
                 {isSubmittingTask ? 'Adding...' : 'Add Task'}
               </button>
             </form>
-          </div>
+            </div>
+          )}
 
         </div>
         <div className="w-full lg:w-1/3 flex flex-col gap-6">
            {/* Current Read Widget */}
-           {currentRead && (
+           {features.reading && currentRead && (
              <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 dark:text-slate-100">
                <div className="flex justify-between items-center mb-4">
                  <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300">Current Read</h3>
@@ -322,8 +334,9 @@ export default function Dashboard() {
              </div>
            )}
 
-           <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 dark:text-slate-100">
-              <div className="flex items-center justify-between mb-4">
+           {features.finance && (
+             <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 dark:text-slate-100">
+                <div className="flex items-center justify-between mb-4">
                 <a href="/finance" className="text-lg font-semibold text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-400 dark:text-indigo-400 dark:hover:text-indigo-400 transition-colors cursor-pointer">Recent Spending →</a>
                 <button
                   type="button"
@@ -374,7 +387,8 @@ export default function Dashboard() {
                  ))}
                </div>
              )}
-           </div>
+             </div>
+           )}
         </div>
       </div>
 

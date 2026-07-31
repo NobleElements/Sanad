@@ -32,10 +32,14 @@ public class SanadDbContext : DbContext
     public DbSet<HabitLog> HabitLogs => Set<HabitLog>();
     public DbSet<Folder> Folders => Set<Folder>();
     public DbSet<FileItem> FileItems => Set<FileItem>();
+    public DbSet<UserSetting> UserSettings => Set<UserSetting>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<UserSetting>()
+            .HasKey(s => s.Key);
 
         modelBuilder.Entity<Folder>()
             .HasMany(f => f.Subfolders)
