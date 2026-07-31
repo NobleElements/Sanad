@@ -4,6 +4,7 @@ import {
   endOfMonth, addWeeks, subWeeks, addMonths, subMonths, addYears, subYears, isSameDay
 } from 'date-fns';
 import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, PanelLeftClose, PanelLeft, LayoutList, Search, Bell, Settings, PanelRightClose, ChevronDown } from 'lucide-react';
+import usePageTitle from '../hooks/usePageTitle';
 import useCalendarStore from '../store/useCalendarStore';
 import useTaskStore from '../store/useTaskStore';
 import CalendarGrid from '../components/Calendar/CalendarGrid';
@@ -14,6 +15,7 @@ import CategoryEditModal from '../components/Calendar/CategoryEditModal';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
 export default function Calendar() {
+  usePageTitle('Calendar');
   const { 
     events, fetchEvents, viewDate, setViewDate, viewMode, setViewMode, categories, fetchCategories,
     todoTasks, fetchTodoTasks
