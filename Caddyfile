@@ -18,4 +18,4 @@
 }
 
 # Import configurations for other apps from the mounted directory
-import /etc/caddy/conf.d/*.caddy
+import /etc/caddy/conf.d/*.caddyfile
