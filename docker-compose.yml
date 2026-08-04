@@ -15,6 +15,8 @@ services:
       - caddy_config:/config
     depends_on:
       - sanad-api
+    networks:
+      - Caddy
 
   sanad-api:
     build:
@@ -27,8 +29,14 @@ services:
     volumes:
       - ./sanad-data:/app/Data
       - /mnt:/mnt
+    networks:
+      - Caddy
     # Port 8080 is exposed internally
 
 volumes:
   caddy_data:
   caddy_config:
+
+networks:
+  Caddy:
+    name: Caddy
