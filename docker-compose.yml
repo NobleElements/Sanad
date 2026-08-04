@@ -13,6 +13,7 @@ services:
     volumes:
       - caddy_data:/data
       - caddy_config:/config
+      - /opt/caddy-extra-configs:/etc/caddy/conf.d
     depends_on:
       - sanad-api
     networks:

@@ -16,3 +16,6 @@
         file_server
     }
 }
+
+# Import configurations for other apps from the mounted directory
+import /etc/caddy/conf.d/*.caddy
