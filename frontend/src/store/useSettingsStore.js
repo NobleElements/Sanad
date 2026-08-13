@@ -12,6 +12,7 @@ const useSettingsStore = create((set, get) => ({
     finance: true,
     reading: true,
     files: true,
+    apps: true,
   },
   fetchSettings: async () => {
     try {

@@ -830,4 +830,58 @@ public class McpEndpoints
         await _db.SaveChangesAsync();
         return true;
     }
+
+    // --- Custom Apps Tools ---
+    [McpServerTool, Description("Get all custom apps")]
+    public async Task<List<CustomApp>> GetApps()
+    {
+        return await _db.CustomApps.OrderByDescending(a => a.CreatedAt).ToListAsync();
+    }
+
+    [McpServerTool, Description("Create a new custom app")]
+    public async Task<CustomApp> CreateApp(string name, string htmlContent, string icon, bool showInDashboard, bool isStandalone)
+    {
+        var app = new CustomApp
+        {
+            Id = Guid.NewGuid(),
+            Name = name,
+            HtmlContent = htmlContent,
+            Icon = icon,
+            ShowInDashboard = showInDashboard,
+            IsStandalone = isStandalone,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        _db.CustomApps.Add(app);
+        await _db.SaveChangesAsync();
+        return app;
+    }
+
+    [McpServerTool, Description("Update an existing custom app")]
+    public async Task<CustomApp?> UpdateApp(Guid id, string name, string htmlContent, string icon, bool showInDashboard, bool isStandalone)
+    {
+        var app = await _db.CustomApps.FindAsync(id);
+        if (app == null) return null;
+
+        app.Name = name;
+        app.HtmlContent = htmlContent;
+        app.Icon = icon;
+        app.ShowInDashboard = showInDashboard;
+        app.IsStandalone = isStandalone;
+        app.UpdatedAt = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync();
+        return app;
+    }
+
+    [McpServerTool, Description("Delete a custom app by ID")]
+    public async Task<bool> DeleteApp(Guid id)
+    {
+        var app = await _db.CustomApps.FindAsync(id);
+        if (app == null) return false;
+
+        _db.CustomApps.Remove(app);
+        await _db.SaveChangesAsync();
+        return true;
+    }
 }

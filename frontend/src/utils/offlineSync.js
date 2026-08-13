@@ -61,7 +61,8 @@ export const warmUpApiCache = async () => {
     '/subscription/transactions',
     '/admin/users',
     '/admin/datastores',
-    '/folders?page=1&pageSize=50&sortBy=name&sortOrder=asc'
+    '/folders?page=1&pageSize=50&sortBy=name&sortOrder=asc',
+    '/apps'
   ];
 
   console.log('[Offline Sync] Warming up API cache...');

@@ -13,6 +13,8 @@ import CategorySelector from '../components/CategorySelector';
 import usePageTitle from '../hooks/usePageTitle';
 import useTaskStore from '../store/useTaskStore';
 import useSettingsStore from '../store/useSettingsStore';
+import useAppStore from '../store/useAppStore';
+import { Link } from 'react-router-dom';
 
 export default function Dashboard() {
   usePageTitle('Dashboard');
@@ -43,6 +45,9 @@ export default function Dashboard() {
 
   // Habit store
   const { habits, fetchHabits, toggleHabitLog } = useHabitStore();
+
+  // App store
+  const { apps, fetchApps } = useAppStore();
 
   const [spendAmount, setSpendAmount] = useState('');
   const [spendDesc, setSpendDesc] = useState('');
@@ -106,7 +111,8 @@ export default function Dashboard() {
     loadDailyGoal();
     fetchCurrentRead();
     fetchHabits();
-  }, [fetchFinanceData, fetchCurrentRead, fetchHabits]);
+    if (features.apps) fetchApps();
+  }, [fetchFinanceData, fetchCurrentRead, fetchHabits, features.apps, fetchApps]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -237,6 +243,28 @@ export default function Dashboard() {
                  ))}
                </div>
             )}
+            </div>
+          </div>
+        )}
+        {features.apps && apps.filter(a => a.showInDashboard).length > 0 && (
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col max-h-[140px] dark:text-slate-100">
+            <h3 className="text-sm text-slate-500 dark:text-slate-400 font-semibold uppercase mb-2">App Shortcuts</h3>
+            <div className="overflow-y-auto flex-1 pr-1 custom-scrollbar">
+              <div className="flex flex-col gap-2">
+                {apps.filter(a => a.showInDashboard).map(app => (
+                  <Link 
+                    key={app.id} 
+                    to={app.isStandalone ? `/app-standalone/${app.id}` : `/apps/${app.id}`}
+                    target={app.isStandalone ? "_blank" : undefined}
+                    className="flex items-center gap-2 p-1.5 rounded hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                  >
+                    <span className="text-pink-500 text-sm font-bold w-5 text-center">
+                      {app.icon || '🚀'}
+                    </span>
+                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">{app.name}</span>
+                  </Link>
+                ))}
+              </div>
             </div>
           </div>
         )}

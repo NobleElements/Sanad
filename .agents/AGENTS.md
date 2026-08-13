@@ -68,6 +68,10 @@
   2. Inside your `onChange` handler, use `if (isInitializingRef.current) return;` to safely ignore these programmatic events.
   3. When programmatically setting content using TipTap's API, explicitly pass `false` for `emitUpdate` (e.g., `editor.commands.setContent(content, false)`).
 
+### Custom Apps & CORS Proxy
+- **Bypassing CORS**: When writing JavaScript for custom HTML apps, requests to external servers may fail due to CORS restrictions.
+- **Solution**: Route these requests through the backend proxy at `/api/apps/proxy`. The frontend app should send a `POST` request to this endpoint with the payload `{ url: string, method: string, headers: object, body: string }` and authenticate using the `Sanad.Auth` token from `localStorage`.
+
 ## Backend Conventions
 
 ### Architecture & Patterns

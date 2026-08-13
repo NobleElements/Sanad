@@ -33,6 +33,7 @@ public class SanadDbContext : DbContext
     public DbSet<Folder> Folders => Set<Folder>();
     public DbSet<FileItem> FileItems => Set<FileItem>();
     public DbSet<UserSetting> UserSettings => Set<UserSetting>();
+    public DbSet<CustomApp> CustomApps => Set<CustomApp>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

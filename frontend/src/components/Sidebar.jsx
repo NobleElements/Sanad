@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Lightbulb, CheckSquare, Calendar as CalendarIcon, Book, DollarSign, BookOpen, Menu, LogOut, Repeat, Folder, Shield, CreditCard, Settings } from 'lucide-react';
+import { LayoutDashboard, Lightbulb, CheckSquare, Calendar as CalendarIcon, Book, DollarSign, BookOpen, Menu, LogOut, Repeat, Folder, Shield, CreditCard, Settings, AppWindow } from 'lucide-react';
 import useAuthStore from '../store/useAuthStore';
 import useCalendarStore from '../store/useCalendarStore';
 import useSettingsStore from '../store/useSettingsStore';
@@ -131,6 +131,12 @@ export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }) {
           <Link to="/files" className={getLinkClass('/files')} title="Files" onClick={handleLinkClick}>
             <Folder className="w-5 h-5 flex-shrink-0" />
             {(!isCollapsed || window.innerWidth < 768) && <span className="font-medium">Files</span>}
+          </Link>
+        )}
+        {features.apps && (
+          <Link to="/apps" className={getLinkClass('/apps')} title="Apps" onClick={handleLinkClick}>
+            <AppWindow className="w-5 h-5 flex-shrink-0" />
+            {(!isCollapsed || window.innerWidth < 768) && <span className="font-medium">Apps</span>}
           </Link>
         )}
 

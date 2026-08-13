@@ -33,6 +33,8 @@ import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import RefundPolicy from './pages/RefundPolicy';
 import Settings from './pages/Settings';
+import AppsManager from './pages/Apps/AppsManager';
+import AppView from './pages/Apps/AppView';
 
 function App() {
   const { loaded, authenticated, isAdmin, checkAuthStatus } = useAuthStore();
@@ -138,6 +140,10 @@ function App() {
         <Route path="/share/:token" element={<PublicShareView />} />
         <Route path="/subscription" element={<ProtectedRoute><AppLayout><Subscription /></AppLayout></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><AppLayout><Settings /></AppLayout></ProtectedRoute>} />
+        
+        <Route path="/apps" element={<ProtectedRoute><AppLayout><AppsManager /></AppLayout></ProtectedRoute>} />
+        <Route path="/apps/:appId" element={<ProtectedRoute><AppLayout><AppView /></AppLayout></ProtectedRoute>} />
+        <Route path="/app-standalone/:appId" element={<ProtectedRoute><AppView standalone={true} /></ProtectedRoute>} />
         
         <Route 
           path="/admin" 

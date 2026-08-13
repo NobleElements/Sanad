@@ -146,6 +146,7 @@ api.MapFileEndpoints();
 api.MapStorageEndpoints();
 api.MapSubscriptionEndpoints();
 api.MapSettingsEndpoints();
+api.MapAppEndpoints();
 
 app.MapShareEndpoints();
 
