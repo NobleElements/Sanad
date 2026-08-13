@@ -160,4 +160,48 @@ public class TaskApiTests
         Assert.NotNull(dbTask);
         Assert.Equal("My Project", dbTask.Project);
     }
+
+    [Fact]
+    public async Task GetTasks_WithNoProjectFilter_ReturnsOnlyUnassociatedTasks()
+    {
+        var options = new DbContextOptionsBuilder<SanadDbContext>()
+            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .Options;
+
+        using var context = new SanadDbContext(options);
+        context.TaskItems.AddRange(
+            new TaskItem { Title = "Task 1", Project = "Project Alpha" },
+            new TaskItem { Title = "Task 2", Project = null },
+            new TaskItem { Title = "Task 3", Project = "" }
+        );
+        await context.SaveChangesAsync();
+
+        var result = await TaskEndpoints.GetTasks(context, "__NONE__", null, null);
+        var okResult = Assert.IsType<Microsoft.AspNetCore.Http.HttpResults.Ok<List<TaskItem>>>(result);
+        Assert.NotNull(okResult.Value);
+        Assert.Equal(2, okResult.Value.Count);
+        Assert.All(okResult.Value, t => Assert.True(string.IsNullOrEmpty(t.Project)));
+    }
+
+    [Fact]
+    public async Task McpGetTasks_WithNoProjectFilter_ReturnsOnlyUnassociatedTasks()
+    {
+        var options = new DbContextOptionsBuilder<SanadDbContext>()
+            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .Options;
+
+        using var context = new SanadDbContext(options);
+        context.TaskItems.AddRange(
+            new TaskItem { Title = "Task A", Project = "Project Beta" },
+            new TaskItem { Title = "Task B", Project = null },
+            new TaskItem { Title = "Task C", Project = "" }
+        );
+        await context.SaveChangesAsync();
+
+        var mcpEndpoints = new McpEndpoints(context, null!, null!, new DummyTenantProvider(), null!, null!);
+        var result = await mcpEndpoints.GetTasks("NONE", null, null);
+        Assert.NotNull(result);
+        Assert.Equal(2, result.Count);
+        Assert.All(result, t => Assert.True(string.IsNullOrEmpty(t.Project)));
+    }
 }

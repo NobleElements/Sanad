@@ -96,7 +96,11 @@ export default function Tasks() {
 
   // Filtered tasks
   const filteredTasks = tasks.filter(t => {
-    if (projectFilter && t.project !== projectFilter) return false;
+    if (projectFilter === '__NONE__') {
+      if (t.project && t.project.trim() !== '') return false;
+    } else if (projectFilter && t.project !== projectFilter) {
+      return false;
+    }
     
     if (tagFilter) {
       const taskTags = t.tags ? t.tags.split(',').map(tag => tag.trim()).filter(Boolean) : [];
@@ -218,7 +222,7 @@ export default function Tasks() {
           )}
 
           {/* Project Filter */}
-          {projects.length > 0 && (
+          {(projects.length > 0 || projectFilter) && (
             <div className="relative">
               <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none z-10" />
               <select
@@ -227,6 +231,7 @@ export default function Tasks() {
                 className="pl-9 pr-4 py-2.5 text-sm bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-indigo-500 focus:border-indigo-500 transition-colors appearance-none cursor-pointer"
               >
                 <option value="">All Projects</option>
+                <option value="__NONE__">No Project</option>
                 {projects.map(p => (
                   <option key={p} value={p}>{p}</option>
                 ))}
@@ -262,7 +267,7 @@ export default function Tasks() {
           </button>
 
           <button
-            onClick={() => openTaskModal({ title: '', content: '', status: 'ToDo', isNew: true, project: projectFilter || '' })}
+            onClick={() => openTaskModal({ title: '', content: '', status: 'ToDo', isNew: true, project: (projectFilter && projectFilter !== '__NONE__') ? projectFilter : '' })}
             disabled={isOffline}
             title={isOffline ? "Not available offline" : ""}
             className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all shadow-sm hover:shadow-md dark:focus:ring-offset-gray-900 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"

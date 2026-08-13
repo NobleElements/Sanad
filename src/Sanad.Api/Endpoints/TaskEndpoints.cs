@@ -27,7 +27,12 @@ public static class TaskEndpoints
     {
         var query = db.TaskItems.AsQueryable();
         if (!string.IsNullOrEmpty(project))
-            query = query.Where(t => t.Project == project);
+        {
+            if (project == "__NONE__" || project.Equals("NONE", StringComparison.OrdinalIgnoreCase))
+                query = query.Where(t => string.IsNullOrEmpty(t.Project));
+            else
+                query = query.Where(t => t.Project == project);
+        }
         if (status.HasValue)
             query = query.Where(t => t.Status == status.Value);
             

@@ -200,7 +200,11 @@ export default function Calendar() {
 
   const filteredTasks = todoTasks.filter(t => {
     if (taskSearch && !t.title.toLowerCase().includes(taskSearch.toLowerCase())) return false;
-    if (taskProjectFilter && t.project !== taskProjectFilter) return false;
+    if (taskProjectFilter === '__NONE__') {
+      if (t.project && t.project.trim() !== '') return false;
+    } else if (taskProjectFilter && t.project !== taskProjectFilter) {
+      return false;
+    }
     return true;
   });
 
@@ -350,6 +354,7 @@ export default function Calendar() {
                 className="w-full p-2 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded text-sm focus:ring-1 focus:ring-blue-500"
               >
                 <option value="">All Projects</option>
+                <option value="__NONE__">No Project</option>
                 {projects.map(p => (
                   <option key={p} value={p}>{p}</option>
                 ))}
