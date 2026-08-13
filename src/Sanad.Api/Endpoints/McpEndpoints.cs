@@ -103,9 +103,9 @@ public class McpEndpoints
     }
 
     [McpServerTool, Description("Create a new task")]
-    public async Task<TaskItem> CreateTask(string title, string? content = null)
+    public async Task<TaskItem> CreateTask(string title, string? content = null, string? project = null)
     {
-        var task = new TaskItem { Title = title, Content = content, Status = Models.TaskStatus.ToDo };
+        var task = new TaskItem { Title = title, Content = content, Project = project, Status = Models.TaskStatus.ToDo };
         _db.TaskItems.Add(task);
         await _db.SaveChangesAsync();
         return task;

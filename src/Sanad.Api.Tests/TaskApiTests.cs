@@ -62,7 +62,7 @@ public class TaskApiTests
         { 
             TaskItemId = task.Id, 
             FileName = "test.txt",
-            FilePath = $"/api/attachments/{uniqueFileName}"
+            FilePath = $"/attachments/{uniqueFileName}"
         };
         context.TaskAttachments.Add(attachment);
         await context.SaveChangesAsync();
@@ -109,7 +109,7 @@ public class TaskApiTests
         { 
             TaskItemId = task.Id, 
             FileName = "test.txt",
-            FilePath = $"/api/attachments/{uniqueFileName}"
+            FilePath = $"/attachments/{uniqueFileName}"
         };
         context.TaskAttachments.Add(attachment);
         await context.SaveChangesAsync();
@@ -137,5 +137,27 @@ public class TaskApiTests
                 File.Delete(filePath);
             }
         }
+    }
+
+    [Fact]
+    public async Task McpCreateTask_WithProject_SetsProjectProperty()
+    {
+        var options = new DbContextOptionsBuilder<SanadDbContext>()
+            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .Options;
+
+        using var context = new SanadDbContext(options);
+        var mcpEndpoints = new McpEndpoints(context, null!, null!, new DummyTenantProvider(), null!, null!);
+
+        var createdTask = await mcpEndpoints.CreateTask("New Task", "Task details", "My Project");
+
+        Assert.NotNull(createdTask);
+        Assert.Equal("New Task", createdTask.Title);
+        Assert.Equal("Task details", createdTask.Content);
+        Assert.Equal("My Project", createdTask.Project);
+
+        var dbTask = await context.TaskItems.FirstOrDefaultAsync(t => t.Id == createdTask.Id);
+        Assert.NotNull(dbTask);
+        Assert.Equal("My Project", dbTask.Project);
     }
 }
