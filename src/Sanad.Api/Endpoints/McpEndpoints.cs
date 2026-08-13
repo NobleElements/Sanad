@@ -88,9 +88,18 @@ public class McpEndpoints
 
     // Tasks Tools
     [McpServerTool, Description("Get a list of tasks")]
-    public async Task<List<TaskItem>> GetTasks()
+    public async Task<List<TaskItem>> GetTasks(string? project = null, Sanad.Api.Models.TaskStatus? status = null, bool? unscheduledOnly = null)
     {
-        return await _db.TaskItems.OrderByDescending(t => t.CreatedAt).Take(20).ToListAsync();
+        var query = _db.TaskItems.AsQueryable();
+        if (!string.IsNullOrEmpty(project))
+            query = query.Where(t => t.Project == project);
+        if (status.HasValue)
+            query = query.Where(t => t.Status == status.Value);
+            
+        if (unscheduledOnly == true)
+            query = query.Where(t => t.StartDate == null);
+        
+        return await query.OrderBy(t => t.Order).ThenByDescending(t => t.CreatedAt).ToListAsync();
     }
 
     [McpServerTool, Description("Create a new task")]
