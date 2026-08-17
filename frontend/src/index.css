@@ -328,3 +328,7 @@ body {
   top: 0;
   width: 4px;
 }
+
+.tl-watermark_SEE-LICENSE {
+  display: none;
+}
