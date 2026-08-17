@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { LayoutDashboard, CheckSquare, BrainCircuit, Wallet, BookOpen, HardDrive, ArrowRight, Code, Check, Terminal, Copy, Calendar, WifiOff } from 'lucide-react';
+import { LayoutDashboard, CheckSquare, BrainCircuit, Wallet, BookOpen, HardDrive, ArrowRight, Code, Check, Terminal, Copy, Calendar, WifiOff, Presentation, AppWindow } from 'lucide-react';
 import { API_URL } from '../config';
 import { formatBytes } from '../utils/formatUtils';
 
@@ -207,6 +207,16 @@ export default function LandingPage() {
               description="Visualize your scheduled tasks and daily habits in a unified calendar view to plan your time effectively."
             />
             <FeatureCard 
+              icon={Presentation}
+              title="Infinite Whiteboard"
+              description="Miro-like visual canvas. Brainstorm ideas, embed tasks and notes, sketch diagrams, and export in vector PDF or high-res images."
+            />
+            <FeatureCard 
+              icon={AppWindow}
+              title="Custom Apps"
+              description="Build and run sandboxed HTML/JS mini apps with local state persistence and built-in secure CORS proxy."
+            />
+            <FeatureCard 
               icon={WifiOff}
               title="Offline Ready"
               description="Install as an app. Access and search your notes, calendar, and tasks even without an internet connection."
@@ -387,7 +397,63 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Showcase 7: Offline */}
+          {/* Showcase 7: Whiteboard */}
+          <div className="flex flex-col lg:flex-row items-center gap-16">
+            <div className="lg:w-1/2">
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">Infinite Canvas & Visual Thinking</h2>
+              <p className="text-lg text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
+                Brainstorm, map out ideas, and connect your workflow with a Miro-like infinite whiteboard powered by tldraw. Embed Sanad tasks and notes directly as interactive cards, sketch freely, and export high-quality vector PDFs or images.
+              </p>
+              <ul className="space-y-4">
+                {['Embed interactive Sanad Tasks & Notes cards', 'Multi-page boards, minimap & rich drawing tools', 'Export to vector PDF, SVG, or 4K PNG'].map((item, i) => (
+                  <li key={i} className="flex items-center text-gray-700 dark:text-gray-300">
+                    <Presentation className="w-5 h-5 text-amber-500 mr-3" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="lg:w-1/2">
+              <div className="rounded-xl overflow-hidden shadow-xl border border-gray-200 dark:border-gray-700">
+                <img 
+                  src="/screenshots/whiteboard.png" 
+                  alt="Whiteboard Feature" 
+                  className="w-full h-auto"
+                  onError={(e) => { e.target.src = 'https://placehold.co/1280x720/1e293b/ffffff?text=Whiteboard+Screenshot+Pending' }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Showcase 8: Custom Apps */}
+          <div className="flex flex-col lg:flex-row-reverse items-center gap-16">
+            <div className="lg:w-1/2">
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">Build & Run Custom Mini Apps</h2>
+              <p className="text-lg text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
+                Extend your personal workspace with sandboxed, lightweight HTML/JS mini applications. Build custom widgets, dashboards, or external integrations with built-in CORS proxy support and persistent local storage.
+              </p>
+              <ul className="space-y-4">
+                {['Sandboxed HTML/JS execution environment', 'Built-in CORS proxy for external APIs', 'Local state persistence & responsive full-screen views'].map((item, i) => (
+                  <li key={i} className="flex items-center text-gray-700 dark:text-gray-300">
+                    <AppWindow className="w-5 h-5 text-emerald-500 mr-3" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="lg:w-1/2">
+              <div className="rounded-xl overflow-hidden shadow-xl border border-gray-200 dark:border-gray-700">
+                <img 
+                  src="/screenshots/apps.png" 
+                  alt="Custom Apps Feature" 
+                  className="w-full h-auto"
+                  onError={(e) => { e.target.src = 'https://placehold.co/1280x720/1e293b/ffffff?text=Custom+Apps+Screenshot+Pending' }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Showcase 9: Offline */}
           <div className="flex flex-col lg:flex-row items-center gap-16">
             <div className="lg:w-1/2">
               <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">Work anywhere, anytime</h2>

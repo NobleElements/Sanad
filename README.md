@@ -50,6 +50,8 @@ Sanad is a comprehensive personal management application designed to help you or
 - **Task Management**: Create, organize, and track daily tasks and goals.
 - **Calendar**: Integrated view combining your scheduled tasks and daily habits for a clear overview of your schedule.
 - **Notes & Thoughts**: Capture thoughts quickly and organize detailed notes into notebooks using a rich-text editor.
+- **Infinite Whiteboard**: Miro-like visual canvas powered by tldraw. Map out architectures, embed interactive Sanad tasks and notes cards directly onto the board, sketch with multi-color drawing tools, manage multi-page boards, and export to vector PDF, SVG, or 4K PNG.
+- **Custom Mini-Apps**: Create and run sandboxed lightweight HTML/JS mini applications. Includes persistent local state, responsive full-screen views, and a built-in secure CORS proxy to interact with external APIs.
 - **Finance Tracking**: Manage your transactions, categorize expenses, track budgets, and monitor asset snapshots over time.
 - **Books & Reading Progress**: Manage your personal bookshelf, track current reads, log reading progress, and maintain reading plans.
 - **Habit Tracking**: Define daily, weekly, or monthly routines, visualize your consistency with a 90-day heat map, and build streaks.
@@ -64,6 +66,8 @@ Sanad is a comprehensive personal management application designed to help you or
 - Vite
 - Tailwind CSS
 - Zustand (State Management)
+- tldraw (Infinite Canvas & Whiteboard)
+- jsPDF (High-Quality Vector PDF Export)
 - Recharts (Data Visualization)
 - Tiptap (Rich Text Editor)
 
