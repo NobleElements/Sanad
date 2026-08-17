@@ -124,6 +124,7 @@ export default function MiroSelectionToolbar({ editor }) {
           const textShape = shapes.find((s) => s.type === 'text');
           const geoShape = shapes.find((s) => s.type === 'geo');
           const arrowShape = shapes.find((s) => s.type === 'arrow');
+          const drawShape = shapes.find((s) => s.type === 'draw' || s.type === 'highlight' || s.type === 'line');
           const firstShape = shapes[0];
 
           const noteColor = noteShape?.props?.color || 'yellow';
@@ -133,7 +134,7 @@ export default function MiroSelectionToolbar({ editor }) {
             : (noteShape?.props?.labelColor || geoShape?.props?.labelColor || arrowShape?.props?.labelColor || 'black');
           const shapeColor = geoShape 
             ? (geoShape.props?.color || 'black') 
-            : (arrowShape?.props?.color || firstShape?.props?.color || 'black');
+            : (arrowShape?.props?.color || drawShape?.props?.color || firstShape?.props?.color || 'black');
 
           // Detect arrow shape kind (straight / curved / squared)
           let arrowKind = 'straight';

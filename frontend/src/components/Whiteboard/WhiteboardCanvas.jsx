@@ -405,7 +405,12 @@ const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
       onDragOver={handleDragOver}
       onDrop={handleDrop}
       data-theme={isDarkMode ? 'dark' : 'light'}
-      style={customBgColor ? { '--whiteboard-custom-bg': customBgColor } : {}}
+      data-custom-bg={customBgColor ? 'true' : 'false'}
+      style={customBgColor ? { 
+        '--whiteboard-custom-bg': customBgColor,
+        '--tl-color-background': customBgColor,
+        backgroundColor: customBgColor
+      } : {}}
       className={`miro-whiteboard relative w-full h-full overflow-hidden ${className}`}
     >
       {/* Floating Miro Left Vertical Toolbar, Contextual Style Bar & Minimap */}

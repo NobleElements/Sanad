@@ -15,14 +15,22 @@
   display: none !important;
 }
 
-/* Subtle Miro Background Canvas */
-.miro-whiteboard .tl-canvas {
+/* Base Canvas & Background styling */
+.miro-whiteboard,
+.miro-whiteboard .tl-container,
+.miro-whiteboard .tl-canvas,
+.miro-whiteboard .tl-background {
+  --tl-color-background: var(--whiteboard-custom-bg, #f8fafc) !important;
   background-color: var(--whiteboard-custom-bg, #f8fafc) !important;
 }
 
 /* Dark theme background via Media Query, .dark class, data-theme, or tl-theme__dark */
 @media (prefers-color-scheme: dark) {
-  .miro-whiteboard .tl-canvas {
+  .miro-whiteboard,
+  .miro-whiteboard .tl-container,
+  .miro-whiteboard .tl-canvas,
+  .miro-whiteboard .tl-background {
+    --tl-color-background: var(--whiteboard-custom-bg, #0f172a) !important;
     background-color: var(--whiteboard-custom-bg, #0f172a) !important;
   }
   .miro-whiteboard .tlui-popover,
@@ -33,14 +41,54 @@
   }
 }
 
+.dark .miro-whiteboard,
+.dark .miro-whiteboard .tl-container,
 .dark .miro-whiteboard .tl-canvas,
+.dark .miro-whiteboard .tl-background,
+.miro-whiteboard[data-theme="dark"],
+.miro-whiteboard[data-theme="dark"] .tl-container,
 .miro-whiteboard[data-theme="dark"] .tl-canvas,
-.miro-whiteboard .tl-theme__dark .tl-canvas {
+.miro-whiteboard[data-theme="dark"] .tl-background,
+.miro-whiteboard .tl-theme__dark,
+.miro-whiteboard .tl-theme__dark .tl-container,
+.miro-whiteboard .tl-theme__dark .tl-canvas,
+.miro-whiteboard .tl-theme__dark .tl-background {
+  --tl-color-background: var(--whiteboard-custom-bg, #0f172a) !important;
   background-color: var(--whiteboard-custom-bg, #0f172a) !important;
 }
 
-.miro-whiteboard[data-theme="light"] .tl-canvas {
+.miro-whiteboard[data-theme="light"],
+.miro-whiteboard[data-theme="light"] .tl-container,
+.miro-whiteboard[data-theme="light"] .tl-canvas,
+.miro-whiteboard[data-theme="light"] .tl-background,
+.miro-whiteboard .tl-theme__light,
+.miro-whiteboard .tl-theme__light .tl-container,
+.miro-whiteboard .tl-theme__light .tl-canvas,
+.miro-whiteboard .tl-theme__light .tl-background {
+  --tl-color-background: var(--whiteboard-custom-bg, #f8fafc) !important;
   background-color: var(--whiteboard-custom-bg, #f8fafc) !important;
+}
+
+/* When a custom background is explicitly chosen, apply it everywhere overriding theme defaults */
+.miro-whiteboard[data-custom-bg="true"],
+.miro-whiteboard[data-custom-bg="true"] .tl-container,
+.miro-whiteboard[data-custom-bg="true"] .tl-canvas,
+.miro-whiteboard[data-custom-bg="true"] .tl-background,
+.miro-whiteboard[data-custom-bg="true"] .tl-theme__dark,
+.miro-whiteboard[data-custom-bg="true"] .tl-theme__dark .tl-container,
+.miro-whiteboard[data-custom-bg="true"] .tl-theme__dark .tl-canvas,
+.miro-whiteboard[data-custom-bg="true"] .tl-theme__dark .tl-background,
+.miro-whiteboard[data-custom-bg="true"] .tl-theme__light,
+.miro-whiteboard[data-custom-bg="true"] .tl-theme__light .tl-container,
+.miro-whiteboard[data-custom-bg="true"] .tl-theme__light .tl-canvas,
+.miro-whiteboard[data-custom-bg="true"] .tl-theme__light .tl-background {
+  --tl-color-background: var(--whiteboard-custom-bg) !important;
+  background-color: var(--whiteboard-custom-bg) !important;
+}
+
+/* Grid Dots Visibility */
+.miro-whiteboard .tl-grid-dot {
+  opacity: 0.45 !important;
 }
 
 /* Selection and Hover Indicators */

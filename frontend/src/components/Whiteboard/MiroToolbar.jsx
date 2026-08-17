@@ -32,7 +32,7 @@ import {
   Check,
   Trash2
 } from 'lucide-react';
-import { DefaultColorStyle, GeoShapeGeoStyle } from 'tldraw';
+import { DefaultColorStyle, DefaultSizeStyle, GeoShapeGeoStyle } from 'tldraw';
 
 const STICKY_COLORS = [
   { id: 'yellow', label: 'Yellow', bg: 'bg-amber-300 border-amber-400' },
@@ -43,6 +43,28 @@ const STICKY_COLORS = [
   { id: 'blue', label: 'Blue', bg: 'bg-blue-400 border-blue-500' },
   { id: 'light-green', label: 'Green', bg: 'bg-emerald-300 border-emerald-400' },
   { id: 'grey', label: 'Gray', bg: 'bg-slate-300 border-slate-400' }
+];
+
+const DRAW_COLORS = [
+  { id: 'black', label: 'Black', bg: 'bg-slate-900 border-slate-950' },
+  { id: 'grey', label: 'Gray', bg: 'bg-slate-400 border-slate-500' },
+  { id: 'light-violet', label: 'Pink', bg: 'bg-pink-400 border-pink-500' },
+  { id: 'violet', label: 'Purple', bg: 'bg-purple-500 border-purple-600' },
+  { id: 'blue', label: 'Blue', bg: 'bg-blue-600 border-blue-700' },
+  { id: 'light-blue', label: 'Sky Blue', bg: 'bg-sky-400 border-sky-500' },
+  { id: 'yellow', label: 'Yellow', bg: 'bg-amber-400 border-amber-500' },
+  { id: 'orange', label: 'Orange', bg: 'bg-orange-500 border-orange-600' },
+  { id: 'light-green', label: 'Light Green', bg: 'bg-emerald-400 border-emerald-500' },
+  { id: 'green', label: 'Green', bg: 'bg-emerald-600 border-emerald-700' },
+  { id: 'red', label: 'Red', bg: 'bg-rose-500 border-rose-600' },
+  { id: 'white', label: 'White', bg: 'bg-white border-slate-300' }
+];
+
+const DRAW_SIZES = [
+  { id: 's', label: 'S' },
+  { id: 'm', label: 'M' },
+  { id: 'l', label: 'L' },
+  { id: 'xl', label: 'XL' }
 ];
 
 const SHAPES_LIST = [
@@ -82,24 +104,38 @@ const CANVAS_BACKGROUNDS = [
 export default function MiroToolbar({ editor, onToggleResourceDrawer, isResourceDrawerOpen, customBgColor, onSelectBgColor }) {
   const [currentTool, setCurrentTool] = useState('select');
   const [activeFlyout, setActiveFlyout] = useState(null); // 'select' | 'sticky' | 'shapes' | 'draw' | 'connectors' | 'more' | 'bg' | null
-  const [isGridOn, setIsGridOn] = useState(false);
+  const [activeDrawColor, setActiveDrawColor] = useState('black');
+  const [activeDrawSize, setActiveDrawSize] = useState('m');
+  const [isGridOn, setIsGridOn] = useState(() => {
+    return editor?.getInstanceState?.()?.isGridMode ?? false;
+  });
   const flyoutRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  // Sync active tool and grid from tldraw editor
+  // Sync active tool, draw styles, and grid from tldraw editor
   useEffect(() => {
     if (!editor) return;
 
     const updateTool = () => {
       const toolId = editor.getCurrentToolId();
       setCurrentTool(toolId);
-      if (editor.getGridMode) {
-        setIsGridOn(editor.getGridMode());
+      const isGrid = editor.getInstanceState?.()?.isGridMode ?? false;
+      setIsGridOn(isGrid);
+
+      // Read current next shape color / size for pen tools
+      try {
+        const shared = editor.getSharedStyles ? editor.getSharedStyles() : null;
+        const col = shared?.getAsKnownValue?.(DefaultColorStyle) || editor.getStyleForNextShape?.(DefaultColorStyle) || 'black';
+        const sz = shared?.getAsKnownValue?.(DefaultSizeStyle) || editor.getStyleForNextShape?.(DefaultSizeStyle) || 'm';
+        setActiveDrawColor(col);
+        setActiveDrawSize(sz);
+      } catch {
+        // fallback
       }
     };
 
     updateTool();
-    const unlisten = editor.store.listen(updateTool, { scope: 'session' });
+    const unlisten = editor.store.listen(updateTool, { scope: 'all' });
     return () => unlisten();
   }, [editor]);
 
@@ -120,7 +156,9 @@ export default function MiroToolbar({ editor, onToggleResourceDrawer, isResource
     try {
       editor.setCurrentTool(toolId);
       if (extraAction) extraAction();
-      setActiveFlyout(null);
+      if (toolId !== 'draw' && toolId !== 'highlight') {
+        setActiveFlyout(null);
+      }
     } catch (e) {
       console.warn(`Failed to set tool to ${toolId}`, e);
     }
@@ -146,13 +184,41 @@ export default function MiroToolbar({ editor, onToggleResourceDrawer, isResource
     }
   };
 
+  const handleSelectDrawColor = (colorId) => {
+    try {
+      setActiveDrawColor(colorId);
+      editor.setStyleForNextShapes(DefaultColorStyle, colorId);
+      const selected = editor.getSelectedShapeIds?.() || [];
+      if (selected.length > 0) {
+        editor.setStyleForSelectedShapes(DefaultColorStyle, colorId);
+      }
+      if (currentTool !== 'draw' && currentTool !== 'highlight') {
+        editor.setCurrentTool('draw');
+      }
+    } catch (e) {
+      console.warn('Failed to set draw color', e);
+    }
+  };
+
+  const handleSelectDrawSize = (sizeId) => {
+    try {
+      setActiveDrawSize(sizeId);
+      editor.setStyleForNextShapes(DefaultSizeStyle, sizeId);
+      const selected = editor.getSelectedShapeIds?.() || [];
+      if (selected.length > 0) {
+        editor.setStyleForSelectedShapes(DefaultSizeStyle, sizeId);
+      }
+    } catch (e) {
+      console.warn('Failed to set draw size', e);
+    }
+  };
+
   const handleToggleGrid = () => {
     try {
-      if (editor.setGridMode && editor.getGridMode) {
-        const next = !editor.getGridMode();
-        editor.setGridMode(next);
-        setIsGridOn(next);
-      }
+      const current = editor.getInstanceState?.()?.isGridMode ?? false;
+      const next = !current;
+      editor.updateInstanceState({ isGridMode: next });
+      setIsGridOn(next);
       setActiveFlyout(null);
     } catch (e) {
       console.warn('Failed to toggle grid mode', e);
@@ -238,6 +304,7 @@ export default function MiroToolbar({ editor, onToggleResourceDrawer, isResource
   const isShapeTool = currentTool === 'geo';
   const isDrawTool = ['draw', 'highlight', 'eraser', 'laser'].includes(currentTool);
   const isConnectorTool = ['arrow', 'line'].includes(currentTool);
+  const currentDrawColorObj = DRAW_COLORS.find((c) => c.id === activeDrawColor) || DRAW_COLORS[0];
 
   return (
     <div 
@@ -470,7 +537,7 @@ export default function MiroToolbar({ editor, onToggleResourceDrawer, isResource
           )}
         </div>
 
-        {/* 7. Pen / Draw / Laser Flyout */}
+        {/* 7. Pen / Draw / Laser Flyout with Color Palette & Thickness */}
         <div className="relative">
           <button
             type="button"
@@ -482,37 +549,87 @@ export default function MiroToolbar({ editor, onToggleResourceDrawer, isResource
                 setActiveFlyout('draw');
               }
             }}
-            className={`p-2.5 rounded-xl transition-all ${
+            className={`p-2.5 rounded-xl transition-all relative ${
               isDrawTool
                 ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none'
                 : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
             title="Drawing Tools (P / E / L)"
           >
-            <Pen className="w-5 h-5" />
+            {currentTool === 'highlight' ? <Highlighter className="w-5 h-5" /> : <Pen className="w-5 h-5" />}
+            {/* Tiny color badge indicating current pen color */}
+            <span className={`absolute bottom-1.5 right-1.5 w-2 h-2 rounded-full border border-white dark:border-slate-900 shadow-sm ${currentDrawColorObj.bg}`} />
           </button>
 
-          {/* Flyout: Drawing Tools */}
+          {/* Flyout: Drawing Tools & Colors */}
           {activeFlyout === 'draw' && (
-            <div className="absolute left-full ml-3 top-0 w-48 p-1.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 flex flex-col gap-1 animate-in fade-in zoom-in-95 duration-100 z-50">
-              {DRAW_TOOLS.map((t) => {
-                const Icon = t.icon;
-                const isSelected = currentTool === t.id;
-                return (
-                  <button
-                    key={t.id}
-                    onClick={() => selectTool(t.id)}
-                    className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${
-                      isSelected
-                        ? 'bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400'
-                        : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span>{t.label} ({t.kbd})</span>
-                  </button>
-                );
-              })}
+            <div className="absolute left-full ml-3 top-0 w-56 p-2.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 flex flex-col gap-2.5 animate-in fade-in zoom-in-95 duration-100 z-50">
+              {/* Tool Selector Buttons */}
+              <div className="grid grid-cols-2 gap-1.5">
+                {DRAW_TOOLS.map((t) => {
+                  const Icon = t.icon;
+                  const isSelected = currentTool === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => selectTool(t.id)}
+                      className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-colors ${
+                        isSelected
+                          ? 'bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400'
+                          : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      <Icon className="w-3.5 h-3.5 flex-shrink-0" />
+                      <span className="truncate">{t.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Colors Section */}
+              <div className="h-px bg-slate-100 dark:bg-slate-800" />
+              
+              <div>
+                <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">
+                  {currentTool === 'highlight' ? 'Highlighter Color' : 'Pen Color'}
+                </div>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {DRAW_COLORS.map((col) => (
+                    <button
+                      key={col.id}
+                      onClick={() => handleSelectDrawColor(col.id)}
+                      className={`w-7 h-7 rounded-lg border shadow-sm transition-transform hover:scale-110 active:scale-95 ${col.bg} ${
+                        activeDrawColor === col.id ? 'ring-2 ring-indigo-500 ring-offset-1 dark:ring-offset-slate-900' : ''
+                      }`}
+                      title={col.label}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Thickness / Size Section */}
+              <div>
+                <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">
+                  Thickness
+                </div>
+                <div className="flex items-center bg-slate-100/80 dark:bg-slate-800/80 p-0.5 rounded-xl">
+                  {DRAW_SIZES.map((sz) => (
+                    <button
+                      key={sz.id}
+                      type="button"
+                      onClick={() => handleSelectDrawSize(sz.id)}
+                      className={`flex-1 py-1 rounded-lg text-xs font-semibold transition-all ${
+                        activeDrawSize === sz.id
+                          ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-sm'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                      }`}
+                      title={`Size ${sz.label}`}
+                    >
+                      {sz.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </div>
