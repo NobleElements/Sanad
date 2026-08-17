@@ -53,9 +53,13 @@ const removeCachedDetail = (id) => {
 };
 
 const initialCachedList = loadCachedList();
-const initialActiveBoard = initialCachedList.length > 0 
-  ? (loadCachedDetail(initialCachedList[0].id) || initialCachedList[0]) 
-  : null;
+let initialActiveBoard = null;
+if (initialCachedList.length > 0) {
+  const cached = loadCachedDetail(initialCachedList[0].id);
+  if (cached && typeof cached.documentJson === 'string') {
+    initialActiveBoard = cached;
+  }
+}
 
 let isSaveInFlight = false;
 let pendingSavePayload = null;
@@ -70,7 +74,10 @@ const executeSave = async (id, data) => {
   try {
     const res = await fetch(`${API_URL}/whiteboards/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache'
+      },
       body: JSON.stringify(data)
     });
     if (res.ok) {
@@ -105,7 +112,9 @@ const useWhiteboardStore = create((set, get) => ({
 
     // 2. Fetch fresh list from server in background
     try {
-      const res = await fetch(`${API_URL}/whiteboards`);
+      const res = await fetch(`${API_URL}/whiteboards`, {
+        headers: { 'Cache-Control': 'no-cache' }
+      });
       if (res.ok) {
         const fresh = await res.json();
         setCachedList(fresh);
@@ -121,20 +130,24 @@ const useWhiteboardStore = create((set, get) => ({
   fetchWhiteboardById: async (id) => {
     if (!id) return null;
 
-    // 1. Immediately serve cached whiteboard from localStorage
+    // 1. Immediately serve cached whiteboard from localStorage if it has full documentJson
     const cached = loadCachedDetail(id);
-    if (cached) {
-      set({ activeWhiteboard: cached });
+    if (cached && typeof cached.documentJson === 'string') {
+      set((state) => ({
+        activeWhiteboard: state.activeWhiteboard?.id === id ? { ...state.activeWhiteboard, ...cached } : cached
+      }));
     }
 
-    // 2. Fetch fresh whiteboard from API in background
+    // 2. Fetch fresh whiteboard from API (bypassing browser cache)
     try {
-      const res = await fetch(`${API_URL}/whiteboards/${id}`);
+      const res = await fetch(`${API_URL}/whiteboards/${id}`, {
+        headers: { 'Cache-Control': 'no-cache' }
+      });
       if (res.ok) {
         const fresh = await res.json();
         setCachedDetail(id, fresh);
         set((state) => ({
-          activeWhiteboard: state.activeWhiteboard?.id === id ? fresh : state.activeWhiteboard,
+          activeWhiteboard: fresh,
           whiteboards: state.whiteboards.map((w) =>
             w.id === id
               ? {

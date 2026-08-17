@@ -24,9 +24,7 @@ export default function WhiteboardStandalone() {
   useEffect(() => {
     let isMounted = true;
     if (id) {
-      if (!activeWhiteboard) {
-        setIsLoading(true);
-      }
+      setIsLoading(true);
       fetchWhiteboardById(id).finally(() => {
         if (isMounted) {
           setIsLoading(false);
@@ -47,7 +45,7 @@ export default function WhiteboardStandalone() {
     }
   };
 
-  if (isLoading && !activeWhiteboard) {
+  if (isLoading || !activeWhiteboard || activeWhiteboard.documentJson === undefined) {
     return (
       <div className="w-screen h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>

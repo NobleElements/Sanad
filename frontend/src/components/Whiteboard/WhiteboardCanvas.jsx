@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback, forwardRef, useImperativeHandle } from 'react';
-import { Tldraw, getSnapshot, createShapeId } from 'tldraw';
+import { Tldraw, getSnapshot, loadSnapshot, createShapeId } from 'tldraw';
 import 'tldraw/tldraw.css';
 import './miroTheme.css';
 import useWhiteboardStore from '../../store/useWhiteboardStore';
@@ -203,11 +203,42 @@ const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
     };
   }, [whiteboard?.id]);
 
+  const isUpdatingFromServerRef = useRef(false);
+  const lastLoadedDocJsonRef = useRef(whiteboard?.documentJson || '');
+  const lastUpdatedAtRef = useRef(whiteboard?.updatedAt || '');
+
+  // Synchronize incoming server updates if whiteboard.documentJson updates while canvas is open
+  useEffect(() => {
+    if (!editorRef.current || !whiteboard?.documentJson) return;
+
+    // Check if incoming documentJson from server is different from what was loaded/saved
+    if (
+      whiteboard.documentJson !== lastLoadedDocJsonRef.current &&
+      whiteboard.updatedAt !== lastUpdatedAtRef.current
+    ) {
+      try {
+        const parsed = JSON.parse(whiteboard.documentJson);
+        isUpdatingFromServerRef.current = true;
+        loadSnapshot(editorRef.current.store, parsed);
+        lastLoadedDocJsonRef.current = whiteboard.documentJson;
+        lastUpdatedAtRef.current = whiteboard.updatedAt;
+      } catch (e) {
+        console.warn('Failed to load updated snapshot from server into editor', e);
+      } finally {
+        setTimeout(() => {
+          isUpdatingFromServerRef.current = false;
+        }, 150);
+      }
+    }
+  }, [whiteboard?.documentJson, whiteboard?.updatedAt]);
+
   const handleMount = useCallback((editor) => {
     editorRef.current = editor;
     setEditorInstance(editor);
     onEditorMount?.(editor);
     isInitialMountRef.current = true;
+    lastLoadedDocJsonRef.current = whiteboard?.documentJson || '';
+    lastUpdatedAtRef.current = whiteboard?.updatedAt || '';
 
     // Immediately set dark mode preferences synchronously on mount
     if (editor.user) {
@@ -230,18 +261,12 @@ const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
         y: whiteboard.cameraY, 
         z: typeof whiteboard.cameraZ === 'number' ? whiteboard.cameraZ : 1 
       };
-    } else if (initialSnapshot?.store) {
-      // Fallback: extract camera from tldraw snapshot store records
-      const camRecord = Object.values(initialSnapshot.store).find(
-        (r) => r && r.typeName === 'camera'
-      );
-      if (camRecord && typeof camRecord.x === 'number' && typeof camRecord.y === 'number') {
-        targetCamera = {
-          x: camRecord.x,
-          y: camRecord.y,
-          z: typeof camRecord.z === 'number' ? camRecord.z : 1
-        };
-      }
+    } else if (initialSnapshot?.session?.camera) {
+      targetCamera = {
+        x: initialSnapshot.session.camera.x || 0,
+        y: initialSnapshot.session.camera.y || 0,
+        z: initialSnapshot.session.camera.z || 1
+      };
     }
 
     if (targetCamera) {
@@ -268,14 +293,14 @@ const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
 
     // Persist camera view position & zoom level to database when camera moves (800ms debounce)
     const saveCameraState = () => {
-      if (isInitialMountRef.current || readOnly || isOffline) return;
+      if (isInitialMountRef.current || isUpdatingFromServerRef.current || readOnly || isOffline) return;
 
       if (cameraDebounceTimerRef.current) {
         clearTimeout(cameraDebounceTimerRef.current);
       }
       cameraDebounceTimerRef.current = setTimeout(() => {
         const activeId = whiteboardIdRef.current;
-        if (!activeId || !editorRef.current || isInitialMountRef.current) return;
+        if (!activeId || !editorRef.current || isInitialMountRef.current || isUpdatingFromServerRef.current) return;
         try {
           const camera = editorRef.current.getCamera?.();
           if (camera && typeof camera.x === 'number' && typeof camera.y === 'number' && typeof camera.z === 'number') {
@@ -294,7 +319,10 @@ const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
     // Unified store listener: Fast 400ms debounce for element edits, 800ms for camera
     const unlistenStore = editor.store.listen(
       (entry) => {
-        if (isInitialMountRef.current || readOnly || isOffline) return;
+        if (isInitialMountRef.current || isUpdatingFromServerRef.current || readOnly || isOffline) return;
+
+        // ONLY auto-save when changes originate from actual user actions!
+        if (entry.source !== 'user') return;
 
         // Persist camera whenever viewport shifts
         saveCameraState();
@@ -308,12 +336,14 @@ const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
         // Fast 400ms debounce for shape edits & text changes
         debounceTimerRef.current = setTimeout(async () => {
           const activeId = whiteboardIdRef.current;
-          if (!activeId) return;
+          if (!activeId || isUpdatingFromServerRef.current) return;
 
           try {
             setSaveStatus('saving');
             const snapshot = getSnapshot(editor.store);
             const jsonString = JSON.stringify(snapshot);
+            lastLoadedDocJsonRef.current = jsonString;
+            
             const camera = editor.getCamera?.();
             const success = await saveWhiteboardState(activeId, {
               documentJson: jsonString,
@@ -339,7 +369,9 @@ const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
     // Synchronous flush to localStorage if user leaves or refreshes the page
     const handleBeforeUnload = () => {
       const activeId = whiteboardIdRef.current;
-      if (!activeId || !editorRef.current || isInitialMountRef.current) return;
+      if (!activeId || !editorRef.current || isInitialMountRef.current || isUpdatingFromServerRef.current) return;
+      if (saveStatus !== 'unsaved') return;
+      
       try {
         const snapshot = getSnapshot(editorRef.current.store);
         const jsonString = JSON.stringify(snapshot);
@@ -368,7 +400,7 @@ const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
       unlistenStore();
       clearTimeout(timeout);
     };
-  }, [whiteboard, initialSnapshot, saveWhiteboardState, readOnly, isOffline, onEditorMount]);
+  }, [whiteboard, initialSnapshot, saveWhiteboardState, readOnly, isOffline, onEditorMount, saveStatus]);
 
   const handleToggleMinimap = (nextOpen) => {
     setIsMinimapOpen(nextOpen);

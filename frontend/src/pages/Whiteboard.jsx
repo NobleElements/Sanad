@@ -50,24 +50,45 @@ export default function Whiteboard() {
   const [isResourceDrawerOpen, setIsResourceDrawerOpen] = useState(false);
   const [editor, setEditor] = useState(null);
 
+  const [isDetailLoading, setIsDetailLoading] = useState(true);
+
   const containerRef = useRef(null);
   const dropdownRef = useRef(null);
   const canvasRef = useRef(null);
 
   usePageTitle(activeWhiteboard ? `Whiteboard - ${activeWhiteboard.name}` : 'Whiteboards');
 
-  // Fetch all whiteboards on mount
+  // Fetch all whiteboards on mount & load active detail
   useEffect(() => {
-    if (id) {
-      fetchWhiteboardById(id);
-    }
-    fetchWhiteboards().then((boards) => {
-      if (id) {
-        fetchWhiteboardById(id);
-      } else if (boards && boards.length > 0 && !activeWhiteboard) {
-        fetchWhiteboardById(boards[0].id);
+    let isMounted = true;
+    setIsDetailLoading(true);
+
+    const load = async () => {
+      try {
+        let targetId = id;
+        if (!targetId) {
+          const boards = await fetchWhiteboards();
+          if (boards && boards.length > 0) {
+            targetId = boards[0].id;
+          }
+        }
+        if (targetId && isMounted) {
+          await fetchWhiteboardById(targetId);
+        }
+      } catch (err) {
+        console.error('Failed to load whiteboard:', err);
+      } finally {
+        if (isMounted) {
+          setIsDetailLoading(false);
+        }
       }
-    });
+    };
+
+    load();
+
+    return () => {
+      isMounted = false;
+    };
   }, [id]);
 
   // Close dropdown on outside click
@@ -90,9 +111,8 @@ export default function Whiteboard() {
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
-  const handleSelectWhiteboard = async (wb) => {
+  const handleSelectWhiteboard = (wb) => {
     setIsDropdownOpen(false);
-    await fetchWhiteboardById(wb.id);
     navigate(`/whiteboard/${wb.id}`);
   };
 
@@ -345,11 +365,11 @@ export default function Whiteboard() {
 
       {/* Main Canvas Area */}
       <div className="flex-1 w-full h-full relative overflow-hidden bg-slate-50 dark:bg-slate-900">
-        {isLoading && !activeWhiteboard ? (
+        {isDetailLoading && (!activeWhiteboard || activeWhiteboard.documentJson === undefined) ? (
           <div className="absolute inset-0 flex items-center justify-center bg-slate-50 dark:bg-slate-900 z-10">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
           </div>
-        ) : activeWhiteboard ? (
+        ) : activeWhiteboard && activeWhiteboard.documentJson !== undefined ? (
           <>
             <WhiteboardCanvas 
               key={activeWhiteboard.id} 
