@@ -11,7 +11,8 @@ import {
   Palette,
   MoveRight,
   Spline,
-  CornerDownRight
+  CornerDownRight,
+  Download
 } from 'lucide-react';
 import { 
   DefaultColorStyle, 
@@ -70,7 +71,7 @@ const ARROW_KINDS = [
   { id: 'squared', label: 'Squared', icon: CornerDownRight }
 ];
 
-export default function MiroSelectionToolbar({ editor }) {
+export default function MiroSelectionToolbar({ editor, onOpenExportModal }) {
   const [selectedShapes, setSelectedShapes] = useState([]);
   const [position, setPosition] = useState(null);
   const [activeMenu, setActiveMenu] = useState(null); // 'noteColor' | 'textColor' | 'shapeColor' | 'font' | 'fill' | 'arrowKind' | null
@@ -778,7 +779,16 @@ export default function MiroSelectionToolbar({ editor }) {
 
       <div className="h-4 w-px bg-slate-200 dark:bg-slate-800" />
 
-      {/* 9. Quick Duplicate & Delete */}
+      {/* 9. Quick Export, Duplicate & Delete */}
+      <button
+        type="button"
+        onClick={() => onOpenExportModal?.()}
+        className="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-colors"
+        title="Export Selection (PNG / PDF / SVG)"
+      >
+        <Download className="w-3.5 h-3.5" />
+      </button>
+
       <button
         type="button"
         onClick={handleDuplicate}

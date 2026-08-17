@@ -12,6 +12,7 @@ import { CustomNoteShapeUtil } from './CustomNoteShapeUtil';
 import MiroToolbar from './MiroToolbar';
 import MiroSelectionToolbar from './MiroSelectionToolbar';
 import MiroMinimap from './MiroMinimap';
+import WhiteboardExportModal from './WhiteboardExportModal';
 
 const customShapeUtils = [TaskCardShapeUtil, NoteCardShapeUtil, CustomNoteShapeUtil];
 
@@ -107,6 +108,8 @@ const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
     }
   });
 
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+
   useEffect(() => {
     try {
       const saved = localStorage.getItem(`sanad_whiteboard_bg_${whiteboard?.id}`) || '';
@@ -159,7 +162,7 @@ const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
     }
   }, [whiteboard?.id, whiteboard?.isMinimapOpen]);
 
-  // Expose insertion method to parent
+  // Expose insertion & export methods to parent
   useImperativeHandle(ref, () => ({
     insertResource: (type, data) => {
       if (!editorRef.current) return;
@@ -169,7 +172,11 @@ const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
         x: center.x - 140,
         y: center.y - 65
       });
-    }
+    },
+    openExportModal: () => {
+      setIsExportModalOpen(true);
+    },
+    getEditor: () => editorRef.current
   }));
 
   // Parse initial snapshot ONLY when whiteboard ID changes
@@ -422,14 +429,29 @@ const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
             isResourceDrawerOpen={isResourceDrawerOpen}
             customBgColor={customBgColor}
             onSelectBgColor={handleSelectBgColor}
+            onOpenExportModal={() => setIsExportModalOpen(true)}
           />
-          <MiroSelectionToolbar editor={editorInstance} />
+          <MiroSelectionToolbar 
+            editor={editorInstance} 
+            onOpenExportModal={() => setIsExportModalOpen(true)}
+          />
           <MiroMinimap 
             editor={editorInstance} 
             isOpen={isMinimapOpen} 
             onToggle={handleToggleMinimap} 
           />
         </>
+      )}
+
+      {/* High-Quality Export Modal */}
+      {editorInstance && (
+        <WhiteboardExportModal
+          isOpen={isExportModalOpen}
+          onClose={() => setIsExportModalOpen(false)}
+          editor={editorInstance}
+          whiteboardTitle={whiteboard?.title}
+          isDarkMode={isDarkMode}
+        />
       )}
 
       {/* Floating Save Status Mini Indicator */}

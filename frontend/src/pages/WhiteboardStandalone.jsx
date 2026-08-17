@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Presentation, Sparkles } from 'lucide-react';
+import { ArrowLeft, Presentation, Sparkles, Download } from 'lucide-react';
 import useWhiteboardStore from '../store/useWhiteboardStore';
 import useUIStore from '../store/useUIStore';
 import usePageTitle from '../hooks/usePageTitle';
@@ -91,8 +91,20 @@ export default function WhiteboardStandalone() {
           </span>
         </div>
 
-        {/* Floating Page Selector */}
-        {editor && <WhiteboardPageSelector editor={editor} />}
+        {/* Floating Page Selector & Export */}
+        {editor && (
+          <div className="flex items-center gap-2">
+            <WhiteboardPageSelector editor={editor} />
+            <button
+              onClick={() => canvasRef.current?.openExportModal?.()}
+              title="Export Whiteboard (PDF, PNG, SVG)"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/90 dark:bg-slate-900/90 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 backdrop-blur-md shadow-sm border border-slate-200/80 dark:border-slate-800 text-xs font-semibold transition-colors"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Export</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Full-bleed Canvas */}

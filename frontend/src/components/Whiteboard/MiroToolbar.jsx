@@ -30,7 +30,8 @@ import {
   Grid2X2,
   Palette,
   Check,
-  Trash2
+  Trash2,
+  Download
 } from 'lucide-react';
 import { DefaultColorStyle, DefaultSizeStyle, GeoShapeGeoStyle } from 'tldraw';
 
@@ -101,7 +102,14 @@ const CANVAS_BACKGROUNDS = [
   { id: '#faf8f5', label: 'Warm Cream', color: '#faf8f5', border: 'border-amber-200 bg-[#faf8f5]' }
 ];
 
-export default function MiroToolbar({ editor, onToggleResourceDrawer, isResourceDrawerOpen, customBgColor, onSelectBgColor }) {
+export default function MiroToolbar({ 
+  editor, 
+  onToggleResourceDrawer, 
+  isResourceDrawerOpen, 
+  customBgColor, 
+  onSelectBgColor,
+  onOpenExportModal 
+}) {
   const [currentTool, setCurrentTool] = useState('select');
   const [activeFlyout, setActiveFlyout] = useState(null); // 'select' | 'sticky' | 'shapes' | 'draw' | 'connectors' | 'more' | 'bg' | null
   const [activeDrawColor, setActiveDrawColor] = useState('black');
@@ -769,6 +777,16 @@ export default function MiroToolbar({ editor, onToggleResourceDrawer, isResource
                 <span>Zoom to Fit (Shift+1)</span>
               </button>
               <div className="h-px bg-slate-100 dark:bg-slate-800 my-1" />
+              <button
+                onClick={() => {
+                  setActiveFlyout(null);
+                  onOpenExportModal?.();
+                }}
+                className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-colors"
+              >
+                <Download className="w-4 h-4 text-indigo-500" />
+                <span>Export Image / PDF...</span>
+              </button>
               <button
                 onClick={() => {
                   editor.selectAll();

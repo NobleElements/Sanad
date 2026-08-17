@@ -28,6 +28,7 @@
     "@tiptap/starter-kit": "^3.26.0",
     "date-fns": "^4.4.0",
     "emoji-picker-react": "^4.19.1",
+    "jspdf": "^4.2.1",
     "lowlight": "^3.3.0",
     "lucide-react": "^1.17.0",
     "react": "^19.2.6",

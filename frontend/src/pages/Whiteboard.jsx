@@ -11,7 +11,8 @@ import {
   Check, 
   Presentation,
   Search,
-  Sparkles
+  Sparkles,
+  Download
 } from 'lucide-react';
 import useWhiteboardStore from '../store/useWhiteboardStore';
 import useUIStore from '../store/useUIStore';
@@ -307,6 +308,16 @@ export default function Whiteboard() {
 
           {activeWhiteboard && (
             <>
+              {/* Export Whiteboard Button */}
+              <button
+                onClick={() => canvasRef.current?.openExportModal?.()}
+                title="Export Whiteboard (PDF, PNG, SVG, JPEG)"
+                className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 hover:border-indigo-300 dark:hover:border-indigo-700 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 text-xs font-medium inline-flex items-center gap-1.5 transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                <span className="hidden md:inline">Export</span>
+              </button>
+
               {/* Open in Standalone Tab Button */}
               <a
                 href={`/whiteboard-standalone/${activeWhiteboard.id}`}
