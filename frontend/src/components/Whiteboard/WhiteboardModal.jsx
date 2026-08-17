@@ -11,15 +11,17 @@ export default function WhiteboardModal({ isOpen, onClose, onSave, editingWhiteb
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (editingWhiteboard) {
-      setName(editingWhiteboard.name || '');
-      setIcon(editingWhiteboard.icon || '🎨');
-    } else {
-      setName('');
-      setIcon('🎨');
+    if (isOpen) {
+      if (editingWhiteboard) {
+        setName(editingWhiteboard.name || '');
+        setIcon(editingWhiteboard.icon || '🎨');
+      } else {
+        setName('');
+        setIcon('🎨');
+      }
+      setShowEmojiPicker(false);
     }
-    setShowEmojiPicker(false);
-  }, [editingWhiteboard, isOpen]);
+  }, [editingWhiteboard?.id, isOpen]);
 
   if (!isOpen) return null;
 
