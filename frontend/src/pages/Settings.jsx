@@ -1,4 +1,4 @@
-import { Target, Lightbulb, CheckSquare, Calendar, Book, DollarSign, BookOpen, Folder, Settings2, AppWindow } from 'lucide-react';
+import { Target, Lightbulb, CheckSquare, Calendar, Book, DollarSign, BookOpen, Folder, Settings2, AppWindow, Presentation } from 'lucide-react';
 import useSettingsStore from '../store/useSettingsStore';
 import usePageTitle from '../hooks/usePageTitle';
 
@@ -19,6 +19,7 @@ export default function Settings() {
     { id: 'reading', name: 'Reading', description: 'Log your reading progress and manage your library.', icon: BookOpen, color: 'text-orange-500' },
     { id: 'files', name: 'Files', description: 'Securely store and manage your documents.', icon: Folder, color: 'text-sky-500' },
     { id: 'apps', name: 'Apps', description: 'Create and manage custom HTML applications.', icon: AppWindow, color: 'text-pink-500' },
+    { id: 'whiteboard', name: 'Whiteboard', description: 'Draw, sketch diagrams, and brainstorm on infinite whiteboards.', icon: Presentation, color: 'text-cyan-500' },
   ];
 
   return (

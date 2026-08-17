@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Sanad.Api.Data;
 
@@ -10,9 +11,11 @@ using Sanad.Api.Data;
 namespace Sanad.Api.Migrations.Sanad
 {
     [DbContext(typeof(SanadDbContext))]
-    partial class SanadDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260817000000_AddWhiteboardFeature")]
+    partial class AddWhiteboardFeature
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.8");
@@ -725,15 +728,6 @@ namespace Sanad.Api.Migrations.Sanad
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<double?>("CameraX")
-                        .HasColumnType("REAL");
-
-                    b.Property<double?>("CameraY")
-                        .HasColumnType("REAL");
-
-                    b.Property<double?>("CameraZ")
-                        .HasColumnType("REAL");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
@@ -744,9 +738,6 @@ namespace Sanad.Api.Migrations.Sanad
                     b.Property<string>("Icon")
                         .IsRequired()
                         .HasColumnType("TEXT");
-
-                    b.Property<bool>("IsMinimapOpen")
-                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Name")
                         .IsRequired()

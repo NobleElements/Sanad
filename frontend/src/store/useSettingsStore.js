@@ -13,6 +13,7 @@ const useSettingsStore = create((set, get) => ({
     reading: true,
     files: true,
     apps: true,
+    whiteboard: true,
   },
   fetchSettings: async () => {
     try {

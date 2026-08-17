@@ -34,6 +34,7 @@ public class SanadDbContext : DbContext
     public DbSet<FileItem> FileItems => Set<FileItem>();
     public DbSet<UserSetting> UserSettings => Set<UserSetting>();
     public DbSet<CustomApp> CustomApps => Set<CustomApp>();
+    public DbSet<Whiteboard> Whiteboards => Set<Whiteboard>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

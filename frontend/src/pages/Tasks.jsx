@@ -77,12 +77,16 @@ export default function Tasks() {
   }, [taskId, isLoaded, tasks, openTaskModal]);
 
   useEffect(() => {
+    if (!isLoaded) return;
+
     if (isTaskModalOpen && activeTask && activeTask.id) {
-      navigate(`/tasks/${activeTask.id}`, { replace: true });
+      if (taskId !== activeTask.id.toString()) {
+        navigate(`/tasks/${activeTask.id}`, { replace: true });
+      }
     } else if (!isTaskModalOpen && taskId) {
       navigate(`/tasks`, { replace: true });
     }
-  }, [isTaskModalOpen, activeTask, navigate, taskId]);
+  }, [isTaskModalOpen, activeTask, navigate, taskId, isLoaded]);
 
   useEffect(() => {
     return () => {

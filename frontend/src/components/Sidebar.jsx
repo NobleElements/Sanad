@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Lightbulb, CheckSquare, Calendar as CalendarIcon, Book, DollarSign, BookOpen, Menu, LogOut, Repeat, Folder, Shield, CreditCard, Settings, AppWindow } from 'lucide-react';
+import { LayoutDashboard, Lightbulb, CheckSquare, Calendar as CalendarIcon, Book, DollarSign, BookOpen, Menu, LogOut, Repeat, Folder, Shield, CreditCard, Settings, AppWindow, Presentation } from 'lucide-react';
 import useAuthStore from '../store/useAuthStore';
 import useCalendarStore from '../store/useCalendarStore';
 import useSettingsStore from '../store/useSettingsStore';
@@ -34,7 +34,7 @@ export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }) {
   }, [setIsMobileMenuOpen, location.pathname]);
 
   const getLinkClass = (path) => {
-    const isActive = location.pathname === path;
+    const isActive = location.pathname === path || (path !== '/' && path !== '/dashboard' && location.pathname.startsWith(path + '/'));
     return `flex items-center gap-3 p-3 rounded transition-colors ${isActive ? 'bg-slate-800 text-slate-100 hover:bg-slate-700' : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'}`;
   };
 
@@ -137,6 +137,12 @@ export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }) {
           <Link to="/apps" className={getLinkClass('/apps')} title="Apps" onClick={handleLinkClick}>
             <AppWindow className="w-5 h-5 flex-shrink-0" />
             {(!isCollapsed || window.innerWidth < 768) && <span className="font-medium">Apps</span>}
+          </Link>
+        )}
+        {features.whiteboard && (
+          <Link to="/whiteboard" className={getLinkClass('/whiteboard')} title="Whiteboard" onClick={handleLinkClick}>
+            <Presentation className="w-5 h-5 flex-shrink-0" />
+            {(!isCollapsed || window.innerWidth < 768) && <span className="font-medium">Whiteboard</span>}
           </Link>
         )}
 

@@ -35,6 +35,8 @@ import RefundPolicy from './pages/RefundPolicy';
 import Settings from './pages/Settings';
 import AppsManager from './pages/Apps/AppsManager';
 import AppView from './pages/Apps/AppView';
+import Whiteboard from './pages/Whiteboard';
+import WhiteboardStandalone from './pages/WhiteboardStandalone';
 
 function App() {
   const { loaded, authenticated, isAdmin, checkAuthStatus } = useAuthStore();
@@ -144,6 +146,10 @@ function App() {
         <Route path="/apps" element={<ProtectedRoute><AppLayout><AppsManager /></AppLayout></ProtectedRoute>} />
         <Route path="/apps/:appId" element={<ProtectedRoute><AppLayout><AppView /></AppLayout></ProtectedRoute>} />
         <Route path="/app-standalone/:appId" element={<ProtectedRoute><AppView standalone={true} /></ProtectedRoute>} />
+        
+        <Route path="/whiteboard" element={<ProtectedRoute><AppLayout><Whiteboard /></AppLayout></ProtectedRoute>} />
+        <Route path="/whiteboard/:id" element={<ProtectedRoute><AppLayout><Whiteboard /></AppLayout></ProtectedRoute>} />
+        <Route path="/whiteboard-standalone/:id" element={<ProtectedRoute><WhiteboardStandalone /></ProtectedRoute>} />
         
         <Route 
           path="/admin" 

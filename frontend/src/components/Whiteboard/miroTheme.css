@@ -1,0 +1,49 @@
+/* Miro Theme Polish & Whiteboard Styling */
+
+/* Hide default tldraw UI elements to provide pure Miro aesthetic */
+.miro-whiteboard .tlui-layout__top,
+.miro-whiteboard .tlui-layout__top-left,
+.miro-whiteboard .tlui-layout__top-right,
+.miro-whiteboard .tlui-layout__bottom,
+.miro-whiteboard .tlui-layout__bottom-left,
+.miro-whiteboard .tlui-layout__bottom-right,
+.miro-whiteboard .tlui-style-panel,
+.miro-whiteboard .tlui-toolbar,
+.miro-whiteboard .tlui-navigation-zone,
+.miro-whiteboard .tlui-help-menu,
+.miro-whiteboard .tlui-page-menu {
+  display: none !important;
+}
+
+/* Subtle Miro Background Grid */
+.miro-whiteboard .tl-canvas {
+  background-color: #f8fafc !important;
+}
+
+.dark .miro-whiteboard .tl-canvas {
+  background-color: #0f172a !important;
+}
+
+/* Selection and Hover Indicators */
+.miro-whiteboard .tl-shape-indicator {
+  stroke: #6366f1 !important;
+  stroke-width: 2px !important;
+}
+
+/* Custom Context Menus & Popovers */
+.miro-whiteboard .tlui-popover,
+.miro-whiteboard .tlui-menu {
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border: 1px solid rgba(226, 232, 240, 0.9) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.12) !important;
+}
+
+.dark .miro-whiteboard .tlui-popover,
+.dark .miro-whiteboard .tlui-menu {
+  background: rgba(30, 41, 59, 0.95) !important;
+  border-color: rgba(51, 65, 85, 0.9) !important;
+  box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.4) !important;
+}
