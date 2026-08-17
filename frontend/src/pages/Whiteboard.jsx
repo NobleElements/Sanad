@@ -190,7 +190,7 @@ export default function Whiteboard() {
             <button
               type="button"
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 text-slate-800 dark:text-slate-100 font-semibold text-sm max-w-[280px] sm:max-w-xs transition-colors shadow-sm"
+              className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 font-semibold text-sm max-w-[280px] sm:max-w-xs transition-colors shadow-sm"
             >
               {activeWhiteboard ? (
                 <>

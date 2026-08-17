@@ -15,6 +15,29 @@ const useSettingsStore = create((set, get) => ({
     apps: true,
     whiteboard: true,
   },
+  tldrawLicenseKey: typeof window !== 'undefined' ? (localStorage.getItem('sanad_tldraw_license_key') || '') : '',
+  publicSettingsLoaded: false,
+
+  fetchPublicSettings: async () => {
+    try {
+      const res = await fetch(`${API_URL}/settings/public`);
+      if (res.ok) {
+        const data = await res.json();
+        const key = data.tldrawLicenseKey || '';
+        set({ tldrawLicenseKey: key, publicSettingsLoaded: true });
+        if (typeof window !== 'undefined') {
+          if (key) {
+            localStorage.setItem('sanad_tldraw_license_key', key);
+          } else {
+            localStorage.removeItem('sanad_tldraw_license_key');
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Failed to fetch public settings', e);
+    }
+  },
+
   fetchSettings: async () => {
     try {
       const res = await fetch(`${API_URL}/settings`);
@@ -32,6 +55,7 @@ const useSettingsStore = create((set, get) => ({
       console.error('Failed to fetch settings', e);
     }
   },
+
   toggleFeature: async (featureName) => {
     const currentState = get().features[featureName];
     const newState = !currentState;

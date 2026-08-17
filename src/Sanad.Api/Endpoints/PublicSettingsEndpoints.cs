@@ -14,7 +14,8 @@ public static class PublicSettingsEndpoints
             var settings = await db.SystemSettings.ToDictionaryAsync(s => s.Key, s => s.Value);
             return Results.Ok(new
             {
-                ContactEmail = settings.GetValueOrDefault("ContactEmail", "")
+                ContactEmail = settings.GetValueOrDefault("ContactEmail", ""),
+                TldrawLicenseKey = settings.GetValueOrDefault("TldrawLicenseKey", "")
             });
         });
     }

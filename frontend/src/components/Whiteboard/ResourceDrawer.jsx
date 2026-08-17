@@ -74,25 +74,21 @@ export default function ResourceDrawer({ isOpen, onClose, onInsertResource }) {
   };
 
   return (
-    <div className="absolute top-14 right-3 bottom-3 w-80 sm:w-96 bg-white/95 dark:bg-slate-850/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-slate-200/80 dark:border-slate-700/80 z-40 flex flex-col overflow-hidden animate-in slide-in-from-right duration-200 font-sans">
-      {/* Drawer Header */}
-      <div className="p-4 border-b border-slate-100 dark:border-slate-700/70 flex items-center justify-between">
+    <div className="absolute top-14 right-3 bottom-3 w-80 sm:w-96 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-slate-200/80 dark:border-slate-800 z-40 flex flex-col overflow-hidden animate-in slide-in-from-right duration-200 font-sans">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-800">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400">
+          <div className="w-7 h-7 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
             <Sparkles className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
-              Sanad Resources
-            </h3>
-            <p className="text-[11px] text-slate-400 dark:text-slate-500">
-              Drag or insert cards onto your canvas
-            </p>
+            <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">Sanad Resources</h3>
+            <p className="text-[11px] text-slate-400 dark:text-slate-500">Drag & drop cards onto whiteboard</p>
           </div>
         </div>
         <button
           onClick={onClose}
-          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-750 transition-colors"
+          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
         >
           <X className="w-4 h-4" />
         </button>

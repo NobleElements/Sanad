@@ -488,7 +488,7 @@ export default function MiroSelectionToolbar({ editor }) {
         zIndex: 100
       }}
       onPointerDown={(e) => e.stopPropagation()}
-      className="pointer-events-auto select-none flex items-center gap-1.5 p-1.5 bg-white/95 dark:bg-slate-850/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-slate-200/90 dark:border-slate-700/90 animate-in fade-in zoom-in-95 duration-100 font-sans"
+      className="pointer-events-auto select-none flex items-center gap-1.5 p-1.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-slate-200/90 dark:border-slate-800 animate-in fade-in zoom-in-95 duration-100 font-sans"
     >
       {/* 1. Arrow Shape Dropdown (Straight / Curved / Squared) */}
       {hasArrows && (
@@ -497,7 +497,7 @@ export default function MiroSelectionToolbar({ editor }) {
             <button
               type="button"
               onClick={() => setActiveMenu(activeMenu === 'arrowKind' ? null : 'arrowKind')}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-750 text-xs font-semibold text-slate-700 dark:text-slate-200 transition-colors"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 transition-colors"
               title="Arrow Shape"
             >
               {(() => {
@@ -515,7 +515,7 @@ export default function MiroSelectionToolbar({ editor }) {
 
             {/* Arrow Shape Dropdown Menu */}
             {activeMenu === 'arrowKind' && (
-              <div className={`absolute ${popoverAlignClass} p-1.5 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 flex flex-col gap-1 w-36 z-50 animate-in fade-in zoom-in-95`}>
+              <div className={`absolute ${popoverAlignClass} p-1.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 flex flex-col gap-1 w-36 z-50 animate-in fade-in zoom-in-95`}>
                 {ARROW_KINDS.map((ak) => {
                   const Icon = ak.icon;
                   const isSelected = currentStyles.arrowKind === ak.id;
@@ -528,8 +528,8 @@ export default function MiroSelectionToolbar({ editor }) {
                       }}
                       className={`flex items-center gap-2 px-3 py-2 rounded-xl text-left text-xs font-medium transition-colors ${
                         isSelected
-                          ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold'
-                          : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700'
+                          ? 'bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 font-bold'
+                          : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
                       }`}
                     >
                       <Icon className="w-3.5 h-3.5" />
@@ -545,14 +545,14 @@ export default function MiroSelectionToolbar({ editor }) {
           <button
             type="button"
             onClick={handleAddOrEditArrowText}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-colors"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-colors"
             title="Add or edit text on arrow (Double-click arrow to edit)"
           >
             <Type className="w-3.5 h-3.5 text-indigo-500" />
             <span>Text</span>
           </button>
 
-          <div className="h-4 w-px bg-slate-200 dark:bg-slate-700" />
+          <div className="h-4 w-px bg-slate-200 dark:bg-slate-800" />
         </>
       )}
 
@@ -562,7 +562,7 @@ export default function MiroSelectionToolbar({ editor }) {
           <button
             type="button"
             onClick={() => setActiveMenu(activeMenu === 'noteColor' ? null : 'noteColor')}
-            className="flex items-center gap-1.5 px-2 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-750 transition-colors"
+            className="flex items-center gap-1.5 px-2 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
             title="Sticky Note Color"
           >
             <StickyNote className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
@@ -572,13 +572,13 @@ export default function MiroSelectionToolbar({ editor }) {
 
           {/* Note Color Palette Popover */}
           {activeMenu === 'noteColor' && (
-            <div className={`absolute ${popoverAlignClass} p-2.5 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 grid grid-cols-4 gap-2 w-44 z-50 animate-in fade-in zoom-in-95`}>
+            <div className={`absolute ${popoverAlignClass} p-2.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 grid grid-cols-4 gap-2 w-44 z-50 animate-in fade-in zoom-in-95`}>
               {MIRO_COLORS.map((col) => (
                 <button
                   key={col.id}
                   onClick={() => handleApplyNoteColor(col.id)}
                   className={`w-7 h-7 rounded-lg border shadow-sm transition-transform hover:scale-110 active:scale-95 ${col.bg} ${
-                    currentStyles.noteColor === col.id ? 'ring-2 ring-indigo-500 ring-offset-1 dark:ring-offset-slate-800' : ''
+                    currentStyles.noteColor === col.id ? 'ring-2 ring-indigo-500 ring-offset-1 dark:ring-offset-slate-900' : ''
                   }`}
                   title={col.label}
                 />
@@ -594,7 +594,7 @@ export default function MiroSelectionToolbar({ editor }) {
           <button
             type="button"
             onClick={() => setActiveMenu(activeMenu === 'shapeColor' ? null : 'shapeColor')}
-            className="flex items-center gap-1.5 px-2 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-750 transition-colors"
+            className="flex items-center gap-1.5 px-2 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
             title={hasArrows ? "Arrow Color" : "Shape / Border Color"}
           >
             <Palette className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
@@ -604,13 +604,13 @@ export default function MiroSelectionToolbar({ editor }) {
 
           {/* Shape Color Palette Popover */}
           {activeMenu === 'shapeColor' && (
-            <div className={`absolute ${popoverAlignClass} p-2.5 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 grid grid-cols-4 gap-2 w-44 z-50 animate-in fade-in zoom-in-95`}>
+            <div className={`absolute ${popoverAlignClass} p-2.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 grid grid-cols-4 gap-2 w-44 z-50 animate-in fade-in zoom-in-95`}>
               {MIRO_COLORS.map((col) => (
                 <button
                   key={col.id}
                   onClick={() => handleApplyShapeColor(col.id)}
                   className={`w-7 h-7 rounded-lg border shadow-sm transition-transform hover:scale-110 active:scale-95 ${col.bg} ${
-                    currentStyles.shapeColor === col.id ? 'ring-2 ring-indigo-500 ring-offset-1 dark:ring-offset-slate-800' : ''
+                    currentStyles.shapeColor === col.id ? 'ring-2 ring-indigo-500 ring-offset-1 dark:ring-offset-slate-900' : ''
                   }`}
                   title={col.label}
                 />
@@ -626,7 +626,7 @@ export default function MiroSelectionToolbar({ editor }) {
           <button
             type="button"
             onClick={() => setActiveMenu(activeMenu === 'textColor' ? null : 'textColor')}
-            className="flex items-center gap-1.5 px-2 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-750 transition-colors"
+            className="flex items-center gap-1.5 px-2 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
             title={hasArrows ? "Arrow Text Color" : "Text / Font Color"}
           >
             <div className="flex flex-col items-center justify-center -space-y-0.5">
@@ -638,13 +638,13 @@ export default function MiroSelectionToolbar({ editor }) {
 
           {/* Text Color Palette Popover */}
           {activeMenu === 'textColor' && (
-            <div className={`absolute ${popoverAlignClass} p-2.5 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 grid grid-cols-4 gap-2 w-44 z-50 animate-in fade-in zoom-in-95`}>
+            <div className={`absolute ${popoverAlignClass} p-2.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 grid grid-cols-4 gap-2 w-44 z-50 animate-in fade-in zoom-in-95`}>
               {MIRO_COLORS.map((col) => (
                 <button
                   key={col.id}
                   onClick={() => handleApplyTextColor(col.id)}
                   className={`w-7 h-7 rounded-lg border shadow-sm transition-transform hover:scale-110 active:scale-95 ${col.bg} ${
-                    currentStyles.textColor === col.id ? 'ring-2 ring-indigo-500 ring-offset-1 dark:ring-offset-slate-800' : ''
+                    currentStyles.textColor === col.id ? 'ring-2 ring-indigo-500 ring-offset-1 dark:ring-offset-slate-900' : ''
                   }`}
                   title={col.label}
                 />
@@ -657,7 +657,7 @@ export default function MiroSelectionToolbar({ editor }) {
       {/* 5. Font Size (S / M / L / XL) */}
       {(hasNotes || hasText || hasGeo || hasArrows || hasDraw) && (
         <>
-          <div className="h-4 w-px bg-slate-200 dark:bg-slate-700" />
+          <div className="h-4 w-px bg-slate-200 dark:bg-slate-800" />
           <div className="flex items-center bg-slate-100/80 dark:bg-slate-800/80 p-0.5 rounded-xl">
             {FONT_SIZES.map((sz) => (
               <button
@@ -684,7 +684,7 @@ export default function MiroSelectionToolbar({ editor }) {
           <button
             type="button"
             onClick={() => setActiveMenu(activeMenu === 'font' ? null : 'font')}
-            className="flex items-center gap-1 px-2 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-750 text-xs font-semibold text-slate-700 dark:text-slate-200 transition-colors"
+            className="flex items-center gap-1 px-2 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 transition-colors"
             title="Font Style"
           >
             <Type className="w-3.5 h-3.5 text-slate-500" />
@@ -694,15 +694,15 @@ export default function MiroSelectionToolbar({ editor }) {
 
           {/* Font Family Popover */}
           {activeMenu === 'font' && (
-            <div className={`absolute ${popoverAlignClass} p-1.5 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 flex flex-col gap-1 w-32 z-50 animate-in fade-in zoom-in-95`}>
+            <div className={`absolute ${popoverAlignClass} p-1.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 flex flex-col gap-1 w-32 z-50 animate-in fade-in zoom-in-95`}>
               {FONT_FAMILIES.map((f) => (
                 <button
                   key={f.id}
                   onClick={() => handleApplyFont(f.id)}
                   className={`px-3 py-1.5 rounded-xl text-left text-xs font-medium transition-colors ${
                     currentStyles.font === f.id
-                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold'
-                      : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700'
+                      ? 'bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 font-bold'
+                      : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
                   {f.label}
@@ -716,7 +716,7 @@ export default function MiroSelectionToolbar({ editor }) {
       {/* 7. Text Alignment (Left / Center / Right) */}
       {(hasNotes || hasText || hasGeo) && (
         <>
-          <div className="h-4 w-px bg-slate-200 dark:bg-slate-700" />
+          <div className="h-4 w-px bg-slate-200 dark:bg-slate-800" />
           <div className="flex items-center gap-0.5">
             {ALIGNMENTS.map((al) => {
               const Icon = al.icon;
@@ -728,8 +728,8 @@ export default function MiroSelectionToolbar({ editor }) {
                   onClick={() => handleApplyAlign(al.id)}
                   className={`p-1.5 rounded-lg text-xs transition-colors ${
                     isSelected
-                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400'
-                      : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-750'
+                      ? 'bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400'
+                      : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                   title={al.label}
                 >
@@ -747,7 +747,7 @@ export default function MiroSelectionToolbar({ editor }) {
           <button
             type="button"
             onClick={() => setActiveMenu(activeMenu === 'fill' ? null : 'fill')}
-            className="flex items-center gap-1 px-2 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-750 text-xs font-semibold text-slate-700 dark:text-slate-200 transition-colors"
+            className="flex items-center gap-1 px-2 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 transition-colors"
             title="Fill Style"
           >
             <span className="capitalize">{currentStyles.fill}</span>
@@ -756,15 +756,15 @@ export default function MiroSelectionToolbar({ editor }) {
 
           {/* Fill Popover */}
           {activeMenu === 'fill' && (
-            <div className={`absolute ${popoverAlignClass} p-1.5 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 flex flex-col gap-1 w-28 z-50 animate-in fade-in zoom-in-95`}>
+            <div className={`absolute ${popoverAlignClass} p-1.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 flex flex-col gap-1 w-28 z-50 animate-in fade-in zoom-in-95`}>
               {FILL_STYLES.map((fil) => (
                 <button
                   key={fil.id}
                   onClick={() => handleApplyFill(fil.id)}
                   className={`px-3 py-1.5 rounded-xl text-left text-xs font-medium transition-colors ${
                     currentStyles.fill === fil.id
-                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold'
-                      : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700'
+                      ? 'bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 font-bold'
+                      : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
                   {fil.label}
@@ -775,13 +775,13 @@ export default function MiroSelectionToolbar({ editor }) {
         </div>
       )}
 
-      <div className="h-4 w-px bg-slate-200 dark:bg-slate-700" />
+      <div className="h-4 w-px bg-slate-200 dark:bg-slate-800" />
 
       {/* 9. Quick Duplicate & Delete */}
       <button
         type="button"
         onClick={handleDuplicate}
-        className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-750 transition-colors"
+        className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
         title="Duplicate (places copy to the right)"
       >
         <Copy className="w-3.5 h-3.5" />

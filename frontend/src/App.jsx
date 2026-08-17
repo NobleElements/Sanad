@@ -46,11 +46,15 @@ function App() {
 
   useEffect(() => {
     checkAuthStatus();
+    useSettingsStore.getState().fetchPublicSettings();
     
     const handleMigrating = () => setIsMigrating(true);
     window.addEventListener('account_migrating', handleMigrating);
 
-    const handleOnline = () => setOfflineStatus(false);
+    const handleOnline = () => {
+      setOfflineStatus(false);
+      useSettingsStore.getState().fetchPublicSettings();
+    };
     const handleOffline = () => setOfflineStatus(true);
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
@@ -66,6 +70,7 @@ function App() {
     const isOffline = useUIStore.getState().isOffline;
     if (authenticated && !isOffline) {
       useSettingsStore.getState().fetchSettings();
+      useSettingsStore.getState().fetchPublicSettings();
       warmUpApiCache();
     }
   }, [authenticated]);

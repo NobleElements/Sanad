@@ -27,7 +27,9 @@ import {
   RotateCcw, 
   RotateCw, 
   Maximize, 
-  Download,
+  Grid2X2,
+  Palette,
+  Check,
   Trash2
 } from 'lucide-react';
 import { DefaultColorStyle, GeoShapeGeoStyle } from 'tldraw';
@@ -67,19 +69,33 @@ const CONNECTOR_TOOLS = [
   { id: 'line', label: 'Straight Line', icon: Minus, kbd: 'L' }
 ];
 
-export default function MiroToolbar({ editor, onToggleResourceDrawer, isResourceDrawerOpen }) {
+const CANVAS_BACKGROUNDS = [
+  { id: 'auto', label: 'Adaptive Auto', color: 'transparent', border: 'border-dashed border-slate-400' },
+  { id: '#0f172a', label: 'Slate Dark', color: '#0f172a', border: 'border-slate-700 bg-slate-900' },
+  { id: '#18181b', label: 'Charcoal', color: '#18181b', border: 'border-zinc-700 bg-zinc-900' },
+  { id: '#0c192c', label: 'Midnight Navy', color: '#0c192c', border: 'border-blue-900 bg-[#0c192c]' },
+  { id: '#f8fafc', label: 'Slate Light', color: '#f8fafc', border: 'border-slate-300 bg-slate-50' },
+  { id: '#ffffff', label: 'Pure White', color: '#ffffff', border: 'border-slate-300 bg-white' },
+  { id: '#faf8f5', label: 'Warm Cream', color: '#faf8f5', border: 'border-amber-200 bg-[#faf8f5]' }
+];
+
+export default function MiroToolbar({ editor, onToggleResourceDrawer, isResourceDrawerOpen, customBgColor, onSelectBgColor }) {
   const [currentTool, setCurrentTool] = useState('select');
-  const [activeFlyout, setActiveFlyout] = useState(null); // 'select' | 'sticky' | 'shapes' | 'draw' | 'connectors' | 'more' | null
+  const [activeFlyout, setActiveFlyout] = useState(null); // 'select' | 'sticky' | 'shapes' | 'draw' | 'connectors' | 'more' | 'bg' | null
+  const [isGridOn, setIsGridOn] = useState(false);
   const flyoutRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  // Sync active tool from tldraw editor
+  // Sync active tool and grid from tldraw editor
   useEffect(() => {
     if (!editor) return;
 
     const updateTool = () => {
       const toolId = editor.getCurrentToolId();
       setCurrentTool(toolId);
+      if (editor.getGridMode) {
+        setIsGridOn(editor.getGridMode());
+      }
     };
 
     updateTool();
@@ -130,6 +146,19 @@ export default function MiroToolbar({ editor, onToggleResourceDrawer, isResource
     }
   };
 
+  const handleToggleGrid = () => {
+    try {
+      if (editor.setGridMode && editor.getGridMode) {
+        const next = !editor.getGridMode();
+        editor.setGridMode(next);
+        setIsGridOn(next);
+      }
+      setActiveFlyout(null);
+    } catch (e) {
+      console.warn('Failed to toggle grid mode', e);
+    }
+  };
+
   const handleImageUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file || !editor) return;
@@ -145,7 +174,6 @@ export default function MiroToolbar({ editor, onToggleResourceDrawer, isResource
           point: center
         });
       } else {
-        // Fallback: Measure natural image dimensions to avoid cropping
         const reader = new FileReader();
         reader.onload = () => {
           const img = new Image();
@@ -153,7 +181,6 @@ export default function MiroToolbar({ editor, onToggleResourceDrawer, isResource
             const naturalW = img.naturalWidth || 600;
             const naturalH = img.naturalHeight || 400;
 
-            // Fit nicely within canvas view while preserving exact aspect ratio
             const maxDimension = 600;
             let displayW = naturalW;
             let displayH = naturalH;
@@ -215,7 +242,7 @@ export default function MiroToolbar({ editor, onToggleResourceDrawer, isResource
   return (
     <div 
       ref={flyoutRef}
-      className="absolute left-4 top-1/2 -translate-y-1/2 z-30 flex items-center pointer-events-auto"
+      className="absolute left-4 top-1/2 -translate-y-1/2 z-30 flex items-center pointer-events-auto font-sans"
       onPointerDown={(e) => e.stopPropagation()}
     >
       {/* Hidden File Input for Image Upload */}
@@ -228,7 +255,7 @@ export default function MiroToolbar({ editor, onToggleResourceDrawer, isResource
       />
 
       {/* Main Vertical Toolbar Capsule */}
-      <div className="flex flex-col items-center gap-1.5 p-2 bg-white/90 dark:bg-slate-850/90 backdrop-blur-2xl rounded-2xl shadow-2xl border border-slate-200/90 dark:border-slate-700/90">
+      <div className="flex flex-col items-center gap-1.5 p-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-slate-200/90 dark:border-slate-800">
         
         {/* 1. Pointer / Select / Hand Tool */}
         <div className="relative group">
@@ -244,7 +271,7 @@ export default function MiroToolbar({ editor, onToggleResourceDrawer, isResource
             className={`p-2.5 rounded-xl transition-all ${
               currentTool === 'select' || currentTool === 'hand'
                 ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none'
-                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-750'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
             title="Select (V) / Hand (H)"
           >
@@ -253,11 +280,11 @@ export default function MiroToolbar({ editor, onToggleResourceDrawer, isResource
 
           {/* Flyout: Select / Hand */}
           {activeFlyout === 'select' && (
-            <div className="absolute left-full ml-3 top-0 w-40 p-1.5 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 flex flex-col gap-1 animate-in fade-in zoom-in-95 duration-100 z-50">
+            <div className="absolute left-full ml-3 top-0 w-40 p-1.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 flex flex-col gap-1 animate-in fade-in zoom-in-95 duration-100 z-50">
               <button
                 onClick={() => selectTool('select')}
                 className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${
-                  currentTool === 'select' ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700'
+                  currentTool === 'select' ? 'bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
                 }`}
               >
                 <MousePointer2 className="w-4 h-4" />
@@ -266,7 +293,7 @@ export default function MiroToolbar({ editor, onToggleResourceDrawer, isResource
               <button
                 onClick={() => selectTool('hand')}
                 className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${
-                  currentTool === 'hand' ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700'
+                  currentTool === 'hand' ? 'bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
                 }`}
               >
                 <Hand className="w-4 h-4" />
@@ -293,7 +320,7 @@ export default function MiroToolbar({ editor, onToggleResourceDrawer, isResource
           <Sparkles className="w-5 h-5" />
         </button>
 
-        <div className="w-6 h-px bg-slate-200/80 dark:bg-slate-700/80 my-0.5" />
+        <div className="w-6 h-px bg-slate-200/80 dark:bg-slate-800 my-0.5" />
 
         {/* 3. Text Tool */}
         <button
@@ -302,7 +329,7 @@ export default function MiroToolbar({ editor, onToggleResourceDrawer, isResource
           className={`p-2.5 rounded-xl transition-all ${
             currentTool === 'text'
               ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none'
-              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-750'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
           title="Text (T)"
         >
@@ -324,7 +351,7 @@ export default function MiroToolbar({ editor, onToggleResourceDrawer, isResource
             className={`p-2.5 rounded-xl transition-all ${
               currentTool === 'note'
                 ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none'
-                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-750'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
             title="Sticky Note (N)"
           >
@@ -333,7 +360,7 @@ export default function MiroToolbar({ editor, onToggleResourceDrawer, isResource
 
           {/* Flyout: Sticky Note Colors */}
           {activeFlyout === 'sticky' && (
-            <div className="absolute left-full ml-3 top-0 w-44 p-3 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 animate-in fade-in zoom-in-95 duration-100 z-50">
+            <div className="absolute left-full ml-3 top-0 w-44 p-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in-95 duration-100 z-50">
               <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wider">
                 Sticky Colors
               </div>
@@ -361,7 +388,7 @@ export default function MiroToolbar({ editor, onToggleResourceDrawer, isResource
             className={`p-2.5 rounded-xl transition-all ${
               isShapeTool
                 ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none'
-                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-750'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
             title="Shapes (R / C)"
           >
@@ -370,7 +397,7 @@ export default function MiroToolbar({ editor, onToggleResourceDrawer, isResource
 
           {/* Flyout: Shapes Grid */}
           {activeFlyout === 'shapes' && (
-            <div className="absolute left-full ml-3 top-0 w-52 p-3 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 animate-in fade-in zoom-in-95 duration-100 z-50">
+            <div className="absolute left-full ml-3 top-0 w-52 p-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in-95 duration-100 z-50">
               <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wider">
                 Shapes
               </div>
@@ -381,10 +408,13 @@ export default function MiroToolbar({ editor, onToggleResourceDrawer, isResource
                     <button
                       key={shp.id}
                       onClick={() => handleSelectShape(shp.id)}
-                      className="p-2.5 rounded-xl flex flex-col items-center justify-center text-slate-700 dark:text-slate-200 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all border border-slate-100 dark:border-slate-700/60"
+                      className="flex flex-col items-center justify-center p-2 rounded-xl border border-slate-100 dark:border-slate-800 hover:border-indigo-200 dark:hover:border-indigo-700 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/40 text-slate-700 dark:text-slate-200 transition-all group"
                       title={shp.label}
                     >
-                      <Icon className="w-5 h-5" />
+                      <Icon className="w-5 h-5 text-slate-600 dark:text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" />
+                      <span className="text-[10px] mt-1 font-medium text-slate-500 dark:text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 truncate max-w-full">
+                        {shp.label}
+                      </span>
                     </button>
                   );
                 })}
@@ -393,7 +423,7 @@ export default function MiroToolbar({ editor, onToggleResourceDrawer, isResource
           )}
         </div>
 
-        {/* 6. Connectors / Lines Flyout */}
+        {/* 6. Connectors (Arrow, Line) */}
         <div className="relative">
           <button
             type="button"
@@ -408,7 +438,7 @@ export default function MiroToolbar({ editor, onToggleResourceDrawer, isResource
             className={`p-2.5 rounded-xl transition-all ${
               isConnectorTool
                 ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none'
-                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-750'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
             title="Connection Lines & Arrows (A / L)"
           >
@@ -417,7 +447,7 @@ export default function MiroToolbar({ editor, onToggleResourceDrawer, isResource
 
           {/* Flyout: Connectors */}
           {activeFlyout === 'connectors' && (
-            <div className="absolute left-full ml-3 top-0 w-44 p-1.5 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 flex flex-col gap-1 animate-in fade-in zoom-in-95 duration-100 z-50">
+            <div className="absolute left-full ml-3 top-0 w-44 p-1.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 flex flex-col gap-1 animate-in fade-in zoom-in-95 duration-100 z-50">
               {CONNECTOR_TOOLS.map((t) => {
                 const Icon = t.icon;
                 const isSelected = currentTool === t.id;
@@ -427,8 +457,8 @@ export default function MiroToolbar({ editor, onToggleResourceDrawer, isResource
                     onClick={() => selectTool(t.id)}
                     className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${
                       isSelected
-                        ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400'
-                        : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700'
+                        ? 'bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400'
+                        : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
                     }`}
                   >
                     <Icon className="w-4 h-4" />
@@ -455,7 +485,7 @@ export default function MiroToolbar({ editor, onToggleResourceDrawer, isResource
             className={`p-2.5 rounded-xl transition-all ${
               isDrawTool
                 ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none'
-                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-750'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
             title="Drawing Tools (P / E / L)"
           >
@@ -464,7 +494,7 @@ export default function MiroToolbar({ editor, onToggleResourceDrawer, isResource
 
           {/* Flyout: Drawing Tools */}
           {activeFlyout === 'draw' && (
-            <div className="absolute left-full ml-3 top-0 w-48 p-1.5 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 flex flex-col gap-1 animate-in fade-in zoom-in-95 duration-100 z-50">
+            <div className="absolute left-full ml-3 top-0 w-48 p-1.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 flex flex-col gap-1 animate-in fade-in zoom-in-95 duration-100 z-50">
               {DRAW_TOOLS.map((t) => {
                 const Icon = t.icon;
                 const isSelected = currentTool === t.id;
@@ -474,8 +504,8 @@ export default function MiroToolbar({ editor, onToggleResourceDrawer, isResource
                     onClick={() => selectTool(t.id)}
                     className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${
                       isSelected
-                        ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400'
-                        : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700'
+                        ? 'bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400'
+                        : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
                     }`}
                   >
                     <Icon className="w-4 h-4" />
@@ -494,7 +524,7 @@ export default function MiroToolbar({ editor, onToggleResourceDrawer, isResource
           className={`p-2.5 rounded-xl transition-all ${
             currentTool === 'frame'
               ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none'
-              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-750'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
           title="Frame / Presentation Section (F)"
         >
@@ -505,15 +535,75 @@ export default function MiroToolbar({ editor, onToggleResourceDrawer, isResource
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="p-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-750 transition-all"
+          className="p-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
           title="Upload Image / Media"
         >
           <ImageIcon className="w-5 h-5" />
         </button>
 
-        <div className="w-6 h-px bg-slate-200/80 dark:bg-slate-700/80 my-0.5" />
+        <div className="w-6 h-px bg-slate-200/80 dark:bg-slate-800 my-0.5" />
 
-        {/* 10. More Actions Flyout (...) */}
+        {/* 10. Canvas Background & Grid Settings */}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setActiveFlyout(activeFlyout === 'bg' ? null : 'bg')}
+            className={`p-2.5 rounded-xl transition-all ${
+              activeFlyout === 'bg'
+                ? 'bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+            title="Canvas Background & Grid"
+          >
+            <Palette className="w-5 h-5" />
+          </button>
+
+          {/* Flyout: Canvas Background & Grid */}
+          {activeFlyout === 'bg' && (
+            <div className="absolute left-full ml-3 bottom-0 w-52 p-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 flex flex-col gap-2.5 animate-in fade-in zoom-in-95 duration-100 z-50">
+              <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                Canvas Background
+              </div>
+              <div className="grid grid-cols-4 gap-2">
+                {CANVAS_BACKGROUNDS.map((bg) => (
+                  <button
+                    key={bg.id}
+                    onClick={() => {
+                      onSelectBgColor?.(bg.id === 'auto' ? '' : bg.id);
+                      setActiveFlyout(null);
+                    }}
+                    className={`w-8 h-8 rounded-xl border shadow-sm flex items-center justify-center transition-transform hover:scale-110 active:scale-95 ${bg.border} ${
+                      (customBgColor === bg.id || (!customBgColor && bg.id === 'auto')) ? 'ring-2 ring-indigo-500 ring-offset-1 dark:ring-offset-slate-900' : ''
+                    }`}
+                    style={bg.id !== 'auto' ? { backgroundColor: bg.color } : {}}
+                    title={bg.label}
+                  >
+                    {(customBgColor === bg.id || (!customBgColor && bg.id === 'auto')) && (
+                      <Check className={`w-3.5 h-3.5 ${bg.id === '#ffffff' || bg.id === '#f8fafc' || bg.id === '#faf8f5' ? 'text-slate-800' : 'text-white'}`} />
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              <div className="h-px bg-slate-100 dark:bg-slate-800 my-0.5" />
+
+              <button
+                onClick={handleToggleGrid}
+                className="flex items-center justify-between w-full px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <Grid2X2 className="w-4 h-4 text-slate-400" />
+                  <span>Grid Lines</span>
+                </div>
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${isGridOn ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'}`}>
+                  {isGridOn ? 'ON' : 'OFF'}
+                </span>
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* 11. More Actions Flyout (...) */}
         <div className="relative">
           <button
             type="button"
@@ -521,7 +611,7 @@ export default function MiroToolbar({ editor, onToggleResourceDrawer, isResource
             className={`p-2.5 rounded-xl transition-all ${
               activeFlyout === 'more'
                 ? 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-100'
-                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-750'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
             title="More Options"
           >
@@ -530,13 +620,13 @@ export default function MiroToolbar({ editor, onToggleResourceDrawer, isResource
 
           {/* Flyout: More Actions */}
           {activeFlyout === 'more' && (
-            <div className="absolute left-full ml-3 bottom-0 w-48 p-1.5 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 flex flex-col gap-1 animate-in fade-in zoom-in-95 duration-100 z-50">
+            <div className="absolute left-full ml-3 bottom-0 w-48 p-1.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 flex flex-col gap-1 animate-in fade-in zoom-in-95 duration-100 z-50">
               <button
                 onClick={() => {
                   editor.undo();
                   setActiveFlyout(null);
                 }}
-                className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
                 <RotateCcw className="w-4 h-4 text-slate-400" />
                 <span>Undo (Ctrl+Z)</span>
@@ -546,7 +636,7 @@ export default function MiroToolbar({ editor, onToggleResourceDrawer, isResource
                   editor.redo();
                   setActiveFlyout(null);
                 }}
-                className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
                 <RotateCw className="w-4 h-4 text-slate-400" />
                 <span>Redo (Ctrl+Y)</span>
@@ -556,12 +646,12 @@ export default function MiroToolbar({ editor, onToggleResourceDrawer, isResource
                   editor.zoomToFit();
                   setActiveFlyout(null);
                 }}
-                className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
                 <Maximize className="w-4 h-4 text-slate-400" />
                 <span>Zoom to Fit (Shift+1)</span>
               </button>
-              <div className="h-px bg-slate-100 dark:bg-slate-700 my-1" />
+              <div className="h-px bg-slate-100 dark:bg-slate-800 my-1" />
               <button
                 onClick={() => {
                   editor.selectAll();

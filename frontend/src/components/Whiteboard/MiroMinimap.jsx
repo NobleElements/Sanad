@@ -4,8 +4,7 @@ import {
   Minus, 
   Maximize2, 
   Map, 
-  ChevronDown, 
-  ChevronUp 
+  ChevronDown
 } from 'lucide-react';
 
 const MINIMAP_WIDTH = 210;
@@ -148,25 +147,38 @@ export default function MiroMinimap({ editor, isOpen = true, onToggle }) {
     const targetPageX = minX + (clickX - offsetX) / scale;
     const targetPageY = minY + (clickY - offsetY) / scale;
 
-    editor.centerOnPoint({ x: targetPageX, y: targetPageY }, { animation: { duration: 150 } });
+    try {
+      const zoom = editor.getZoomLevel ? editor.getZoomLevel() : 1;
+      const container = editor.getContainer ? editor.getContainer() : null;
+      const viewW = container ? container.clientWidth : window.innerWidth;
+      const viewH = container ? container.clientHeight : window.innerHeight;
+
+      // Center the camera on the target point
+      editor.setCamera({
+        x: -targetPageX + viewW / (2 * zoom),
+        y: -targetPageY + viewH / (2 * zoom),
+        z: zoom
+      });
+    } catch (err) {
+      console.warn('Failed to pan canvas from minimap', err);
+    }
   };
 
   const handlePointerDown = (e) => {
-    e.stopPropagation();
+    e.preventDefault();
     isDraggingRef.current = true;
     handleMinimapPointer(e);
   };
 
   const handlePointerMove = (e) => {
     if (isDraggingRef.current) {
-      e.stopPropagation();
+      e.preventDefault();
       handleMinimapPointer(e);
     }
   };
 
-  const handlePointerUp = (e) => {
+  const handlePointerUp = () => {
     if (isDraggingRef.current) {
-      e.stopPropagation();
       isDraggingRef.current = false;
     }
   };
@@ -178,7 +190,7 @@ export default function MiroMinimap({ editor, isOpen = true, onToggle }) {
     >
       {/* 1. Minimap Canvas Box (Expandable) */}
       {internalOpen && (
-        <div className="bg-white/95 dark:bg-slate-850/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-slate-200/90 dark:border-slate-700/90 p-2.5 flex flex-col gap-1.5 animate-in fade-in zoom-in-95 duration-150">
+        <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-slate-200/90 dark:border-slate-800 p-2.5 flex flex-col gap-1.5 animate-in fade-in zoom-in-95 duration-150">
           <div className="flex items-center justify-between px-1">
             <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-600 dark:text-slate-300">
               <Map className="w-3 h-3 text-indigo-500" />
@@ -187,7 +199,7 @@ export default function MiroMinimap({ editor, isOpen = true, onToggle }) {
             <button
               type="button"
               onClick={handleToggle}
-              className="p-0.5 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-750"
+              className="p-0.5 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               title="Hide Minimap"
             >
               <ChevronDown className="w-3.5 h-3.5" />
@@ -196,7 +208,7 @@ export default function MiroMinimap({ editor, isOpen = true, onToggle }) {
 
           {/* Minimap SVG Area */}
           <div 
-            className="relative rounded-xl overflow-hidden bg-slate-100/90 dark:bg-slate-900/90 border border-slate-200/60 dark:border-slate-800 cursor-crosshair"
+            className="relative rounded-xl overflow-hidden bg-slate-100/90 dark:bg-slate-950/90 border border-slate-200/60 dark:border-slate-800 cursor-crosshair"
             style={{ width: MINIMAP_WIDTH, height: MINIMAP_HEIGHT }}
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
@@ -240,28 +252,28 @@ export default function MiroMinimap({ editor, isOpen = true, onToggle }) {
       )}
 
       {/* 2. Floating Zoom Controls Pill */}
-      <div className="flex items-center gap-1 p-1 bg-white/95 dark:bg-slate-850/95 backdrop-blur-2xl rounded-2xl shadow-xl border border-slate-200/90 dark:border-slate-700/90">
+      <div className="flex items-center gap-1 p-1 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl rounded-2xl shadow-xl border border-slate-200/90 dark:border-slate-800">
         {/* Toggle Minimap Button */}
         <button
           type="button"
           onClick={handleToggle}
           className={`p-1.5 rounded-xl transition-all ${
             internalOpen
-              ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-750'
+              ? 'bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
           title={internalOpen ? 'Hide Minimap' : 'Show Minimap'}
         >
           <Map className="w-3.5 h-3.5" />
         </button>
 
-        <div className="h-4 w-px bg-slate-200 dark:bg-slate-700" />
+        <div className="h-4 w-px bg-slate-200 dark:bg-slate-800" />
 
         {/* Zoom Out */}
         <button
           type="button"
           onClick={() => editor.zoomOut?.()}
-          className="p-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-750 transition-all"
+          className="p-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
           title="Zoom Out (Ctrl -)"
         >
           <Minus className="w-3.5 h-3.5" />
@@ -271,7 +283,7 @@ export default function MiroMinimap({ editor, isOpen = true, onToggle }) {
         <button
           type="button"
           onClick={() => editor.resetZoom?.()}
-          className="px-1.5 py-0.5 rounded-lg text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-750 font-mono transition-all"
+          className="px-1.5 py-0.5 rounded-lg text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-mono transition-all"
           title="Reset to 100%"
         >
           {Math.round(zoomLevel * 100)}%
@@ -281,19 +293,19 @@ export default function MiroMinimap({ editor, isOpen = true, onToggle }) {
         <button
           type="button"
           onClick={() => editor.zoomIn?.()}
-          className="p-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-750 transition-all"
+          className="p-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
           title="Zoom In (Ctrl +)"
         >
           <Plus className="w-3.5 h-3.5" />
         </button>
 
-        <div className="h-4 w-px bg-slate-200 dark:bg-slate-700" />
+        <div className="h-4 w-px bg-slate-200 dark:bg-slate-800" />
 
         {/* Zoom to Fit */}
         <button
           type="button"
           onClick={() => editor.zoomToFit?.()}
-          className="p-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-750 transition-all"
+          className="p-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
           title="Fit to Screen (Shift 1)"
         >
           <Maximize2 className="w-3.5 h-3.5" />

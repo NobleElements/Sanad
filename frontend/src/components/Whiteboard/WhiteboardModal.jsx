@@ -81,7 +81,7 @@ export default function WhiteboardModal({ isOpen, onClose, onSave, editingWhiteb
               <button
                 type="button"
                 onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                className="w-full flex items-center gap-3 px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-850 transition-colors text-left focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full flex items-center gap-3 px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
                 <span className="text-2xl leading-none">{icon}</span>
                 <span className="text-sm text-slate-500 dark:text-slate-400">Click to choose icon...</span>

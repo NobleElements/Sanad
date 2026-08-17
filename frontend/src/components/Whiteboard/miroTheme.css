@@ -15,13 +15,32 @@
   display: none !important;
 }
 
-/* Subtle Miro Background Grid */
+/* Subtle Miro Background Canvas */
 .miro-whiteboard .tl-canvas {
-  background-color: #f8fafc !important;
+  background-color: var(--whiteboard-custom-bg, #f8fafc) !important;
 }
 
-.dark .miro-whiteboard .tl-canvas {
-  background-color: #0f172a !important;
+/* Dark theme background via Media Query, .dark class, data-theme, or tl-theme__dark */
+@media (prefers-color-scheme: dark) {
+  .miro-whiteboard .tl-canvas {
+    background-color: var(--whiteboard-custom-bg, #0f172a) !important;
+  }
+  .miro-whiteboard .tlui-popover,
+  .miro-whiteboard .tlui-menu {
+    background: rgba(15, 23, 42, 0.95) !important;
+    border-color: rgba(51, 65, 85, 0.9) !important;
+    box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.4) !important;
+  }
+}
+
+.dark .miro-whiteboard .tl-canvas,
+.miro-whiteboard[data-theme="dark"] .tl-canvas,
+.miro-whiteboard .tl-theme__dark .tl-canvas {
+  background-color: var(--whiteboard-custom-bg, #0f172a) !important;
+}
+
+.miro-whiteboard[data-theme="light"] .tl-canvas {
+  background-color: var(--whiteboard-custom-bg, #f8fafc) !important;
 }
 
 /* Selection and Hover Indicators */
@@ -43,7 +62,7 @@
 
 .dark .miro-whiteboard .tlui-popover,
 .dark .miro-whiteboard .tlui-menu {
-  background: rgba(30, 41, 59, 0.95) !important;
+  background: rgba(15, 23, 42, 0.95) !important;
   border-color: rgba(51, 65, 85, 0.9) !important;
   box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.4) !important;
 }

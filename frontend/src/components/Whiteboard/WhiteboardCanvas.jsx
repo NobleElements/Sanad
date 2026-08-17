@@ -4,6 +4,7 @@ import 'tldraw/tldraw.css';
 import './miroTheme.css';
 import useWhiteboardStore from '../../store/useWhiteboardStore';
 import useUIStore from '../../store/useUIStore';
+import useSettingsStore from '../../store/useSettingsStore';
 import { Check, CloudOff, RefreshCw } from 'lucide-react';
 import { TaskCardShapeUtil } from './TaskCardShapeUtil';
 import { NoteCardShapeUtil } from './NoteCardShapeUtil';
@@ -79,12 +80,68 @@ const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
 ) {
   const isOffline = useUIStore((state) => state.isOffline);
   const saveWhiteboardState = useWhiteboardStore((state) => state.saveWhiteboardState);
+  const tldrawLicenseKey = useSettingsStore((state) => state.tldrawLicenseKey);
+
+  useEffect(() => {
+    if (!useSettingsStore.getState().publicSettingsLoaded) {
+      useSettingsStore.getState().fetchPublicSettings();
+    }
+  }, []);
   
   const [saveStatus, setSaveStatus] = useState('saved'); // 'saved' | 'saving' | 'unsaved' | 'error'
   const [editorInstance, setEditorInstance] = useState(null);
   const [isMinimapOpen, setIsMinimapOpen] = useState(whiteboard?.isMinimapOpen ?? true);
   const isMinimapOpenRef = useRef(whiteboard?.isMinimapOpen ?? true);
   isMinimapOpenRef.current = isMinimapOpen;
+
+  // Immediate synchronous dark mode detection to avoid light-to-dark theme flash
+  const isSystemDark = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const [isDarkMode, setIsDarkMode] = useState(isSystemDark);
+
+  // Custom canvas background color state (persisted per whiteboard)
+  const [customBgColor, setCustomBgColor] = useState(() => {
+    try {
+      return localStorage.getItem(`sanad_whiteboard_bg_${whiteboard?.id}`) || '';
+    } catch {
+      return '';
+    }
+  });
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(`sanad_whiteboard_bg_${whiteboard?.id}`) || '';
+      setCustomBgColor(saved);
+    } catch {
+      setCustomBgColor('');
+    }
+  }, [whiteboard?.id]);
+
+  const handleSelectBgColor = (color) => {
+    setCustomBgColor(color);
+    try {
+      if (color) {
+        localStorage.setItem(`sanad_whiteboard_bg_${whiteboard?.id}`, color);
+      } else {
+        localStorage.removeItem(`sanad_whiteboard_bg_${whiteboard?.id}`);
+      }
+    } catch (e) {
+      console.warn('Failed to save background color', e);
+    }
+  };
+
+  // Listen to OS theme changes
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mql = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleThemeChange = (e) => {
+      setIsDarkMode(e.matches);
+      if (editorRef.current?.user) {
+        editorRef.current.user.updateUserPreferences({ colorScheme: e.matches ? 'dark' : 'light' });
+      }
+    };
+    mql.addEventListener('change', handleThemeChange);
+    return () => mql.removeEventListener('change', handleThemeChange);
+  }, []);
 
   const debounceTimerRef = useRef(null);
   const cameraDebounceTimerRef = useRef(null);
@@ -144,6 +201,12 @@ const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
     setEditorInstance(editor);
     onEditorMount?.(editor);
     isInitialMountRef.current = true;
+
+    // Immediately set dark mode preferences synchronously on mount
+    if (editor.user) {
+      const currentDark = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      editor.user.updateUserPreferences({ colorScheme: currentDark ? 'dark' : 'light' });
+    }
 
     // Deselect any selected shapes so tldraw doesn't auto-scroll/snap to them
     editor.selectNone?.();
@@ -341,6 +404,8 @@ const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
       ref={containerRef}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
+      data-theme={isDarkMode ? 'dark' : 'light'}
+      style={customBgColor ? { '--whiteboard-custom-bg': customBgColor } : {}}
       className={`miro-whiteboard relative w-full h-full overflow-hidden ${className}`}
     >
       {/* Floating Miro Left Vertical Toolbar, Contextual Style Bar & Minimap */}
@@ -350,6 +415,8 @@ const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
             editor={editorInstance}
             onToggleResourceDrawer={onToggleResourceDrawer}
             isResourceDrawerOpen={isResourceDrawerOpen}
+            customBgColor={customBgColor}
+            onSelectBgColor={handleSelectBgColor}
           />
           <MiroSelectionToolbar editor={editorInstance} />
           <MiroMinimap 
@@ -375,7 +442,7 @@ const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
             : 'All changes saved'
         }
       >
-        <div className="w-7 h-7 rounded-full bg-white/90 dark:bg-slate-850/90 backdrop-blur-md shadow-sm border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-center transition-all">
+        <div className="w-7 h-7 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md shadow-sm border border-slate-200/80 dark:border-slate-800 flex items-center justify-center transition-all">
           {isOffline ? (
             <CloudOff className="w-3.5 h-3.5 text-amber-500" />
           ) : saveStatus === 'saving' ? (
@@ -393,6 +460,8 @@ const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
       {/* Tldraw Canvas Component with Custom Shapes & Clean Miro Chrome */}
       <Tldraw
         key={whiteboard.id}
+        licenseKey={tldrawLicenseKey || import.meta.env.VITE_TLDRAW_LICENSE_KEY || undefined}
+        colorScheme={isDarkMode ? 'dark' : 'light'}
         snapshot={initialSnapshot}
         shapeUtils={customShapeUtils}
         components={tldrawComponents}

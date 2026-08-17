@@ -12,7 +12,8 @@ export default function AdminSettings() {
     paddleApiKey: '',
     paddleClientToken: '',
     paddleWebhookSecret: '',
-    contactEmail: ''
+    contactEmail: '',
+    tldrawLicenseKey: ''
   });
   
   const [loading, setLoading] = useState(true);
@@ -38,7 +39,8 @@ export default function AdminSettings() {
           paddleApiKey: data.paddleApiKey || '',
           paddleClientToken: data.paddleClientToken || '',
           paddleWebhookSecret: data.paddleWebhookSecret || '',
-          contactEmail: data.contactEmail || ''
+          contactEmail: data.contactEmail || '',
+          tldrawLicenseKey: data.tldrawLicenseKey || ''
         });
       }
     } catch (e) {
@@ -100,8 +102,8 @@ export default function AdminSettings() {
       <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-200 mb-8">Admin Settings</h1>
       
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 border border-slate-200 dark:border-slate-700 max-w-2xl dark:text-slate-100">
-        {message && <div className="mb-4 p-3 bg-green-100 text-green-700 rounded">{message}</div>}
-        {error && <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">{error}</div>}
+        {message && <div className="mb-4 p-3 bg-green-100 dark:bg-green-950/50 text-green-700 dark:text-green-300 rounded-lg">{message}</div>}
+        {error && <div className="mb-4 p-3 bg-red-100 dark:bg-red-950/50 text-red-700 dark:text-red-300 rounded-lg">{error}</div>}
 
         <form onSubmit={handleSave} className="space-y-6">
           <div>
@@ -112,10 +114,35 @@ export default function AdminSettings() {
                 type="email"
                 value={settings.contactEmail}
                 onChange={(e) => setSettings({...settings, contactEmail: e.target.value})}
-                className="w-full border rounded-md px-3 py-2 dark:bg-slate-700 dark:text-slate-100"
+                className="w-full border border-slate-300 dark:border-slate-600 rounded-md px-3 py-2 dark:bg-slate-700 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 placeholder="e.g. support@yourdomain.com"
               />
-              <p className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-500 mt-1">This email will be used for the 'Contact Us' form on the landing page.</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">This email will be used for the 'Contact Us' form on the landing page.</p>
+            </div>
+          </div>
+
+          <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
+            <h2 className="text-xl font-bold mb-4">Whiteboard (tldraw) License</h2>
+            <div className="mb-4">
+              <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">tldraw License Key</label>
+              <input 
+                type="password"
+                value={settings.tldrawLicenseKey}
+                onChange={(e) => setSettings({...settings, tldrawLicenseKey: e.target.value})}
+                className="w-full border border-slate-300 dark:border-slate-600 rounded-md px-3 py-2 dark:bg-slate-700 dark:text-slate-100 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="e.g. key_..."
+              />
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                Required for production deployments on live HTTPS domains. Obtain your license key at{' '}
+                <a 
+                  href="https://tldraw.dev" 
+                  target="_blank" 
+                  rel="noreferrer" 
+                  className="text-indigo-600 dark:text-indigo-400 hover:underline font-semibold"
+                >
+                  tldraw.dev
+                </a>.
+              </p>
             </div>
           </div>
 
@@ -150,7 +177,7 @@ export default function AdminSettings() {
                 <select 
                   value={settings.paddleEnvironment}
                   onChange={(e) => setSettings({...settings, paddleEnvironment: e.target.value})}
-                  className="w-full border rounded-md px-3 py-2 dark:bg-slate-700 dark:text-slate-100"
+                  className="w-full border border-slate-300 dark:border-slate-600 rounded-md px-3 py-2 dark:bg-slate-700 dark:text-slate-100"
                 >
                   <option value="sandbox">Sandbox (https://sandbox-api.paddle.com)</option>
                   <option value="production">Live (https://api.paddle.com)</option>
@@ -163,7 +190,7 @@ export default function AdminSettings() {
                   type="password"
                   value={settings.paddleApiKey}
                   onChange={(e) => setSettings({...settings, paddleApiKey: e.target.value})}
-                  className="w-full border rounded-md px-3 py-2 dark:bg-slate-700 dark:text-slate-100"
+                  className="w-full border border-slate-300 dark:border-slate-600 rounded-md px-3 py-2 dark:bg-slate-700 dark:text-slate-100"
                   placeholder="e.g. 5d..."
                 />
               </div>
@@ -174,7 +201,7 @@ export default function AdminSettings() {
                   type="text"
                   value={settings.paddleClientToken}
                   onChange={(e) => setSettings({...settings, paddleClientToken: e.target.value})}
-                  className="w-full border rounded-md px-3 py-2 dark:bg-slate-700 dark:text-slate-100"
+                  className="w-full border border-slate-300 dark:border-slate-600 rounded-md px-3 py-2 dark:bg-slate-700 dark:text-slate-100"
                   placeholder="e.g. live_..."
                 />
               </div>
@@ -185,7 +212,7 @@ export default function AdminSettings() {
                   type="password"
                   value={settings.paddleWebhookSecret}
                   onChange={(e) => setSettings({...settings, paddleWebhookSecret: e.target.value})}
-                  className="w-full border rounded-md px-3 py-2 dark:bg-slate-700 dark:text-slate-100"
+                  className="w-full border border-slate-300 dark:border-slate-600 rounded-md px-3 py-2 dark:bg-slate-700 dark:text-slate-100"
                   placeholder="e.g. whsec_..."
                 />
               </div>
@@ -196,7 +223,7 @@ export default function AdminSettings() {
             <button 
               type="submit" 
               disabled={saving}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
             >
               {saving ? 'Saving...' : 'Save Settings'}
             </button>
@@ -204,13 +231,13 @@ export default function AdminSettings() {
             <button 
               type="button" 
               onClick={handleVerify}
-              className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700/50 dark:bg-slate-900"
+              className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700/50 dark:bg-slate-900 transition-colors"
             >
               Verify API Access
             </button>
             
             {verifyStatus && (
-              <span className={`text-sm ${verifyStatus.includes('Success') ? 'text-green-600' : 'text-red-600 dark:text-red-400'}`}>
+              <span className={`text-sm ${verifyStatus.includes('Success') ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                 {verifyStatus}
               </span>
             )}

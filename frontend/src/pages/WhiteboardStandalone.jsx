@@ -77,7 +77,7 @@ export default function WhiteboardStandalone() {
     <div className="w-screen h-screen fixed inset-0 overflow-hidden bg-slate-50 dark:bg-slate-900 z-50">
       {/* Floating Top Left Controls */}
       <div className="absolute top-3 left-3 z-30 flex items-center gap-2">
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/90 dark:bg-slate-850/90 backdrop-blur-md shadow-sm border border-slate-200/80 dark:border-slate-700/80">
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md shadow-sm border border-slate-200/80 dark:border-slate-800">
           <button
             onClick={() => navigate(`/whiteboard/${activeWhiteboard.id}`)}
             className="p-1 -ml-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 transition-colors"
