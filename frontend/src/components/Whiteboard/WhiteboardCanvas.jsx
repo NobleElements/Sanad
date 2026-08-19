@@ -240,11 +240,162 @@ const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
     lastLoadedDocJsonRef.current = whiteboard?.documentJson || '';
     lastUpdatedAtRef.current = whiteboard?.updatedAt || '';
 
-    // Immediately set dark mode preferences synchronously on mount
+    // Immediately set dark mode preferences synchronously on mount & ensure inputMode is null for dynamic camera options
     if (editor.user) {
       const currentDark = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-      editor.user.updateUserPreferences({ colorScheme: currentDark ? 'dark' : 'light' });
+      editor.user.updateUserPreferences({ 
+        colorScheme: currentDark ? 'dark' : 'light',
+        inputMode: null
+      });
     }
+
+    // Default to 'zoom' so mouse wheel scroll immediately zooms into the canvas
+    editor.setCameraOptions({ wheelBehavior: 'zoom' });
+
+    // Smooth mouse wheel zoom state & animation helpers
+    let targetZoom = null;
+    let smoothZoomRaf = null;
+    let anchorPoint = { x: 0, y: 0 };
+
+    const cancelSmoothZoom = () => {
+      if (smoothZoomRaf) {
+        cancelAnimationFrame(smoothZoomRaf);
+        smoothZoomRaf = null;
+      }
+      targetZoom = null;
+    };
+
+    const applySmoothZoom = (deltaY, point) => {
+      const currentCamera = editor.getCamera?.();
+      if (!currentCamera) return;
+
+      const cameraOptions = editor.getCameraOptions?.() || {};
+      const zoomSteps = cameraOptions.zoomSteps || [0.1, 0.25, 0.5, 1, 2, 4, 8];
+      const minZoom = zoomSteps[0] || 0.05;
+      const maxZoom = zoomSteps[zoomSteps.length - 1] || 8;
+      const zoomSpeed = cameraOptions.zoomSpeed || 1;
+
+      // Base target zoom off current target if already animating, else current camera zoom
+      const currentBase = targetZoom !== null ? targetZoom : currentCamera.z;
+
+      // In TLDraw's normalizeWheel: deltaY > 0 is scroll UP (zoom in), deltaY < 0 is scroll DOWN (zoom out)
+      // Clamp delta magnitude per event to prevent single-event spikes
+      const clampedDeltaY = Math.sign(deltaY) * Math.min(Math.abs(deltaY), 120);
+      const zoomFactor = Math.exp(clampedDeltaY * 0.003 * zoomSpeed);
+      const newTarget = Math.max(minZoom, Math.min(maxZoom, currentBase * zoomFactor));
+      targetZoom = newTarget;
+
+      // Anchor zoom around cursor screen position
+      const screenPt = editor.inputs?.getCurrentScreenPoint?.() || point || { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+      anchorPoint = { x: screenPt.x, y: screenPt.y };
+
+      if (!smoothZoomRaf) {
+        const stepAnimation = () => {
+          const cam = editor.getCamera?.();
+          if (!cam || targetZoom === null) {
+            smoothZoomRaf = null;
+            return;
+          }
+
+          const target = targetZoom;
+          const diff = target - cam.z;
+
+          if (Math.abs(diff) < 0.002) {
+            // Settle cleanly at target zoom
+            const finalZ = target;
+            const ax = anchorPoint.x;
+            const ay = anchorPoint.y;
+            const finalX = cam.x + ax / finalZ - ax / cam.z;
+            const finalY = cam.y + ay / finalZ - ay / cam.z;
+            editor.setCamera({ x: finalX, y: finalY, z: finalZ });
+            smoothZoomRaf = null;
+            targetZoom = null;
+          } else {
+            // Smooth ease-out glide (~140ms transition)
+            const nextZ = cam.z + diff * 0.20;
+            const ax = anchorPoint.x;
+            const ay = anchorPoint.y;
+            const nextX = cam.x + ax / nextZ - ax / cam.z;
+            const nextY = cam.y + ay / nextZ - ay / cam.z;
+            editor.setCamera({ x: nextX, y: nextY, z: nextZ });
+            smoothZoomRaf = requestAnimationFrame(stepAnimation);
+          }
+        };
+
+        smoothZoomRaf = requestAnimationFrame(stepAnimation);
+      }
+    };
+
+    // Intercept editor.dispatch to dynamically auto-switch wheelBehavior between 'pan' (trackpad) and 'zoom' (mouse wheel)
+    if (!editor._originalDispatch) {
+      editor._originalDispatch = editor.dispatch;
+    }
+    editor.dispatch = (info) => {
+      const cameraOptions = editor.getCameraOptions();
+
+      // Trackpad detection:
+      // 1. Horizontal or diagonal scrolling (delta.x !== 0) -> trackpad
+      // 2. Vertical scrolling with ctrlKey (browser pinch-to-zoom simulation) -> trackpad
+      // 3. Subpixel / fractional delta values (delta % 1 !== 0) -> trackpad
+      const isTrackpadWheel = 
+        info.name === 'wheel' &&
+        (info.delta.x !== 0 || (info.delta.y !== 0 && (info.ctrlKey || editor.inputs.ctrlKey)) || Math.abs(info.delta.y) % 1 !== 0);
+
+      if (isTrackpadWheel) {
+        cancelSmoothZoom();
+        if (cameraOptions.wheelBehavior !== 'pan' && !editor.inputs.isPanning) {
+          editor.setCameraOptions({ wheelBehavior: 'pan' });
+        }
+        editor._originalDispatch(info);
+        return editor;
+      }
+
+      // Discrete mouse wheel notch detection & smooth interpolation:
+      const isMouseWheel =
+        info.name === 'wheel' &&
+        !editor.inputs.isPanning &&
+        info.delta.x === 0 &&
+        !info.ctrlKey &&
+        !editor.inputs.ctrlKey &&
+        Math.abs(info.delta.y) % 1 === 0;
+
+      if (isMouseWheel) {
+        if (cameraOptions.wheelBehavior !== 'zoom') {
+          editor.setCameraOptions({ wheelBehavior: 'zoom' });
+        }
+        editor.inputs.updateFromEvent?.(info);
+        applySmoothZoom(info.delta.y, info.point);
+        return editor;
+      }
+
+      // Pointer panning detection:
+      // Space-drag, middle-click drag, or hand tool drag indicates mouse user panning
+      if (
+        (info.name === 'pointer_down' || info.name === 'pointer_move') &&
+        editor.inputs.isPanning
+      ) {
+        cancelSmoothZoom();
+        if (cameraOptions.wheelBehavior !== 'zoom') {
+          editor.setCameraOptions({ wheelBehavior: 'zoom' });
+        }
+      }
+
+      // Pinch gesture detection (Safari gesture / touch pinch)
+      if (info.name === 'pinch_start' || info.name === 'pinch') {
+        cancelSmoothZoom();
+        if (cameraOptions.wheelBehavior !== 'pan') {
+          editor.setCameraOptions({ wheelBehavior: 'pan' });
+        }
+      }
+
+      // Any pointer down interaction cancels any active smooth zooming
+      if (info.name === 'pointer_down') {
+        cancelSmoothZoom();
+      }
+
+      editor._originalDispatch(info);
+      return editor;
+    };
 
     // Deselect any selected shapes so tldraw doesn't auto-scroll/snap to them
     editor.selectNone?.();
@@ -396,6 +547,7 @@ const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
     }, 600);
 
     return () => {
+      cancelSmoothZoom();
       window.removeEventListener('beforeunload', handleBeforeUnload);
       unlistenStore();
       clearTimeout(timeout);
