@@ -138,6 +138,7 @@ api.MapCalendarEndpoints();
 api.MapFinanceEndpoints();
 api.MapNotebookEndpoints();
 api.MapAssetEndpoints();
+api.MapDebtEndpoints();
 api.MapBookEndpoints();
 api.MapReadingEndpoints();
 api.MapHabitEndpoints();

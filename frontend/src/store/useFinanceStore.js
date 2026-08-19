@@ -7,6 +7,7 @@ const useFinanceStore = create((set, get) => ({
   transactions: [],
   budgetSummary: { categories: [], monthlyBudget: 0, totalSpent: 0 },
   assets: [],
+  debts: [],
   currencies: [],
   isLoaded: false,
 
@@ -100,28 +101,52 @@ const useFinanceStore = create((set, get) => ({
 
   fetchAssets: async () => {
     try {
-      const [assetsRes, histRes] = await Promise.all([
+      const [assetsRes, histRes, debtsRes, debtHistRes] = await Promise.all([
         fetch(`${API_URL}/finances/assets`),
-        fetch(`${API_URL}/finances/assets/history`)
+        fetch(`${API_URL}/finances/assets/history`),
+        fetch(`${API_URL}/finances/debts`),
+        fetch(`${API_URL}/finances/debts/history`)
       ]);
-      if (assetsRes.ok && histRes.ok) {
+      if (assetsRes.ok && histRes.ok && debtsRes.ok && debtHistRes.ok) {
         const assetsData = await assetsRes.json();
         const histData = await histRes.json();
+        const debtsData = await debtsRes.json();
+        const debtHistData = await debtHistRes.json();
         
+        const combinedTimeline = [];
+        histData.forEach(s => combinedTimeline.push({ ...s, itemKind: 'asset' }));
+        debtHistData.forEach(s => combinedTimeline.push({ ...s, itemKind: 'debt' }));
+        
+        combinedTimeline.sort((a, b) => new Date(a.recordedAt) - new Date(b.recordedAt));
+
         const pointsMap = new Map();
         const assetLatestValue = {};
+        const debtLatestValue = {};
         const allAssetNames = new Set();
         
-        histData.forEach(snapshot => {
+        combinedTimeline.forEach(snapshot => {
           const dateStr = new Date(snapshot.recordedAt).toLocaleDateString();
-          const name = snapshot.assetName || snapshot.assetId;
-          
           const convertedValue = snapshot.amount * (snapshot.exchangeRateToDefault || 1);
-          assetLatestValue[name] = convertedValue;
-          allAssetNames.add(name);
+
+          if (snapshot.itemKind === 'asset') {
+            const name = snapshot.assetName || snapshot.assetId;
+            assetLatestValue[name] = convertedValue;
+            allAssetNames.add(name);
+          } else {
+            const name = snapshot.debtName || snapshot.debtId;
+            debtLatestValue[name] = convertedValue;
+          }
           
-          const totalNetWorth = Object.values(assetLatestValue).reduce((a, b) => a + b, 0);
-          const point = { date: dateStr, netWorth: totalNetWorth };
+          const totalAssetsVal = Object.values(assetLatestValue).reduce((a, b) => a + b, 0);
+          const totalDebtsVal = Object.values(debtLatestValue).reduce((a, b) => a + b, 0);
+          const totalNetWorth = totalAssetsVal - totalDebtsVal;
+
+          const point = { 
+            date: dateStr, 
+            netWorth: totalNetWorth,
+            totalAssets: totalAssetsVal,
+            totalDebts: totalDebtsVal
+          };
           
           Object.entries(assetLatestValue).forEach(([k, v]) => {
             point[k] = v;
@@ -132,12 +157,13 @@ const useFinanceStore = create((set, get) => ({
 
         set({ 
           assets: assetsData, 
+          debts: debtsData,
           assetHistory: Array.from(pointsMap.values()),
           assetChartLines: Array.from(allAssetNames)
         });
       }
     } catch (err) {
-      useUIStore.getState().showError('Network error loading assets');
+      useUIStore.getState().showError('Network error loading assets & debts');
     }
   },
 
@@ -213,6 +239,82 @@ const useFinanceStore = create((set, get) => ({
       throw new Error('Failed to delete');
     } catch (err) {
       useUIStore.getState().showError('Failed to delete asset');
+      return false;
+    }
+  },
+
+  addDebt: async (name, type, amount, currencyId, icon) => {
+    try {
+      const res = await fetch(`${API_URL}/finances/debts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, type, currentAmount: amount, currencyId, icon })
+      });
+      if (res.ok) {
+        useUIStore.getState().showSuccess('Debt created');
+        await get().fetchAssets();
+        return true;
+      }
+      throw new Error('Failed to create');
+    } catch (err) {
+      useUIStore.getState().showError('Failed to add debt');
+      return false;
+    }
+  },
+
+  updateDebt: async (debt, newAmount) => {
+    try {
+      const res = await fetch(`${API_URL}/finances/debts/${debt.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...debt, currentAmount: newAmount })
+      });
+      if (res.ok) {
+        useUIStore.getState().showSuccess('Debt updated');
+        await get().fetchAssets();
+        return true;
+      }
+      throw new Error('Failed to update');
+    } catch (err) {
+      useUIStore.getState().showError('Failed to update debt');
+      return false;
+    }
+  },
+
+  reorderDebts: async (orderedIds) => {
+    // Optimistic UI update
+    const currentDebts = [...get().debts];
+    const newDebts = orderedIds.map(id => currentDebts.find(d => d.id === id)).filter(Boolean);
+    set({ debts: newDebts });
+    
+    try {
+      const res = await fetch(`${API_URL}/finances/debts/reorder`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderedIds)
+      });
+      if (!res.ok) {
+        throw new Error('Failed to reorder debts');
+      }
+    } catch (err) {
+      console.error(err);
+      // Revert on failure
+      set({ debts: currentDebts });
+      useUIStore.getState().showError('Failed to save debt order');
+    }
+  },
+
+  deleteDebt: async (id) => {
+    try {
+      const res = await fetch(`${API_URL}/finances/debts/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        useUIStore.getState().showSuccess('Debt deleted');
+        await get().fetchAssets();
+        return true;
+      }
+      throw new Error('Failed to delete');
+    } catch (err) {
+      useUIStore.getState().showError('Failed to delete debt');
       return false;
     }
   },

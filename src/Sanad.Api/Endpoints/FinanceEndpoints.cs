@@ -254,8 +254,9 @@ public static class FinanceEndpoints
             return Results.BadRequest("Cannot delete the default currency.");
 
         var hasAssets = await db.Assets.AnyAsync(a => a.CurrencyId == id);
-        if (hasAssets)
-            return Results.BadRequest("Cannot delete currency because it is used by assets.");
+        var hasDebts = await db.Debts.AnyAsync(d => d.CurrencyId == id);
+        if (hasAssets || hasDebts)
+            return Results.BadRequest("Cannot delete currency because it is used by assets or debts.");
 
         db.Currencies.Remove(currency);
         await db.SaveChangesAsync();

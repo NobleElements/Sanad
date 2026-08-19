@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import EmojiPicker from 'emoji-picker-react';
+import EmojiPicker, { Theme } from 'emoji-picker-react';
 import useUIStore from '../../store/useUIStore';
 import { X } from 'lucide-react';
 
@@ -41,13 +41,15 @@ export default function WhiteboardModal({ isOpen, onClose, onSave, editingWhiteb
     }
   };
 
+  const isDarkMode = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
       <div 
-        className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col"
+        className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 dark:border-slate-700 flex flex-col relative"
         onClick={() => setShowEmojiPicker(false)}
       >
-        <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-700">
+        <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-700 rounded-t-2xl">
           <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">
             {editingWhiteboard ? 'Edit Whiteboard' : 'Create New Whiteboard'}
           </h3>
@@ -90,8 +92,9 @@ export default function WhiteboardModal({ isOpen, onClose, onSave, editingWhiteb
               </button>
 
               {showEmojiPicker && (
-                <div className="absolute left-0 bottom-full mb-2 z-50 shadow-2xl rounded-xl overflow-hidden">
+                <div className="absolute left-0 top-full mt-2 z-50 shadow-2xl rounded-2xl">
                   <EmojiPicker
+                    theme={isDarkMode ? Theme.DARK : Theme.LIGHT}
                     onEmojiClick={(emojiData) => {
                       setIcon(emojiData.emoji);
                       setShowEmojiPicker(false);

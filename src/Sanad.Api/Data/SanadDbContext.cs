@@ -24,6 +24,8 @@ public class SanadDbContext : DbContext
     public DbSet<Currency> Currencies => Set<Currency>();
     public DbSet<Asset> Assets => Set<Asset>();
     public DbSet<AssetSnapshot> AssetSnapshots => Set<AssetSnapshot>();
+    public DbSet<Debt> Debts => Set<Debt>();
+    public DbSet<DebtSnapshot> DebtSnapshots => Set<DebtSnapshot>();
     public DbSet<Book> Books => Set<Book>();
     public DbSet<ReadingPeriod> ReadingPeriods => Set<ReadingPeriod>();
     public DbSet<ReadingPlan> ReadingPlans => Set<ReadingPlan>();
@@ -59,6 +61,12 @@ public class SanadDbContext : DbContext
             .HasOne(a => a.Currency)
             .WithMany()
             .HasForeignKey(a => a.CurrencyId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Debt>()
+            .HasOne(d => d.Currency)
+            .WithMany()
+            .HasForeignKey(d => d.CurrencyId)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

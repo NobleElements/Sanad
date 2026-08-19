@@ -50,6 +50,8 @@ export const warmUpApiCache = async () => {
     '/finances/categories',
     '/finances/assets',
     '/finances/assets/history',
+    '/finances/debts',
+    '/finances/debts/history',
     `/finances/summary?month=${currentMonth}&year=${currentYear}`,
     '/finances/transactions?page=1&limit=50',
     '/reading/periods',

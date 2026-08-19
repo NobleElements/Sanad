@@ -74,6 +74,9 @@ public static class AssetEndpoints
         var asset = await db.Assets.FindAsync(id);
         if (asset is null) return Results.NotFound();
 
+        var snapshots = await db.AssetSnapshots.Where(s => s.AssetId == id).ToListAsync();
+        db.AssetSnapshots.RemoveRange(snapshots);
+
         db.Assets.Remove(asset);
         await db.SaveChangesAsync();
         return Results.NoContent();

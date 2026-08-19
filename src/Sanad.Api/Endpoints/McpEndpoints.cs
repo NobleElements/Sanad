@@ -291,6 +291,82 @@ public class McpEndpoints
         return false;
     }
 
+    // Debts Tools
+    [McpServerTool, Description("Get all debts / liabilities")]
+    public async Task<List<Debt>> GetDebts()
+    {
+        return await _db.Debts.Include(d => d.Currency).OrderBy(d => d.Order).ThenByDescending(d => d.CreatedAt).ToListAsync();
+    }
+
+    [McpServerTool, Description("Create a new debt / liability")]
+    public async Task<Debt> CreateDebt(string name, string type, decimal currentAmount, Guid? currencyId = null, string? icon = null)
+    {
+        var debt = new Debt
+        {
+            Id = Guid.NewGuid(),
+            Name = name,
+            Type = type,
+            CurrentAmount = currentAmount,
+            CurrencyId = currencyId,
+            Icon = icon,
+            Order = (await _db.Debts.MaxAsync(d => (int?)d.Order) ?? 0) + 1,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        _db.Debts.Add(debt);
+        var snapshot = new DebtSnapshot
+        {
+            DebtId = debt.Id,
+            Amount = debt.CurrentAmount,
+            RecordedAt = DateTime.UtcNow
+        };
+        _db.DebtSnapshots.Add(snapshot);
+        await _db.SaveChangesAsync();
+        return debt;
+    }
+
+    [McpServerTool, Description("Update a debt / liability")]
+    public async Task<Debt?> UpdateDebt(Guid id, string name, string type, decimal currentAmount, Guid? currencyId = null, string? icon = null)
+    {
+        var debt = await _db.Debts.FindAsync(id);
+        if (debt == null) return null;
+
+        debt.Name = name;
+        debt.Type = type;
+        debt.CurrencyId = currencyId;
+        debt.Icon = icon;
+
+        if (debt.CurrentAmount != currentAmount)
+        {
+            debt.CurrentAmount = currentAmount;
+            var snapshot = new DebtSnapshot
+            {
+                DebtId = debt.Id,
+                Amount = debt.CurrentAmount,
+                RecordedAt = DateTime.UtcNow
+            };
+            _db.DebtSnapshots.Add(snapshot);
+        }
+
+        debt.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+        return debt;
+    }
+
+    [McpServerTool, Description("Delete a debt by ID")]
+    public async Task<bool> DeleteDebt(Guid id)
+    {
+        var debt = await _db.Debts.FindAsync(id);
+        if (debt == null) return false;
+
+        var snapshots = await _db.DebtSnapshots.Where(s => s.DebtId == id).ToListAsync();
+        _db.DebtSnapshots.RemoveRange(snapshots);
+
+        _db.Debts.Remove(debt);
+        await _db.SaveChangesAsync();
+        return true;
+    }
+
     // Notes Tools
     [McpServerTool, Description("Get recent notes")]
     public async Task<List<Note>> GetNotes()
