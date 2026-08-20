@@ -1,4 +1,5 @@
 import { Extension } from '@tiptap/core';
+import { Plugin, PluginKey } from '@tiptap/pm/state';
 
 export const Indent = Extension.create({
   name: 'indent',
@@ -217,8 +218,6 @@ export const Indent = Extension.create({
 
   addKeyboardShortcuts() {
     return {
-      Tab: () => this.editor.commands.indent(),
-      'Shift-Tab': () => this.editor.commands.outdent(),
       Backspace: () => {
         const { selection } = this.editor.state;
         if (!selection.empty) return false;
@@ -256,5 +255,29 @@ export const Indent = Extension.create({
         return false;
       },
     };
+  },
+
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        key: new PluginKey('indentKeyHandler'),
+        props: {
+          handleKeyDown: (view, event) => {
+            if (event.key === 'Tab') {
+              event.preventDefault();
+              event.stopPropagation();
+              if (event.shiftKey) {
+                this.editor.commands.outdent();
+              } else {
+                this.editor.commands.indent();
+              }
+              view.focus();
+              return true;
+            }
+            return false;
+          },
+        },
+      }),
+    ];
   },
 });
