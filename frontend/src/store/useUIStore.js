@@ -27,6 +27,11 @@ const useUIStore = create((set) => ({
     toasts: state.toasts.filter((t) => t.id !== id)
   })),
   
+  isGlobalSearchOpen: false,
+  openGlobalSearch: () => set({ isGlobalSearchOpen: true }),
+  closeGlobalSearch: () => set({ isGlobalSearchOpen: false }),
+  toggleGlobalSearch: () => set((state) => ({ isGlobalSearchOpen: !state.isGlobalSearchOpen })),
+  
   showError: (message) => useUIStore.getState().addToast(message, 'error'),
   showSuccess: (message) => useUIStore.getState().addToast(message, 'success'),
 }));

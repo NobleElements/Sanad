@@ -16,6 +16,10 @@ export default function FinanceDashboard() {
   const [searchParams, setSearchParams] = useSearchParams();
   const urlMonth = searchParams.get('month') ? parseInt(searchParams.get('month'), 10) : new Date().getMonth() + 1;
   const urlYear = searchParams.get('year') ? parseInt(searchParams.get('year'), 10) : new Date().getFullYear();
+  const urlTab = searchParams.get('tab');
+  const urlTxId = searchParams.get('txId');
+
+  const [highlightedTxId, setHighlightedTxId] = useState(null);
 
   const { 
     currencies, categories, transactions, budgetSummary: summary, 
@@ -28,6 +32,31 @@ export default function FinanceDashboard() {
   const { showConfirm } = useConfirmStore();
 
   const defaultCurrency = currencies.find(c => c.isDefault) || { symbol: '$' };
+
+  useEffect(() => {
+    if (urlTab === 'assets' || urlTab === 'debts') {
+      setActiveTab('assets');
+    } else if (urlTab === 'spending') {
+      setActiveTab('spending');
+    }
+  }, [urlTab]);
+
+  useEffect(() => {
+    if (urlTxId && transactions.length > 0) {
+      setHighlightedTxId(urlTxId);
+      setTimeout(() => {
+        const el = document.getElementById(`tx-${urlTxId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+
+      const timer = setTimeout(() => {
+        setHighlightedTxId(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [urlTxId, transactions]);
 
   useEffect(() => {
     if (urlMonth !== currentMonth || urlYear !== currentYear) {
@@ -493,7 +522,15 @@ export default function FinanceDashboard() {
               </div>
               <div className="flex flex-col gap-2">
                 {transactions.map(tx => (
-                  <div key={tx.id} className="group flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-100 transition-colors hover:bg-slate-100 dark:hover:bg-slate-700 dark:text-slate-100">
+                  <div 
+                    key={tx.id} 
+                    id={`tx-${tx.id}`}
+                    className={`group flex justify-between items-center p-3 rounded-lg border transition-all ${
+                      highlightedTxId === tx.id?.toString()
+                        ? 'border-indigo-500 ring-2 ring-indigo-500/50 bg-indigo-50/50 dark:bg-indigo-950/40'
+                        : 'bg-slate-50 dark:bg-slate-900 border-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700'
+                    } dark:text-slate-100`}
+                  >
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: tx.category?.colorHex || '#CBD5E1' }}></div>
                       <div className="flex-1 min-w-0">

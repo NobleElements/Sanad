@@ -149,6 +149,7 @@ api.MapSubscriptionEndpoints();
 api.MapSettingsEndpoints();
 api.MapAppEndpoints();
 api.MapWhiteboardEndpoints();
+api.MapSearchEndpoints();
 
 app.MapShareEndpoints();
 

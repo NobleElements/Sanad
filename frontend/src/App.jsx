@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { Menu } from 'lucide-react';
+import { Menu, Search } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
 import Tasks from './pages/Tasks';
@@ -17,6 +17,7 @@ import AuthOverlay from './components/AuthOverlay';
 import ToastContainer from './components/ToastContainer';
 import NotificationManager from './components/NotificationManager';
 import GlobalConfirmModal from './components/common/GlobalConfirmModal';
+import GlobalSearchModal from './components/common/GlobalSearchModal';
 import OfflineBanner from './components/common/OfflineBanner';
 import useAuthStore from './store/useAuthStore';
 import useUIStore from './store/useUIStore';
@@ -59,10 +60,19 @@ function App() {
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
+    const handleGlobalKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        useUIStore.getState().toggleGlobalSearch();
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+
     return () => {
       window.removeEventListener('account_migrating', handleMigrating);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('keydown', handleGlobalKeyDown);
     };
   }, [checkAuthStatus, setOfflineStatus]);
 
@@ -95,12 +105,21 @@ function App() {
           {/* Mobile Top Bar */}
           <div className="md:hidden flex items-center justify-between bg-slate-900 text-slate-100 p-4 border-b border-slate-800 dark:bg-slate-700 dark:text-slate-100">
             <Link to="/" className="text-xl font-bold tracking-wider text-white">SANAD</Link>
-            <button 
-              onClick={() => setIsMobileMenuOpen(true)}
-              className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-slate-100 transition-colors"
-            >
-              <Menu className="w-6 h-6" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => useUIStore.getState().openGlobalSearch()}
+                className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-slate-100 transition-colors"
+                title="Search (⌘K)"
+              >
+                <Search className="w-5 h-5" />
+              </button>
+              <button 
+                onClick={() => setIsMobileMenuOpen(true)}
+                className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-slate-100 transition-colors"
+              >
+                <Menu className="w-6 h-6" />
+              </button>
+            </div>
           </div>
           <div className="flex-1 overflow-y-auto">
             {children}
@@ -109,6 +128,7 @@ function App() {
         <NotificationManager />
         <ToastContainer />
         <GlobalConfirmModal />
+        <GlobalSearchModal />
       </div>
     </div>
   );

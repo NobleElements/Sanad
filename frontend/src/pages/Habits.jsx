@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Plus, Trash, ChevronDown, ChevronUp, Check, X, GripVertical } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import EmojiPicker from 'emoji-picker-react';
@@ -10,6 +11,10 @@ import usePageTitle from '../hooks/usePageTitle';
 
 export default function Habits() {
   usePageTitle('Habits');
+  const [searchParams] = useSearchParams();
+  const habitIdParam = searchParams.get('habitId');
+  const [highlightedHabitId, setHighlightedHabitId] = useState(null);
+
   const { habits, isLoaded, fetchHabits, createHabit, deleteHabit, toggleHabitLog, reorderHabits } = useHabitStore();
   const { showConfirm } = useConfirmStore();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -21,6 +26,24 @@ export default function Habits() {
   useEffect(() => {
     fetchHabits();
   }, [fetchHabits]);
+
+  useEffect(() => {
+    if (habitIdParam && habits.length > 0) {
+      setHighlightedHabitId(habitIdParam);
+      setExpandedHabits(prev => new Set([...prev, habitIdParam]));
+      setTimeout(() => {
+        const el = document.getElementById(`habit-${habitIdParam}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+
+      const timer = setTimeout(() => {
+        setHighlightedHabitId(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [habitIdParam, habits]);
 
   const handleCreate = async () => {
     if (!newHabit.name.trim()) return;
@@ -107,8 +130,15 @@ export default function Habits() {
                         {(provided, snapshot) => (
                           <div 
                             ref={provided.innerRef}
+                            id={`habit-${habit.id}`}
                             {...provided.draggableProps}
-                            className={`bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden transition-all ${snapshot.isDragging ? 'shadow-xl ring-2 ring-indigo-500 scale-[1.02]' : 'hover:shadow-md'}`}
+                            className={`bg-white dark:bg-slate-800 rounded-xl shadow-sm border overflow-hidden transition-all ${
+                              highlightedHabitId === habit.id
+                                ? 'border-indigo-500 ring-2 ring-indigo-500/50 bg-indigo-50/20 dark:bg-indigo-950/40 shadow-md'
+                                : snapshot.isDragging 
+                                  ? 'border-slate-200 dark:border-slate-700 shadow-xl ring-2 ring-indigo-500 scale-[1.02]' 
+                                  : 'border-slate-200 dark:border-slate-700 hover:shadow-md'
+                            }`}
                           >
                             <div className="p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
                               <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">

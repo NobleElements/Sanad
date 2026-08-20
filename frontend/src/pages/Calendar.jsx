@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { 
   format, addDays, subDays, startOfWeek, endOfWeek, startOfMonth, 
   endOfMonth, addWeeks, subWeeks, addMonths, subMonths, addYears, subYears, isSameDay
@@ -16,6 +17,7 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
 export default function Calendar() {
   usePageTitle('Calendar');
+  const [searchParams, setSearchParams] = useSearchParams();
   const { 
     events, fetchEvents, viewDate, setViewDate, viewMode, setViewMode, categories, fetchCategories,
     todoTasks, fetchTodoTasks
@@ -82,6 +84,36 @@ export default function Calendar() {
       Notification.requestPermission();
     }
   }, []);
+
+  // Handle eventId deep linking
+  const eventIdParam = searchParams.get('eventId');
+  const handledEventIdRef = useRef(null);
+
+  useEffect(() => {
+    if (!eventIdParam) {
+      handledEventIdRef.current = null;
+      return;
+    }
+    if (handledEventIdRef.current === eventIdParam || events.length === 0) return;
+
+    const target = events.find(e => e.id?.toString() === eventIdParam);
+    if (target) {
+      handledEventIdRef.current = eventIdParam;
+      setViewDate(new Date(target.startDate));
+      setSelectedEvent(target);
+      setIsEventModalOpen(true);
+    }
+  }, [eventIdParam, events, setViewDate]);
+
+  const handleCloseEventModal = () => {
+    setIsEventModalOpen(false);
+    setSelectedEvent(null);
+    const next = new URLSearchParams(searchParams);
+    if (next.has('eventId')) {
+      next.delete('eventId');
+      setSearchParams(next, { replace: true });
+    }
+  };
 
   const handleNavigate = (direction) => {
     let newDate = new Date(viewDate);
@@ -390,7 +422,7 @@ export default function Calendar() {
         {isEventModalOpen && (
           <EventModal 
             isOpen={isEventModalOpen}
-            onClose={() => setIsEventModalOpen(false)}
+            onClose={handleCloseEventModal}
             eventToEdit={selectedEvent}
             initialDate={selectedDateSlot}
           />

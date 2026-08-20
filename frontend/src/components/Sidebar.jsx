@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Lightbulb, CheckSquare, Calendar as CalendarIcon, Book, DollarSign, BookOpen, Menu, LogOut, Repeat, Folder, Shield, CreditCard, Settings, AppWindow, Presentation } from 'lucide-react';
+import { LayoutDashboard, Lightbulb, CheckSquare, Calendar as CalendarIcon, Book, DollarSign, BookOpen, Menu, LogOut, Repeat, Folder, Shield, CreditCard, Settings, AppWindow, Presentation, Search } from 'lucide-react';
 import useAuthStore from '../store/useAuthStore';
 import useCalendarStore from '../store/useCalendarStore';
 import useSettingsStore from '../store/useSettingsStore';
+import useUIStore from '../store/useUIStore';
 
 export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }) {
   const location = useLocation();
@@ -49,13 +50,15 @@ export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }) {
     }
   };
 
+  const openGlobalSearch = useUIStore((state) => state.openGlobalSearch);
+
   return (
     <>
       {/* Mobile Overlay */}
       {isMobileMenuOpen && (
         <div 
           className="md:hidden fixed inset-0 bg-black/50 z-40 transition-opacity" 
-          onClick={() => setIsMobileMenuOpen(false)}
+          onClick={() => setIsMobileMenuOpen(false)} 
         />
       )}
       
@@ -81,6 +84,25 @@ export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }) {
         </div>
       
       <nav className="flex flex-col gap-2 flex-1 px-3 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        <button
+          onClick={() => {
+            openGlobalSearch();
+            handleLinkClick();
+          }}
+          className={`flex items-center justify-between p-3 rounded transition-colors text-slate-300 hover:bg-slate-800 hover:text-slate-100 group w-full text-left ${isCollapsed ? 'md:justify-center' : ''}`}
+          title="Search (⌘K)"
+        >
+          <div className="flex items-center gap-3">
+            <Search className="w-5 h-5 flex-shrink-0 text-slate-400 group-hover:text-slate-100" />
+            {(!isCollapsed || window.innerWidth < 768) && <span className="font-medium">Search</span>}
+          </div>
+          {(!isCollapsed || window.innerWidth < 768) && (
+            <kbd className="hidden lg:inline-flex items-center px-1.5 py-0.5 text-[10px] font-semibold text-slate-400 bg-slate-800 border border-slate-700 rounded shadow-xs">
+              ⌘K
+            </kbd>
+          )}
+        </button>
+
         <Link to="/dashboard" className={getLinkClass('/dashboard')} title="Dashboard" onClick={handleLinkClick}>
           <LayoutDashboard className="w-5 h-5 flex-shrink-0" />
           {(!isCollapsed || window.innerWidth < 768) && <span className="font-medium">Dashboard</span>}

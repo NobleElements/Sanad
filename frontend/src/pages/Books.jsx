@@ -18,6 +18,8 @@ export default function Books() {
   
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'shelf';
+  const bookIdParam = searchParams.get('bookId');
+  const [highlightedBookId, setHighlightedBookId] = useState(null);
   
   const handleTabChange = (tab) => {
       setSearchParams({ tab }, { replace: true });
@@ -52,6 +54,26 @@ export default function Books() {
     fetchBooks();
     fetchPeriods();
   }, [fetchCurrentRead, fetchBooks, fetchPeriods]);
+
+  useEffect(() => {
+    if (bookIdParam && books.length > 0) {
+      if (activeTab !== 'shelf') {
+        handleTabChange('shelf');
+      }
+      setHighlightedBookId(bookIdParam);
+      setTimeout(() => {
+        const el = document.getElementById(`book-${bookIdParam}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+
+      const timer = setTimeout(() => {
+        setHighlightedBookId(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [bookIdParam, books, activeTab]);
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -229,7 +251,15 @@ export default function Books() {
                         const highestPage = p?.logs?.length > 0 ? Math.max(...p.logs.map(l => l.endPage)) : 0;
 
                         return viewMode === 'grid' ? (
-                        <div key={b.id} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden flex flex-col hover:shadow-lg transition group">
+                        <div 
+                            key={b.id} 
+                            id={`book-${b.id}`}
+                            className={`bg-white dark:bg-slate-800 border rounded-2xl overflow-hidden flex flex-col transition-all group ${
+                                highlightedBookId === b.id?.toString()
+                                    ? 'border-indigo-500 ring-2 ring-indigo-500/50 bg-indigo-50/20 dark:bg-indigo-950/40 shadow-lg'
+                                    : 'border-slate-200 dark:border-slate-700 hover:shadow-lg'
+                            }`}
+                        >
                             <div className="h-48 bg-slate-100 relative">
                                 {b.coverUrl ? (
                                     <CachedImage src={b.coverUrl} className="w-full h-full object-cover" alt="cover"/>
@@ -270,7 +300,15 @@ export default function Books() {
                             </div>
                         </div>
                         ) : (
-                        <div key={b.id} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden flex flex-col sm:flex-row sm:items-center p-4 gap-4 hover:shadow-sm transition group dark:text-slate-100">
+                        <div 
+                            key={b.id} 
+                            id={`book-${b.id}`}
+                            className={`bg-white dark:bg-slate-800 border rounded-xl overflow-hidden flex flex-col sm:flex-row sm:items-center p-4 gap-4 transition-all group dark:text-slate-100 ${
+                                highlightedBookId === b.id?.toString()
+                                    ? 'border-indigo-500 ring-2 ring-indigo-500/50 bg-indigo-50/20 dark:bg-indigo-950/40 shadow-md'
+                                    : 'border-slate-200 dark:border-slate-700 hover:shadow-sm'
+                            }`}
+                        >
                             <div className="flex items-center gap-4 flex-1 w-full min-w-0">
                                 <div className="w-16 h-24 bg-slate-100 shrink-0 rounded overflow-hidden">
                                     {b.coverUrl ? (

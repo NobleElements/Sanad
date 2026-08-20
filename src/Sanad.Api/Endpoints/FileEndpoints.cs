@@ -97,6 +97,13 @@ public static class FileEndpoints
             return Results.NoContent();
         });
 
+        group.MapGet("/{id:int}", async (int id, SanadDbContext db) =>
+        {
+            var file = await db.FileItems.FindAsync(id);
+            if (file == null) return Results.NotFound();
+            return Results.Ok(file);
+        });
+
         group.MapGet("/{id}/download", async (int id, [FromQuery] bool? inline, SanadDbContext db, FileStorageService storage, HttpContext ctx) =>
         {
             var file = await db.FileItems.FindAsync(id);

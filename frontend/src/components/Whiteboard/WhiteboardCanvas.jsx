@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback, forwardRef, useImperativeHandle } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Tldraw, getSnapshot, loadSnapshot, createShapeId } from 'tldraw';
 import 'tldraw/tldraw.css';
 import './miroTheme.css';
@@ -79,6 +80,8 @@ const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
   { whiteboard, readOnly = false, className = '', isResourceDrawerOpen, onToggleResourceDrawer, onEditorMount },
   ref
 ) {
+  const [searchParams] = useSearchParams();
+  const shapeIdParam = searchParams.get('shapeId');
   const isOffline = useUIStore((state) => state.isOffline);
   const saveWhiteboardState = useWhiteboardStore((state) => state.saveWhiteboardState);
   const tldrawLicenseKey = useSettingsStore((state) => state.tldrawLicenseKey);
@@ -440,6 +443,23 @@ const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
       } catch (err) {
         console.warn('Failed to restore camera position', err);
       }
+    }
+
+    // Check for shapeId in URL to auto-focus and select
+    if (shapeIdParam) {
+      setTimeout(() => {
+        try {
+          if (editorRef.current) {
+            const shape = editorRef.current.getShape?.(shapeIdParam);
+            if (shape) {
+              editorRef.current.select(shapeIdParam);
+              editorRef.current.zoomToSelection?.({ animation: { duration: 300 } });
+            }
+          }
+        } catch (e) {
+          console.warn('Failed to focus shape from URL', e);
+        }
+      }, 250);
     }
 
     // Persist camera view position & zoom level to database when camera moves (800ms debounce)

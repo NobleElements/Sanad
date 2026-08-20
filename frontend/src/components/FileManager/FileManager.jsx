@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState, useRef } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useFileManagerStore } from '../../store/fileManagerStore';
 import { Folder as FolderIcon, File as FileIcon, ChevronRight, Home, FolderPlus, Download, Trash2, MoreVertical, Search, Grid, List, ArrowUp, ArrowDown, Clock, Type, HardDrive, FileText, Video, Music, Archive, Code, Image as ImageIcon, Loader2, Share2, Globe } from 'lucide-react';
 import FileUploader from './FileUploader';
@@ -23,6 +23,9 @@ const getFileIconComponent = (mimeType, size = 20, className = '') => {
 const FileManager = () => {
   usePageTitle('Files');
   const { folderId } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const fileIdParam = searchParams.get('fileId');
+  const handledFileIdRef = useRef(null);
   const navigate = useNavigate();
 
   const { 
@@ -63,6 +66,45 @@ const FileManager = () => {
       fetchContents();
     }
   }, [folderId, fetchContents, setCurrentFolder, currentFolderId]);
+
+  useEffect(() => {
+    if (!fileIdParam) {
+      handledFileIdRef.current = null;
+      return;
+    }
+    if (handledFileIdRef.current === fileIdParam) return;
+
+    // First check if matching file is already loaded in files list
+    const match = files.find(f => f.id?.toString() === fileIdParam);
+    if (match) {
+      handledFileIdRef.current = fileIdParam;
+      setPreviewFile(match);
+      return;
+    }
+
+    // Otherwise fetch the file metadata directly by ID from backend
+    let isMounted = true;
+    fetch(`/api/files/${fileIdParam}`)
+      .then(res => res.ok ? res.json() : null)
+      .then(fileData => {
+        if (isMounted && fileData) {
+          handledFileIdRef.current = fileIdParam;
+          setPreviewFile(fileData);
+        }
+      })
+      .catch(err => console.error('Failed to load file preview', err));
+
+    return () => { isMounted = false; };
+  }, [fileIdParam, files]);
+
+  const handleClosePreview = () => {
+    setPreviewFile(null);
+    const next = new URLSearchParams(searchParams);
+    if (next.has('fileId')) {
+      next.delete('fileId');
+      setSearchParams(next, { replace: true });
+    }
+  };
 
   const handleCreateFolder = (e) => {
     e.preventDefault();
@@ -382,7 +424,7 @@ const FileManager = () => {
         )}
       </div>
 
-      <FilePreview file={previewFile} files={files} onNavigate={setPreviewFile} onClose={() => setPreviewFile(null)} />
+      <FilePreview file={previewFile} files={files} onNavigate={setPreviewFile} onClose={handleClosePreview} />
       <TransferProgress />
       <ShareModal item={shareModalItem} onClose={() => setShareModalItem(null)} />
     </div>

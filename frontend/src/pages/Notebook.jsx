@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import TipTapEditor from '../components/TipTapEditor';
 import { Plus, Search, FolderOpen, FileText, Trash2, Pencil, X, Check, BookOpen, ArrowUp, ArrowDown, ListFilter, ChevronDown, Menu } from 'lucide-react';
 import useNotebookStore from '../store/useNotebookStore';
@@ -11,6 +11,8 @@ import { extractImagesFromHtml, deleteImages } from '../utils/imageUtils';
 export default function Notebook() {
   usePageTitle('Notebook');
   const { noteId: urlNoteId } = useParams();
+  const [searchParams] = useSearchParams();
+  const urlNotebookId = searchParams.get('notebookId');
   const navigate = useNavigate();
 
   // Store state and actions
@@ -48,8 +50,6 @@ export default function Notebook() {
   const isSavingRef = useRef(false);
   const isInitializingRef = useRef(false);
 
-
-
   // --- Initialization: load notebooks, then open note from URL or latest ---
 
   const initDone = useRef(false);
@@ -58,10 +58,15 @@ export default function Notebook() {
     const init = async () => {
       await fetchNotebooks();
 
+      if (urlNotebookId && !urlNoteId) {
+        setSelectedNotebookId(urlNotebookId);
+        await fetchNotes(urlNotebookId);
+      }
+
       let targetNoteId = urlNoteId;
 
-      // If no note in URL, try to get the latest
-      if (!targetNoteId) {
+      // If no note in URL and no specific notebook requested, try to get the latest
+      if (!targetNoteId && !urlNotebookId) {
         const latest = await fetchLatestNote();
         if (latest) {
           targetNoteId = latest.id;

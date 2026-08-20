@@ -14,10 +14,13 @@ import usePageTitle from '../hooks/usePageTitle';
 import useTaskStore from '../store/useTaskStore';
 import useSettingsStore from '../store/useSettingsStore';
 import useAppStore from '../store/useAppStore';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 export default function Dashboard() {
   usePageTitle('Dashboard');
+  const [searchParams] = useSearchParams();
+  const goalDateParam = searchParams.get('goalDate');
+  const [highlightedGoal, setHighlightedGoal] = useState(false);
   const features = useSettingsStore((state) => state.features);
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -62,10 +65,10 @@ export default function Dashboard() {
   const [isSavingGoal, setIsSavingGoal] = useState(false);
 
 
-  const loadDailyGoal = async () => {
+  const loadDailyGoal = async (dateOverride = null) => {
     try {
-      const today = new Date().toISOString().split('T')[0];
-      const res = await fetch(`${API_URL}/goals/${today}`);
+      const dateToFetch = dateOverride || new Date().toISOString().split('T')[0];
+      const res = await fetch(`${API_URL}/goals/${dateToFetch}`);
       if (res.status === 204 || !res.ok) {
         setDailyGoal('');
         return;
@@ -77,11 +80,29 @@ export default function Dashboard() {
     }
   };
 
+  useEffect(() => {
+    if (goalDateParam) {
+      loadDailyGoal(goalDateParam);
+      setHighlightedGoal(true);
+      setTimeout(() => {
+        const el = document.getElementById('daily-goal-section');
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+
+      const timer = setTimeout(() => {
+        setHighlightedGoal(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [goalDateParam]);
+
   const saveDailyGoal = async () => {
     try {
       setIsSavingGoal(true);
-      const today = new Date().toISOString().split('T')[0];
-      const res = await fetch(`${API_URL}/goals/${today}`, {
+      const targetDate = goalDateParam || new Date().toISOString().split('T')[0];
+      const res = await fetch(`${API_URL}/goals/${targetDate}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ goal: editGoalValue })
@@ -178,7 +199,14 @@ export default function Dashboard() {
           </div>
         )}
         {features.todayGoal && (
-          <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 dark:text-slate-100">
+          <div 
+            id="daily-goal-section" 
+            className={`bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border transition-all ${
+              highlightedGoal 
+                ? 'border-indigo-500 ring-2 ring-indigo-500/50 bg-indigo-50/20 dark:bg-indigo-950/40 shadow-md' 
+                : 'border-slate-200 dark:border-slate-700'
+            } dark:text-slate-100`}
+          >
             <h3 className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-500 font-semibold uppercase">Today's Goals</h3>
           {isEditingGoal ? (
             <div className="mt-2 flex items-center gap-2">

@@ -2,6 +2,13 @@ import React, { useEffect, useCallback } from 'react';
 import { X, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import VideoPlayer from './VideoPlayer'
 
+const isImage = (f) => f?.mimeType?.toLowerCase().startsWith('image/') || /\.(png|jpe?g|gif|webp|svg|bmp|ico)$/i.test(f?.name || '');
+const isVideo = (f) => f?.mimeType?.toLowerCase().startsWith('video/') || /\.(mp4|webm|ogg|mov)$/i.test(f?.name || '');
+const isAudio = (f) => f?.mimeType?.toLowerCase().startsWith('audio/') || /\.(mp3|wav|ogg|m4a|aac)$/i.test(f?.name || '');
+const isPdf = (f) => f?.mimeType?.toLowerCase() === 'application/pdf' || /\.pdf$/i.test(f?.name || '');
+
+const isPreviewable = (f) => isImage(f) || isVideo(f) || isPdf(f) || isAudio(f);
+
 const FilePreview = ({ file, files = [], onClose, onNavigate, urlResolver }) => {
   if (!file) return null;
 
@@ -9,7 +16,6 @@ const FilePreview = ({ file, files = [], onClose, onNavigate, urlResolver }) => 
     if (!files.length || !onNavigate) return;
     onNavigate((currentFile) => {
       if (!currentFile) return null;
-      const isPreviewable = (f) => f.mimeType.startsWith('image/') || f.mimeType.startsWith('video/') || f.mimeType === 'application/pdf';
       const previewableFiles = files.filter(isPreviewable);
       const targetList = previewableFiles.length > 0 ? previewableFiles : files;
       
@@ -43,21 +49,21 @@ const FilePreview = ({ file, files = [], onClose, onNavigate, urlResolver }) => 
   const inlineUrl = `${fileUrl}?inline=true`;
 
   const renderContent = () => {
-    if (file.mimeType.startsWith('image/')) {
+    if (isImage(file)) {
       return <img src={inlineUrl} alt={file.name} className="max-w-full max-h-[70vh] object-contain rounded" />;
     }
-    if (file.mimeType.startsWith('video/')) {
+    if (isVideo(file)) {
       return <VideoPlayer src={inlineUrl} className="max-w-full max-h-[70vh] object-contain rounded" />;
     }
-    if (file.mimeType.startsWith('audio/')) {
+    if (isAudio(file)) {
       return <audio src={inlineUrl} controls className="w-full mt-4" />;
     }
-    if (file.mimeType === 'application/pdf') {
+    if (isPdf(file)) {
       return <iframe src={inlineUrl} title={file.name} className="w-full h-[70vh] rounded" />;
     }
     
     return (
-      <div className="flex flex-col items-center justify-center h-64 bg-gray-100 dark:bg-gray-800 rounded">
+      <div className="flex flex-col items-center justify-center h-64 bg-gray-100 dark:bg-gray-800 rounded p-6">
         <p className="text-gray-500 mb-4">Preview not available for this file type.</p>
         <a 
           href={fileUrl}
@@ -71,13 +77,18 @@ const FilePreview = ({ file, files = [], onClose, onNavigate, urlResolver }) => 
     );
   };
 
-  const isPreviewable = (f) => f.mimeType.startsWith('image/') || f.mimeType.startsWith('video/') || f.mimeType === 'application/pdf';
   const previewableFiles = files.filter(isPreviewable);
   const targetFiles = previewableFiles.length > 0 ? previewableFiles : files;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col relative">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-white dark:bg-gray-900 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col relative"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex justify-between items-center p-4 border-b dark:border-gray-700">
           <h3 className="font-semibold text-lg truncate pr-4">{file.name}</h3>
           <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, Fragment } from 'react';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import { Loader2, Search } from 'lucide-react';
 import useThoughtsStore from '../store/useThoughtsStore';
 import useConfirmStore from '../store/useConfirmStore';
@@ -10,13 +11,15 @@ import usePageTitle from '../hooks/usePageTitle';
 
 export default function Thoughts() {
   usePageTitle('Thoughts');
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
   const { thoughts, hasMore, isLoaded, fetchThoughts, addThought, updateThought, deleteThought: storeDeleteThought } = useThoughtsStore();
   const { showConfirm } = useConfirmStore();
   const isOffline = useUIStore(state => state.isOffline);
   
   const [loadingMore, setLoadingMore] = useState(false);
-
   const [page, setPage] = useState(1);
+  const [highlightedThoughtId, setHighlightedThoughtId] = useState(null);
 
   const [editingId, setEditingId] = useState(null);
   const [editContent, setEditContent] = useState('');
@@ -65,6 +68,25 @@ export default function Thoughts() {
       loadThoughts(page, debouncedSearch);
     }
   }, [page]);
+
+  useEffect(() => {
+    const targetId = searchParams.get('highlight') || (location.hash ? location.hash.replace('#thought-', '') : null);
+    if (!targetId || !isLoaded) return;
+
+    setHighlightedThoughtId(targetId);
+    setTimeout(() => {
+      const el = document.getElementById(`thought-${targetId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 100);
+
+    const timer = setTimeout(() => {
+      setHighlightedThoughtId(null);
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [searchParams, location.hash, isLoaded, thoughts]);
 
   const startEdit = (thought) => {
     setEditingId(thought.id);
@@ -178,11 +200,15 @@ export default function Thoughts() {
                     </div>
                   )}
 
-                  <div className="relative pl-8 group">
+                  <div id={`thought-${thought.id}`} className="relative pl-8 group">
                     {/* Timeline dot */}
                     <div className="absolute -left-[9px] top-1.5 w-4 h-4 bg-indigo-500 rounded-full border-4 border-slate-50 dark:bg-slate-700 dark:text-slate-100"></div>
                     
-                    <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow dark:text-slate-100">
+                    <div className={`bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border transition-all duration-300 dark:text-slate-100 ${
+                      highlightedThoughtId === thought.id 
+                        ? 'border-indigo-500 ring-2 ring-indigo-500/50 bg-indigo-50/40 dark:bg-indigo-950/40 shadow-md' 
+                        : 'border-slate-200 dark:border-slate-700 hover:shadow-md'
+                    }`}>
                       <div className="flex items-center justify-between mb-3">
                         <span className="text-xs font-semibold uppercase tracking-wider text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10 px-2 py-1 rounded">
                           Thought

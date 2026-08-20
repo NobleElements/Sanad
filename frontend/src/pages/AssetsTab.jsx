@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { Trash2, GripVertical, TrendingUp, TrendingDown, Landmark, CreditCard } from 'lucide-react';
@@ -8,6 +9,13 @@ import useUIStore from '../store/useUIStore';
 import CurrencyManager from '../components/CurrencyManager';
 
 export default function AssetsTab() {
+  const [searchParams] = useSearchParams();
+  const assetIdParam = searchParams.get('assetId');
+  const debtIdParam = searchParams.get('debtId');
+
+  const [highlightedAssetId, setHighlightedAssetId] = useState(null);
+  const [highlightedDebtId, setHighlightedDebtId] = useState(null);
+
   const { 
     assets, debts = [], currencies, assetHistory: history, assetChartLines: chartLines, 
     fetchAssets, addAsset, updateAsset, deleteAsset: storeDeleteAsset,
@@ -32,6 +40,40 @@ export default function AssetsTab() {
   useEffect(() => {
     fetchAssets();
   }, [fetchAssets]);
+
+  useEffect(() => {
+    if (assetIdParam && assets.length > 0) {
+      setHighlightedAssetId(assetIdParam);
+      setTimeout(() => {
+        const el = document.getElementById(`asset-${assetIdParam}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+
+      const timer = setTimeout(() => {
+        setHighlightedAssetId(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [assetIdParam, assets]);
+
+  useEffect(() => {
+    if (debtIdParam && debts.length > 0) {
+      setHighlightedDebtId(debtIdParam);
+      setTimeout(() => {
+        const el = document.getElementById(`debt-${debtIdParam}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+
+      const timer = setTimeout(() => {
+        setHighlightedDebtId(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [debtIdParam, debts]);
   
   // Form Type: 'asset' | 'debt'
   const [formType, setFormType] = useState('asset');
@@ -324,8 +366,15 @@ export default function AssetsTab() {
                               {(provided, snapshot) => (
                                 <div 
                                   ref={provided.innerRef}
+                                  id={`asset-${asset.id}`}
                                   {...provided.draggableProps}
-                                  className={`group flex justify-between items-center p-4 rounded-lg border transition-all ${snapshot.isDragging ? 'bg-indigo-50 dark:bg-indigo-500/10 border-indigo-200 shadow-md scale-[1.01]' : 'bg-slate-50 dark:bg-slate-900 border-slate-100 hover:border-slate-200 dark:border-slate-700'}`}
+                                  className={`group flex justify-between items-center p-4 rounded-lg border transition-all ${
+                                    highlightedAssetId === asset.id?.toString()
+                                      ? 'border-indigo-500 ring-2 ring-indigo-500/50 bg-indigo-50/50 dark:bg-indigo-950/40 shadow-md'
+                                      : snapshot.isDragging 
+                                        ? 'bg-indigo-50 dark:bg-indigo-500/10 border-indigo-200 shadow-md scale-[1.01]' 
+                                        : 'bg-slate-50 dark:bg-slate-900 border-slate-100 hover:border-slate-200 dark:border-slate-700'
+                                  }`}
                                 >
                                   <div className="flex items-center gap-3 min-w-0">
                                     <div {...provided.dragHandleProps} className="text-slate-300 hover:text-slate-500 dark:text-slate-400 cursor-grab active:cursor-grabbing">
@@ -421,8 +470,15 @@ export default function AssetsTab() {
                               {(provided, snapshot) => (
                                 <div 
                                   ref={provided.innerRef}
+                                  id={`debt-${debt.id}`}
                                   {...provided.draggableProps}
-                                  className={`group flex justify-between items-center p-4 rounded-lg border transition-all ${snapshot.isDragging ? 'bg-rose-50 dark:bg-rose-500/10 border-rose-200 shadow-md scale-[1.01]' : 'bg-slate-50 dark:bg-slate-900 border-slate-100 hover:border-slate-200 dark:border-slate-700'}`}
+                                  className={`group flex justify-between items-center p-4 rounded-lg border transition-all ${
+                                    highlightedDebtId === debt.id?.toString()
+                                      ? 'border-rose-500 ring-2 ring-rose-500/50 bg-rose-50/50 dark:bg-rose-950/40 shadow-md'
+                                      : snapshot.isDragging 
+                                        ? 'bg-rose-50 dark:bg-rose-500/10 border-rose-200 shadow-md scale-[1.01]' 
+                                        : 'bg-slate-50 dark:bg-slate-900 border-slate-100 hover:border-slate-200 dark:border-slate-700'
+                                  }`}
                                 >
                                   <div className="flex items-center gap-3 min-w-0">
                                     <div {...provided.dragHandleProps} className="text-slate-300 hover:text-slate-500 dark:text-slate-400 cursor-grab active:cursor-grabbing">
