@@ -14,8 +14,9 @@ import { Color } from '@tiptap/extension-color';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { common, createLowlight } from 'lowlight';
 import { useEffect, useRef, useCallback, useState } from 'react';
-import { Bold, Italic, Strikethrough, List, ListOrdered, CheckSquare, Code, ImagePlus, Link as LinkIcon, Table as TableIcon, Trash2, Plus, Minus, Columns, Rows, PilcrowLeft, PilcrowRight } from 'lucide-react';
+import { Bold, Italic, Strikethrough, List, ListOrdered, CheckSquare, Code, ImagePlus, Link as LinkIcon, Table as TableIcon, Trash2, Plus, Minus, Columns, Rows, PilcrowLeft, PilcrowRight, IndentDecrease, IndentIncrease } from 'lucide-react';
 import { TextDirection } from './TextDirection';
+import { Indent } from './Indent';
 
 const FontSize = Extension.create({
   name: 'fontSize',
@@ -173,6 +174,12 @@ const MenuBar = ({ editor, onImageUpload, currentFontSize }) => {
       <button onClick={toggleTaskList} className={btnClass(editor.isActive('taskList'))} aria-label="Task List">
         <CheckSquare className="w-4 h-4" />
       </button>
+      <button onClick={() => editor.chain().focus().outdent().run()} className={btnClass(false)} aria-label="Decrease Indent" title="Decrease Indent (Shift+Tab)">
+        <IndentDecrease className="w-4 h-4" />
+      </button>
+      <button onClick={() => editor.chain().focus().indent().run()} className={btnClass(false)} aria-label="Increase Indent" title="Increase Indent (Tab)">
+        <IndentIncrease className="w-4 h-4" />
+      </button>
 
       <div className="w-px h-4 bg-gray-300 dark:bg-gray-600 mx-1" />
 
@@ -250,6 +257,7 @@ export default function TipTapEditor({ content, onChange, onImageUpload }) {
       TextStyle,
       FontSize,
       TextDirection,
+      Indent,
     ],
     content: content || '',
     onUpdate: ({ editor }) => {
@@ -398,6 +406,12 @@ export default function TipTapEditor({ content, onChange, onImageUpload }) {
               <div className="w-px h-4 bg-gray-300 dark:bg-gray-600 mx-1" />
               <button onClick={() => editor.chain().focus().toggleTextDirection().run()} className={`p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${editor.isActive({ dir: 'rtl' }) ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10' : 'text-gray-600 dark:text-gray-400'}`} aria-label="Toggle Text Direction">
                 {editor.isActive({ dir: 'rtl' }) ? <PilcrowRight className="w-4 h-4" /> : <PilcrowLeft className="w-4 h-4" />}
+              </button>
+              <button onClick={() => editor.chain().focus().outdent().run()} className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition-colors" aria-label="Decrease Indent" title="Decrease Indent (Shift+Tab)">
+                <IndentDecrease className="w-4 h-4" />
+              </button>
+              <button onClick={() => editor.chain().focus().indent().run()} className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition-colors" aria-label="Increase Indent" title="Increase Indent (Tab)">
+                <IndentIncrease className="w-4 h-4" />
               </button>
               <div className="w-px h-4 bg-gray-300 dark:bg-gray-600 mx-1" />
               <button onClick={() => editor.chain().focus().toggleCodeBlock().run()} className={`p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${editor.isActive('codeBlock') ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10' : 'text-gray-600 dark:text-gray-400'}`} aria-label="Code Block">

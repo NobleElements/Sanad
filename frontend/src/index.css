@@ -24,7 +24,7 @@ body {
 
 .tiptap-editor ul,
 .tiptap-editor ol {
-  padding-left: 1.5rem;
+  padding-inline-start: 1.5rem;
   margin-top: 0.5em;
   margin-bottom: 0.5em;
 }
@@ -40,6 +40,10 @@ body {
 .tiptap-editor ul[data-type="taskList"] {
   list-style: none;
   padding: 0;
+}
+
+.tiptap-editor ul[data-type="taskList"] ul[data-type="taskList"] {
+  padding-inline-start: 1.5rem;
 }
 
 .tiptap-editor ul[data-type="taskList"] li {
