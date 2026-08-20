@@ -85,6 +85,25 @@ export default function EventModal({ isOpen, onClose, eventToEdit, initialDate }
     }
   }, [eventToEdit, initialDate]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (isConfirmDeleteOpen) {
+          setIsConfirmDeleteOpen(false);
+        } else if (isCreatingCategory) {
+          setIsCreatingCategory(false);
+        } else {
+          onClose();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, isConfirmDeleteOpen, isCreatingCategory, onClose]);
+
   if (!isOpen) return null;
 
   const handleSave = async () => {

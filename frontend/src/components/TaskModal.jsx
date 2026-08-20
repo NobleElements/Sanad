@@ -25,6 +25,7 @@ export default function TaskModal() {
   const [error, setError] = useState(null);
   const [isRenameProjectModalOpen, setIsRenameProjectModalOpen] = useState(false);
   const uploadedSessionImages = useRef([]);
+  const initialValuesRef = useRef(null);
 
   const { 
     isTaskModalOpen: isOpen, activeTask: task, closeTaskModal: onClose, createTask, updateTask,
@@ -49,31 +50,43 @@ export default function TaskModal() {
   useEffect(() => {
     if (isOpen && task) {
       setInternalTask(task);
-      setTitle(task.title || '');
-      setStatus(task.status === 2 || task.status === 'Done' ? 'Done' : 
-                task.status === 1 || task.status === 'InProgress' ? 'InProgress' : 'ToDo');
-      setContent(task.content || '');
-      setProject(task.project || '');
+      const initTitle = task.title || '';
+      const initStatus = task.status === 2 || task.status === 'Done' ? 'Done' : 
+                         task.status === 1 || task.status === 'InProgress' ? 'InProgress' : 'ToDo';
+      const initContent = task.content || '';
+      const initProject = task.project || '';
+      const initTags = (task.tags && typeof task.tags === 'string')
+        ? task.tags.split(',').map(t => t.trim()).filter(Boolean)
+        : [];
+      const initHours = (task.estimatedMinutes && task.estimatedMinutes > 0)
+        ? String(Math.floor(task.estimatedMinutes / 60)) || ''
+        : '';
+      const initMinutes = (task.estimatedMinutes && task.estimatedMinutes > 0)
+        ? String(task.estimatedMinutes % 60) || ''
+        : '';
+
+      setTitle(initTitle);
+      setStatus(initStatus);
+      setContent(initContent);
+      setProject(initProject);
+      setTags(initTags);
       setTagInput('');
       setError(null);
+      setHours(initHours);
+      setMinutes(initMinutes);
+      setNewComment('');
 
-      // Initialize tags from comma-separated string
-      if (task.tags && typeof task.tags === 'string') {
-        setTags(task.tags.split(',').map(t => t.trim()).filter(Boolean));
-      } else {
-        setTags([]);
-      }
+      initialValuesRef.current = {
+        title: initTitle,
+        status: initStatus,
+        content: initContent,
+        project: initProject,
+        tags: initTags,
+        hours: initHours,
+        minutes: initMinutes,
+      };
 
       uploadedSessionImages.current = [];
-
-      // Initialize estimated time from minutes
-      if (task.estimatedMinutes && task.estimatedMinutes > 0) {
-        setHours(String(Math.floor(task.estimatedMinutes / 60)) || '');
-        setMinutes(String(task.estimatedMinutes % 60) || '');
-      } else {
-        setHours('');
-        setMinutes('');
-      }
       
       // Auto-focus the title input when opening
       setTimeout(() => {
@@ -239,11 +252,54 @@ export default function TaskModal() {
     }
   };
 
+  const normalizeHtml = (html) => {
+    if (!html) return '';
+    const trimmed = html.trim();
+    if (
+      trimmed === '' ||
+      trimmed === '<p></p>' ||
+      trimmed === '<p><br></p>' ||
+      trimmed === '<p><br class="ProseMirror-trailingBreak"></p>'
+    ) {
+      return '';
+    }
+    return trimmed;
+  };
+
+  const areArraysEqual = (a = [], b = []) => {
+    if (a.length !== b.length) return false;
+    return a.every((val, index) => val === b[index]);
+  };
+
+  const isModified = () => {
+    if (!initialValuesRef.current) return false;
+    const init = initialValuesRef.current;
+
+    if (title !== init.title) return true;
+    if (status !== init.status) return true;
+    if (normalizeHtml(content) !== normalizeHtml(init.content)) return true;
+    if ((project || '') !== (init.project || '')) return true;
+    if (tagInput.trim() !== '') return true;
+    if (!areArraysEqual(tags, init.tags)) return true;
+    if (hours !== init.hours) return true;
+    if (minutes !== init.minutes) return true;
+    if (newComment.trim() !== '') return true;
+    if (uploadedSessionImages.current && uploadedSessionImages.current.length > 0) return true;
+
+    return false;
+  };
+
+  const handleBackdropClick = () => {
+    if (!isModified()) {
+      handleCloseModal();
+    }
+  };
+
   return (
     <>
       <div 
         className={`fixed inset-0 bg-black/30 backdrop-blur-sm z-40 transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-        onClick={handleCloseModal}
+        onClick={handleBackdropClick}
         aria-hidden="true"
       />
 
