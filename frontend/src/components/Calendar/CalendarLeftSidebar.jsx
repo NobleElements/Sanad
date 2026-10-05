@@ -1,16 +1,19 @@
-import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, PanelLeftClose, Tag, Check, Edit2, Plus } from 'lucide-react';
+import { useState } from 'react';
+import { ChevronLeft, ChevronRight, PanelLeftClose, Tag, Check, Edit2, Trash2, Plus } from 'lucide-react';
 import { 
   format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, 
   eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday 
 } from 'date-fns';
 import useCalendarStore from '../../store/useCalendarStore';
+import useUIStore from '../../store/useUIStore';
 
-export default function CalendarLeftSidebar({ onClose, onEditCategory }) {
+export default function CalendarLeftSidebar({ onClose, onEditCategory, onDeleteCategory }) {
+  const isOffline = useUIStore((state) => state.isOffline);
   const { 
     viewDate, setViewDate, setViewMode, 
     categories, hiddenCategoryIds, toggleCategoryVisibility 
   } = useCalendarStore();
+
   
   const [miniDate, setMiniDate] = useState(viewDate);
 
@@ -56,7 +59,7 @@ export default function CalendarLeftSidebar({ onClose, onEditCategory }) {
           </div>
           
           <div className="grid grid-cols-7 gap-1 text-sm">
-            {days.map((day, i) => {
+            {days.map((day) => {
               const isSelected = isSameDay(day, viewDate);
               const isCurrentMonth = isSameMonth(day, monthStart);
               const isTodayDate = isToday(day);
@@ -87,8 +90,9 @@ export default function CalendarLeftSidebar({ onClose, onEditCategory }) {
             </h3>
             <button 
               onClick={() => onEditCategory('new')} 
-              className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-500 hover:text-blue-600 transition-colors"
-              title="Add Category"
+              disabled={isOffline}
+              className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-500 hover:text-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title={isOffline ? "Not available offline" : "Add Category"}
             >
               <Plus className="w-4 h-4" />
             </button>
@@ -103,7 +107,7 @@ export default function CalendarLeftSidebar({ onClose, onEditCategory }) {
               const isHidden = hiddenCategoryIds.includes(cat.id);
               return (
                 <div key={cat.id} className="flex justify-between items-center group px-2 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded">
-                  <label className="flex items-center gap-3 cursor-pointer flex-1">
+                  <label className="flex items-center gap-3 cursor-pointer flex-1 min-w-0 mr-1">
                     <div 
                       className="w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors"
                       style={{ 
@@ -117,18 +121,28 @@ export default function CalendarLeftSidebar({ onClose, onEditCategory }) {
                     >
                       {!isHidden && <Check className="w-3 h-3 text-white" />}
                     </div>
-                    <span className={`text-sm ${isHidden ? 'text-slate-500' : 'text-slate-700 dark:text-slate-300'}`}>
+                    <span className={`text-sm truncate ${isHidden ? 'text-slate-500' : 'text-slate-700 dark:text-slate-300'}`}>
                       {cat.name}
                     </span>
                   </label>
                   
-                  <button 
-                    onClick={() => onEditCategory(cat.id)}
-                    className="p-1 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-blue-600 transition-opacity"
-                    title="Edit Category"
-                  >
-                    <Edit2 className="w-3.5 h-3.5" />
-                  </button>
+                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                    <button 
+                      onClick={() => onEditCategory(cat.id)}
+                      className="p-1 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 rounded transition-colors"
+                      title="Edit Category"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button 
+                      onClick={() => onDeleteCategory && onDeleteCategory(cat)}
+                      disabled={isOffline}
+                      className="p-1 text-slate-400 hover:text-red-600 dark:hover:text-red-400 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      title={isOffline ? "Not available offline" : "Delete Category"}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               );
             })}

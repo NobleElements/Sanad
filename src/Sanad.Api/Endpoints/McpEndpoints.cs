@@ -281,8 +281,8 @@ public class McpEndpoints
     public async Task<EventCategory?> UpdateEventCategory(Guid id, string name, string colorCode) =>
         await _calendarService.UpdateCategoryAsync(id, name, colorCode);
 
-    [McpServerTool, Description("Delete a calendar event category by ID")]
-    public async Task<bool> DeleteEventCategory(Guid id) => await _calendarService.DeleteCategoryAsync(id);
+    [McpServerTool, Description("Delete a calendar event category by ID with optional destination category ID for existing events")]
+    public async Task<bool> DeleteEventCategory(Guid id, Guid? moveToCategoryId = null) => await _calendarService.DeleteCategoryAsync(id, moveToCategoryId);
 
     [McpServerTool, Description("Get calendar events optionally filtered by start and end dates")]
     public async Task<List<CalendarEvent>> GetCalendarEvents(DateTime? start = null, DateTime? end = null) =>

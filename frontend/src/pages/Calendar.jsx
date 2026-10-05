@@ -1,27 +1,28 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { 
-  format, addDays, subDays, startOfWeek, endOfWeek, startOfMonth, 
-  endOfMonth, addWeeks, subWeeks, addMonths, subMonths, addYears, subYears, isSameDay
+  format, addDays, subDays, 
+  addWeeks, subWeeks, addMonths, subMonths, addYears, subYears
 } from 'date-fns';
-import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, PanelLeftClose, PanelLeft, LayoutList, Search, Bell, Settings, PanelRightClose, ChevronDown } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, PanelLeft, LayoutList, Search, Settings, PanelRightClose, ChevronDown } from 'lucide-react';
 import usePageTitle from '../hooks/usePageTitle';
 import useCalendarStore from '../store/useCalendarStore';
-import useTaskStore from '../store/useTaskStore';
 import CalendarGrid from '../components/Calendar/CalendarGrid';
 import EventModal from '../components/Calendar/EventModal';
 import CalendarSettingsModal from '../components/Calendar/CalendarSettingsModal';
 import CalendarLeftSidebar from '../components/Calendar/CalendarLeftSidebar';
 import CategoryEditModal from '../components/Calendar/CategoryEditModal';
+import DeleteCategoryModal from '../components/Calendar/DeleteCategoryModal';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
 export default function Calendar() {
   usePageTitle('Calendar');
   const [searchParams, setSearchParams] = useSearchParams();
   const { 
-    events, fetchEvents, viewDate, setViewDate, viewMode, setViewMode, categories, fetchCategories,
+    events, fetchEvents, viewDate, setViewDate, viewMode, setViewMode, fetchCategories,
     todoTasks, fetchTodoTasks
   } = useCalendarStore();
+
   const [showTaskSidebar, setShowTaskSidebar] = useState(() => {
     const saved = localStorage.getItem('calendarTaskSidebar');
     if (saved !== null) return saved === 'true';
@@ -46,6 +47,7 @@ export default function Calendar() {
   const [selectedDateSlot, setSelectedDateSlot] = useState(null);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [editingCategoryId, setEditingCategoryId] = useState(null);
+  const [categoryToDelete, setCategoryToDelete] = useState(null);
   
   const [taskSearch, setTaskSearch] = useState('');
   const [taskProjectFilter, setTaskProjectFilter] = useState('');
@@ -251,7 +253,9 @@ export default function Calendar() {
           <CalendarLeftSidebar 
             onClose={() => setShowLeftSidebar(false)}
             onEditCategory={(id) => setEditingCategoryId(id)}
+            onDeleteCategory={(cat) => setCategoryToDelete(cat)}
           />
+
         )}
 
         {/* Main Calendar Area */}
@@ -439,8 +443,16 @@ export default function Calendar() {
           isOpen={!!editingCategoryId}
           categoryId={editingCategoryId}
           onClose={() => setEditingCategoryId(null)}
+          onDeleteCategory={(cat) => setCategoryToDelete(cat)}
+        />
+
+        <DeleteCategoryModal
+          isOpen={!!categoryToDelete}
+          category={categoryToDelete}
+          onClose={() => setCategoryToDelete(null)}
         />
       </div>
+
     </DragDropContext>
   );
 }

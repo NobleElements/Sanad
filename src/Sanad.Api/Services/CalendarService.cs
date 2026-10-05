@@ -61,21 +61,41 @@ public class CalendarService : ICalendarService
         return category;
     }
 
-    public async Task<bool> DeleteCategoryAsync(Guid id)
+    public async Task<int> GetCategoryEventCountAsync(Guid id)
+    {
+        return await _db.CalendarEvents.CountAsync(e => e.CategoryId == id);
+    }
+
+    public async Task<bool> DeleteCategoryAsync(Guid id, Guid? moveToCategoryId = null)
     {
         var category = await _db.EventCategories.FindAsync(id);
         if (category == null) return false;
 
+        if (moveToCategoryId.HasValue && moveToCategoryId.Value != id)
+        {
+            var targetExists = await _db.EventCategories.AnyAsync(c => c.Id == moveToCategoryId.Value);
+            if (!targetExists)
+            {
+                return false;
+            }
+        }
+        else if (moveToCategoryId.HasValue && moveToCategoryId.Value == id)
+        {
+            moveToCategoryId = null;
+        }
+
         var events = await _db.CalendarEvents.Where(e => e.CategoryId == id).ToListAsync();
         foreach (var evt in events)
         {
-            evt.CategoryId = null;
+            evt.CategoryId = moveToCategoryId;
+            evt.UpdatedAt = DateTime.UtcNow;
         }
 
         _db.EventCategories.Remove(category);
         await _db.SaveChangesAsync();
         return true;
     }
+
 
     public async Task<List<CalendarEvent>> GetEventsAsync(DateTime? start = null, DateTime? end = null)
     {

@@ -78,21 +78,54 @@ const useCalendarStore = create((set, get) => ({
     }
   },
 
-  deleteCategory: async (id) => {
+  getCategoryEventCount: async (id) => {
     try {
-      const response = await fetch(`${API_URL}/calendar/categories/${id}`, {
+      const response = await fetch(`${API_URL}/calendar/categories/${id}/event-count`, {
+        headers: getHeaders(),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        return data.count;
+      }
+    } catch (error) {
+      console.error('Error fetching category event count:', error);
+    }
+    return get().events.filter((e) => e.categoryId === id).length;
+  },
+
+  deleteCategory: async (id, moveToCategoryId = null) => {
+    try {
+      let url = `${API_URL}/calendar/categories/${id}`;
+      if (moveToCategoryId) {
+        url += `?moveToCategoryId=${encodeURIComponent(moveToCategoryId)}`;
+      }
+      const response = await fetch(url, {
         method: 'DELETE',
         headers: getHeaders(),
       });
       if (!response.ok) throw new Error('Failed to delete category');
       set((state) => {
         const isDeletedLastSelected = state.lastSelectedCategoryId === id;
+        const newLastSelected = isDeletedLastSelected ? (moveToCategoryId || '') : state.lastSelectedCategoryId;
         if (isDeletedLastSelected) {
-          localStorage.setItem('calendarLastCategoryId', '');
+          localStorage.setItem('calendarLastCategoryId', newLastSelected);
         }
+        const targetCategory = moveToCategoryId ? state.categories.find((c) => c.id === moveToCategoryId) || null : null;
+
         return {
           categories: state.categories.filter((c) => c.id !== id),
-          lastSelectedCategoryId: isDeletedLastSelected ? '' : state.lastSelectedCategoryId,
+          hiddenCategoryIds: state.hiddenCategoryIds.filter((catId) => catId !== id),
+          lastSelectedCategoryId: newLastSelected,
+          events: state.events.map((e) => {
+            if (e.categoryId === id) {
+              return {
+                ...e,
+                categoryId: moveToCategoryId || null,
+                category: targetCategory,
+              };
+            }
+            return e;
+          }),
         };
       });
     } catch (error) {
@@ -100,6 +133,7 @@ const useCalendarStore = create((set, get) => ({
       throw error;
     }
   },
+
 
   updateCategory: async (id, categoryData) => {
     // Optimistic update

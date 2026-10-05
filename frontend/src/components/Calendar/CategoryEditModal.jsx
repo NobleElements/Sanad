@@ -1,13 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { X, Tag } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, Tag, Trash2 } from 'lucide-react';
 import useCalendarStore from '../../store/useCalendarStore';
+import useUIStore from '../../store/useUIStore';
 
-export default function CategoryEditModal({ isOpen, onClose, categoryId }) {
+export default function CategoryEditModal({ isOpen, onClose, categoryId, onDeleteCategory }) {
+  const isOffline = useUIStore((state) => state.isOffline);
   const { categories, updateCategory, createCategory } = useCalendarStore();
   
   const [name, setName] = useState('');
   const [colorCode, setColorCode] = useState('#3B82F6');
   const [isSaving, setIsSaving] = useState(false);
+
 
   useEffect(() => {
     if (categoryId === 'new') {
@@ -52,6 +55,7 @@ export default function CategoryEditModal({ isOpen, onClose, categoryId }) {
   };
 
   const isNew = categoryId === 'new';
+  const currentCategory = !isNew ? categories.find((c) => c.id === categoryId) : null;
 
   return (
     <div 
@@ -97,13 +101,40 @@ export default function CategoryEditModal({ isOpen, onClose, categoryId }) {
           </div>
         </div>
 
-        <div className="p-4 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-2 bg-slate-50 dark:bg-slate-800/50">
-          <button onClick={onClose} className="px-4 py-2 text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors">
-            Cancel
-          </button>
-          <button onClick={handleSave} disabled={!name || isSaving} className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors">
-            {isSaving ? 'Saving...' : 'Save'}
-          </button>
+        <div className="p-4 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800/50">
+          {!isNew && currentCategory ? (
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                if (onDeleteCategory) {
+                  onDeleteCategory(currentCategory);
+                }
+              }}
+              disabled={isOffline || isSaving}
+              title={isOffline ? "Not available offline" : "Delete Category"}
+              className="px-3 py-2 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete
+            </button>
+          ) : (
+            <div />
+          )}
+
+          <div className="flex items-center gap-2">
+            <button onClick={onClose} className="px-4 py-2 text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors">
+              Cancel
+            </button>
+            <button 
+              onClick={handleSave} 
+              disabled={!name || isSaving || isOffline} 
+              title={isOffline ? "Not available offline" : "Save"}
+              className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isSaving ? 'Saving...' : 'Save'}
+            </button>
+          </div>
         </div>
       </div>
     </div>

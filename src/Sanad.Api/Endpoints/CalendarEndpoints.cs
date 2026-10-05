@@ -1,6 +1,7 @@
 using System;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Sanad.Api.Models;
 using Sanad.Api.Services;
@@ -20,6 +21,12 @@ public static class CalendarEndpoints
             return Results.Ok(categories);
         });
 
+        calendar.MapGet("/categories/{id:guid}/event-count", async (Guid id, ICalendarService svc) =>
+        {
+            var count = await svc.GetCategoryEventCountAsync(id);
+            return Results.Ok(new { count });
+        });
+
         calendar.MapPost("/categories", async (EventCategory category, ICalendarService svc) =>
         {
             var created = await svc.CreateCategoryAsync(category);
@@ -33,12 +40,13 @@ public static class CalendarEndpoints
             return Results.Ok(category);
         });
 
-        calendar.MapDelete("/categories/{id:guid}", async (Guid id, ICalendarService svc) =>
+        calendar.MapDelete("/categories/{id:guid}", async (Guid id, [FromQuery] Guid? moveToCategoryId, ICalendarService svc) =>
         {
-            var success = await svc.DeleteCategoryAsync(id);
+            var success = await svc.DeleteCategoryAsync(id, moveToCategoryId);
             if (!success) return Results.NotFound();
             return Results.NoContent();
         });
+
 
         // --- Events ---
         calendar.MapGet("/events", async (DateTime? start, DateTime? end, ICalendarService svc) =>

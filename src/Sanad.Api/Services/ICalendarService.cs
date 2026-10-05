@@ -11,7 +11,8 @@ public interface ICalendarService
     Task<EventCategory> CreateCategoryAsync(string name, string colorCode);
     Task<EventCategory> CreateCategoryAsync(EventCategory category);
     Task<EventCategory?> UpdateCategoryAsync(Guid id, string name, string colorCode);
-    Task<bool> DeleteCategoryAsync(Guid id);
+    Task<int> GetCategoryEventCountAsync(Guid id);
+    Task<bool> DeleteCategoryAsync(Guid id, Guid? moveToCategoryId = null);
 
     Task<List<CalendarEvent>> GetEventsAsync(DateTime? start = null, DateTime? end = null);
     Task<CalendarEvent> CreateEventAsync(CalendarEvent evt);
