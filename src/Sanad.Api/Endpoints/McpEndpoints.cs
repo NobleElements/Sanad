@@ -92,8 +92,9 @@ public class McpEndpoints
     public async Task<object> GetStorageStatus() => await _storageService.GetStorageStatusAsync(_tenantProvider.GetUsername());
 
     // Thoughts Tools
-    [McpServerTool, Description("Get a list of thoughts")]
-    public async Task<List<Thought>> GetThoughts() => await _thoughtService.GetThoughtsAsync(1, 20);
+    [McpServerTool, Description("Get a list of thoughts, newest first. Supports pagination and search just like the REST API. Set pageSize to control how many are returned per page; pass a large pageSize (e.g. 1000) to fetch all thoughts.")]
+    public async Task<List<Thought>> GetThoughts(int page = 1, int pageSize = 20, string? search = null) =>
+        await _thoughtService.GetThoughtsAsync(page, pageSize, search);
 
     [McpServerTool, Description("Create a new thought")]
     public async Task<Thought> CreateThought(string content) => await _thoughtService.CreateThoughtAsync(content);
