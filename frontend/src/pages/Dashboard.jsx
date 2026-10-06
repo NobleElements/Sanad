@@ -8,7 +8,7 @@ import useHabitStore from '../store/useHabitStore';
 import CachedImage from '../components/CachedImage';
 import { format } from 'date-fns';
 
-import { timeAgo } from '../utils/dateUtils';
+import { timeAgo, parseUTCDate } from '../utils/dateUtils';
 import CategorySelector from '../components/CategorySelector';
 import usePageTitle from '../hooks/usePageTitle';
 import useTaskStore from '../store/useTaskStore';
@@ -160,7 +160,7 @@ export default function Dashboard() {
 
   const totalSpentToday = recentTransactions
     .filter(tx => {
-      const txDate = new Date(tx.date);
+      const txDate = parseUTCDate(tx.date);
       const today = new Date();
       return txDate.toDateString() === today.toDateString();
     })

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { API_BASE, API_URL } from '../config';
 import useUIStore from './useUIStore';
+import { getDateToLog } from '../utils/dateUtils';
 
 const useFinanceStore = create((set, get) => ({
   categories: [],
@@ -321,7 +322,7 @@ const useFinanceStore = create((set, get) => ({
 
   addTransaction: async (amount, categoryId, description, type = 'Expense', date = null) => {
     try {
-      const txDate = date ? new Date(date).toISOString() : new Date().toISOString();
+      const txDate = getDateToLog(date);
       const res = await fetch(`${API_URL}/finances/transactions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

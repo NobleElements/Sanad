@@ -28,3 +28,27 @@ export function formatTime(minutes) {
   if (h) return `${h}h`;
   return `${m}m`;
 }
+
+export function formatTimeOfDay(dateStr) {
+  if (!dateStr) return '';
+  const date = parseUTCDate(dateStr);
+  return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
+
+export function getLocalDateStr(d = new Date()) {
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+}
+
+export function getDateToLog(dateStr) {
+  if (!dateStr || dateStr === getLocalDateStr()) {
+    return new Date().toISOString();
+  }
+  if (dateStr.includes('T')) {
+    return new Date(dateStr).toISOString();
+  }
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const now = new Date();
+  const d = new Date(year, month - 1, day, now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
+  return d.toISOString();
+}
+

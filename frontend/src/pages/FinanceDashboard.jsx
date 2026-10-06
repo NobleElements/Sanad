@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { useSearchParams } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
-import { timeAgo } from '../utils/dateUtils';
+import { timeAgo, getLocalDateStr, getDateToLog } from '../utils/dateUtils';
 import AssetsTab from './AssetsTab';
 import useFinanceStore from '../store/useFinanceStore';
 import useConfirmStore from '../store/useConfirmStore';
@@ -68,11 +68,6 @@ export default function FinanceDashboard() {
     }
   }, [urlMonth, urlYear, currentMonth, currentYear, setDate, fetchFinanceData]);
   
-  const getLocalDateStr = () => {
-    const d = new Date();
-    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
-  };
-
   // setup state
   const [setupCode, setSetupCode] = useState('');
   const [setupName, setSetupName] = useState('');
@@ -168,7 +163,7 @@ export default function FinanceDashboard() {
 
   const handleLog = async (e) => {
     e.preventDefault();
-    const dateToLog = logDate ? new Date(logDate + 'T12:00:00Z').toISOString() : null;
+    const dateToLog = getDateToLog(logDate);
     const success = await addTransaction(parseFloat(amount), categoryId, desc, 'Expense', dateToLog);
     if (success) {
       setCategoryId('');
