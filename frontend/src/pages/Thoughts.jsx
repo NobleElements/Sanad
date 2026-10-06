@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useSearchParams, useLocation } from 'react-router-dom';
-import { Loader2, Search, Calendar, ChevronDown, ChevronUp, Layers, Clock } from 'lucide-react';
+import { Loader2, Search, Calendar, ChevronDown, ChevronUp, Clock } from 'lucide-react';
 import useThoughtsStore from '../store/useThoughtsStore';
 import useConfirmStore from '../store/useConfirmStore';
 import useUIStore from '../store/useUIStore';
@@ -158,24 +158,6 @@ function ThoughtCard({
           dangerouslySetInnerHTML={{ __html: linkify(thought.content) }}
         />
       )}
-
-      {/* Pile footer hint shown on top card when collapsed with multiple thoughts */}
-      {isTopInCollapsedPile && hasMultipleInPile && (
-        <div className="mt-4 pt-3.5 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between text-xs select-none">
-          <div className="flex items-center gap-2 font-medium text-indigo-600 dark:text-indigo-400">
-            <span className="flex items-center justify-center w-5 h-5 rounded-md bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/70 dark:border-indigo-800/60 shadow-2xs">
-              <Layers className="w-3.5 h-3.5" />
-            </span>
-            <span>
-              +{pileCount - 1} more {pileCount - 1 === 1 ? 'thought' : 'thoughts'} in this pile
-            </span>
-          </div>
-          <div className="flex items-center gap-1 font-medium text-slate-400 dark:text-slate-500 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-            <span>Click to unfold pile</span>
-            <ChevronDown className="w-3.5 h-3.5 transition-transform duration-300 group-hover:translate-y-0.5" />
-          </div>
-        </div>
-      )}
     </div>
   );
 
@@ -321,7 +303,6 @@ export default function Thoughts() {
 
   const isDayExpanded = useCallback(
     (dateKey) => {
-      // If user is actively searching, auto-expand so matching thoughts are directly visible
       if (debouncedSearch.trim() !== '') {
         return expandedDays[dateKey] !== false;
       }
@@ -342,24 +323,6 @@ export default function Thoughts() {
     },
     [isDayExpanded]
   );
-
-  const allExpanded = dayGroups.length > 0 && dayGroups.every((g) => isDayExpanded(g.dateKey));
-
-  const toggleAllDays = () => {
-    if (allExpanded) {
-      const nextState = {};
-      dayGroups.forEach((g) => {
-        nextState[g.dateKey] = false;
-      });
-      setExpandedDays(nextState);
-    } else {
-      const nextState = {};
-      dayGroups.forEach((g) => {
-        nextState[g.dateKey] = true;
-      });
-      setExpandedDays(nextState);
-    }
-  };
 
   const handlePileClick = (e, dateKey) => {
     if (
@@ -512,175 +475,147 @@ export default function Thoughts() {
             </p>
           </div>
         ) : (
-          <div>
-            {dayGroups.length > 1 && (
-              <div className="flex items-center justify-between px-2 mb-4 text-xs font-medium text-slate-500 dark:text-slate-400">
-                <span>
-                  {thoughts.length} {thoughts.length === 1 ? 'thought' : 'thoughts'} across {dayGroups.length} days
-                </span>
-                <button
-                  type="button"
-                  onClick={toggleAllDays}
-                  className="inline-flex items-center gap-1 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors cursor-pointer"
-                >
-                  {allExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                  <span>{allExpanded ? 'Collapse all days' : 'Expand all days'}</span>
-                </button>
-              </div>
-            )}
+          <div className="relative border-l-2 border-indigo-200 dark:border-indigo-900/60 ml-4 space-y-10">
+            {dayGroups.map((dayGroup) => {
+              const expanded = isDayExpanded(dayGroup.dateKey);
 
-            <div className="relative border-l-2 border-indigo-200 dark:border-indigo-900/60 ml-4 space-y-8">
-              {dayGroups.map((dayGroup) => {
-                const expanded = isDayExpanded(dayGroup.dateKey);
+              return (
+                <div key={dayGroup.dateKey} className="relative pl-8 group/day">
+                  {/* Single timeline node for the entire day group */}
+                  <div className="absolute -left-[11px] top-1.5 w-6 h-6 bg-slate-100 dark:bg-slate-800 rounded-full border-4 border-slate-50 dark:border-slate-900 flex items-center justify-center transition-colors group-hover/day:border-indigo-200 dark:group-hover/day:border-indigo-800 z-20">
+                    <div
+                      className={`w-2 h-2 rounded-full transition-colors ${
+                        expanded
+                          ? 'bg-indigo-600 dark:bg-indigo-400'
+                          : 'bg-slate-400 dark:bg-slate-500 group-hover/day:bg-indigo-500'
+                      }`}
+                    />
+                  </div>
 
-                return (
-                  <div key={dayGroup.dateKey} className="relative">
-                    {/* Interactive Day Header */}
+                  {/* Day Header Pill directly connected above thoughts */}
+                  <div className="flex items-center mb-3">
                     <button
                       type="button"
                       onClick={() => toggleDay(dayGroup.dateKey)}
-                      className="group/day relative pl-8 my-6 flex items-center text-left focus:outline-none cursor-pointer select-none"
-                      title={
+                      className={`inline-flex items-center gap-2 px-3.5 py-1 rounded-full border shadow-2xs transition-all duration-200 select-none ${
                         expanded
-                          ? 'Click to collapse thoughts for this day'
-                          : 'Click to see all thoughts for this day'
+                          ? 'bg-indigo-50/90 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-800 text-indigo-950 dark:text-indigo-200 ring-2 ring-indigo-500/20'
+                          : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/60 hover:border-slate-300 dark:hover:border-slate-600'
+                      } ${dayGroup.thoughts.length > 1 ? 'cursor-pointer' : 'cursor-default'}`}
+                      title={
+                        dayGroup.thoughts.length > 1
+                          ? expanded
+                            ? 'Click to collapse thoughts'
+                            : 'Click to see all thoughts'
+                          : ''
                       }
                     >
-                      {/* Timeline node */}
-                      <div className="absolute -left-[11px] top-1/2 -translate-y-1/2 w-6 h-6 bg-slate-100 dark:bg-slate-800 rounded-full border-4 border-slate-50 dark:border-slate-900 flex items-center justify-center transition-colors group-hover/day:border-indigo-200 dark:group-hover/day:border-indigo-800">
-                        <div
-                          className={`w-2 h-2 rounded-full transition-colors ${
+                      {dayGroup.display.relative && (
+                        <span
+                          className={`px-2 py-0.5 text-xs font-bold rounded-full ${
+                            dayGroup.display.relative === 'Today'
+                              ? 'bg-indigo-600 text-white dark:bg-indigo-500'
+                              : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                          }`}
+                        >
+                          {dayGroup.display.relative}
+                        </span>
+                      )}
+                      <Calendar className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
+                      <span className="text-sm font-semibold">{dayGroup.display.label}</span>
+                      {dayGroup.thoughts.length > 1 && (
+                        <ChevronDown
+                          className={`w-4 h-4 text-slate-400 dark:text-slate-400 transition-transform duration-300 ${
                             expanded
-                              ? 'bg-indigo-600 dark:bg-indigo-400'
-                              : 'bg-slate-400 dark:bg-slate-500 group-hover/day:bg-indigo-500'
+                              ? 'rotate-180 text-indigo-600 dark:text-indigo-400'
+                              : 'group-hover/day:translate-y-0.5'
                           }`}
                         />
-                      </div>
-
-                      {/* Date pill button */}
-                      <div
-                        className={`inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full border shadow-2xs transition-all duration-200 ${
-                          expanded
-                            ? 'bg-indigo-50/90 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-800 text-indigo-950 dark:text-indigo-200 ring-2 ring-indigo-500/20'
-                            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/60 hover:border-slate-300 dark:hover:border-slate-600'
-                        }`}
-                      >
-                        {dayGroup.display.relative && (
-                          <span
-                            className={`px-2 py-0.5 text-xs font-bold rounded-full ${
-                              dayGroup.display.relative === 'Today'
-                                ? 'bg-indigo-600 text-white dark:bg-indigo-500'
-                                : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
-                            }`}
-                          >
-                            {dayGroup.display.relative}
-                          </span>
-                        )}
-                        <Calendar className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
-                        <span className="text-sm font-semibold">{dayGroup.display.label}</span>
-                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200/50 dark:border-slate-600/50">
-                          {dayGroup.thoughts.length} {dayGroup.thoughts.length === 1 ? 'thought' : 'thoughts'}
-                        </span>
-                        {dayGroup.thoughts.length > 1 && (
-                          <ChevronDown
-                            className={`w-4 h-4 text-slate-400 dark:text-slate-400 transition-transform duration-300 ${
-                              expanded
-                                ? 'rotate-180 text-indigo-600 dark:text-indigo-400'
-                                : 'group-hover/day:translate-y-0.5'
-                            }`}
-                          />
-                        )}
-                      </div>
+                      )}
                     </button>
-
-                    {/* Day Thoughts View */}
-                    {!expanded ? (
-                      /* Collapsed state: only first thought visible, rendered as a pile of cards */
-                      <div className="relative pl-8">
-                        {/* Timeline dot */}
-                        <div className="absolute -left-[9px] top-6 w-4 h-4 bg-indigo-500 rounded-full border-4 border-slate-50 dark:border-slate-900 z-20"></div>
-
-                        <ThoughtCard
-                          thought={dayGroup.thoughts[0]}
-                          orderNumber={dayGroup.thoughts.length > 1 ? 1 : null}
-                          isHighlighted={highlightedThoughtId === dayGroup.thoughts[0].id}
-                          isTopInCollapsedPile={true}
-                          hasMultipleInPile={dayGroup.thoughts.length > 1}
-                          pileCount={dayGroup.thoughts.length}
-                          onPileClick={(e) => handlePileClick(e, dayGroup.dateKey)}
-                          isEditing={editingId === dayGroup.thoughts[0].id}
-                          editContent={editContent}
-                          setEditContent={setEditContent}
-                          isSaving={isSaving}
-                          isOffline={isOffline}
-                          onStartEdit={() => handleStartEdit(dayGroup.thoughts[0], dayGroup.dateKey)}
-                          onCancelEdit={cancelEdit}
-                          onSaveEdit={() => saveEdit(dayGroup.thoughts[0].id)}
-                          onDelete={() => deleteThought(dayGroup.thoughts[0].id)}
-                        />
-                      </div>
-                    ) : (
-                      /* Expanded state: all thoughts for this day ordered ascending */
-                      <div className="space-y-6">
-                        {dayGroup.thoughts.map((thought, tIndex) => (
-                          <div key={thought.id} className="relative pl-8 group">
-                            {/* Timeline dot */}
-                            <div className="absolute -left-[9px] top-6 w-4 h-4 bg-indigo-500 rounded-full border-4 border-slate-50 dark:border-slate-900 z-20"></div>
-
-                            <ThoughtCard
-                              thought={thought}
-                              orderNumber={dayGroup.thoughts.length > 1 ? tIndex + 1 : null}
-                              isHighlighted={highlightedThoughtId === thought.id}
-                              isTopInCollapsedPile={false}
-                              hasMultipleInPile={false}
-                              pileCount={dayGroup.thoughts.length}
-                              onPileClick={() => {}}
-                              isEditing={editingId === thought.id}
-                              editContent={editContent}
-                              setEditContent={setEditContent}
-                              isSaving={isSaving}
-                              isOffline={isOffline}
-                              onStartEdit={() => handleStartEdit(thought, dayGroup.dateKey)}
-                              onCancelEdit={cancelEdit}
-                              onSaveEdit={() => saveEdit(thought.id)}
-                              onDelete={() => deleteThought(thought.id)}
-                            />
-                          </div>
-                        ))}
-
-                        {/* Quick collapse footer if day has multiple thoughts */}
-                        {dayGroup.thoughts.length > 1 && (
-                          <div className="relative pl-8 pt-1 pb-2">
-                            <button
-                              type="button"
-                              onClick={() => toggleDay(dayGroup.dateKey)}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 border border-slate-200 dark:border-slate-700 shadow-2xs transition-all cursor-pointer"
-                            >
-                              <ChevronUp className="w-3.5 h-3.5" />
-                              <span>Collapse day into pile</span>
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    )}
                   </div>
-                );
-              })}
 
-              {/* Loading more indicator & sentinel node */}
-              <div ref={lastElementRef} className="py-4 flex justify-center">
-                {loadingMore && (
-                  <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500">
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    <span className="text-sm font-medium">Loading older thoughts...</span>
-                  </div>
-                )}
-                {!hasMore && thoughts.length > 0 && (
-                  <div className="text-slate-400 dark:text-slate-500 text-sm font-medium italic">
-                    No more thoughts to load
-                  </div>
-                )}
-              </div>
+                  {/* Day Thoughts View */}
+                  {!expanded ? (
+                    /* Collapsed state: only first thought visible, rendered as a pile of cards if >1 */
+                    <div>
+                      <ThoughtCard
+                        thought={dayGroup.thoughts[0]}
+                        orderNumber={dayGroup.thoughts.length > 1 ? 1 : null}
+                        isHighlighted={highlightedThoughtId === dayGroup.thoughts[0].id}
+                        isTopInCollapsedPile={true}
+                        hasMultipleInPile={dayGroup.thoughts.length > 1}
+                        pileCount={dayGroup.thoughts.length}
+                        onPileClick={(e) => handlePileClick(e, dayGroup.dateKey)}
+                        isEditing={editingId === dayGroup.thoughts[0].id}
+                        editContent={editContent}
+                        setEditContent={setEditContent}
+                        isSaving={isSaving}
+                        isOffline={isOffline}
+                        onStartEdit={() => handleStartEdit(dayGroup.thoughts[0], dayGroup.dateKey)}
+                        onCancelEdit={cancelEdit}
+                        onSaveEdit={() => saveEdit(dayGroup.thoughts[0].id)}
+                        onDelete={() => deleteThought(dayGroup.thoughts[0].id)}
+                      />
+                    </div>
+                  ) : (
+                    /* Expanded state: nested sub-list of thoughts in ascending order */
+                    <div className="space-y-4">
+                      {dayGroup.thoughts.map((thought, tIndex) => (
+                        <div key={thought.id}>
+                          <ThoughtCard
+                            thought={thought}
+                            orderNumber={dayGroup.thoughts.length > 1 ? tIndex + 1 : null}
+                            isHighlighted={highlightedThoughtId === thought.id}
+                            isTopInCollapsedPile={false}
+                            hasMultipleInPile={false}
+                            pileCount={dayGroup.thoughts.length}
+                            onPileClick={() => {}}
+                            isEditing={editingId === thought.id}
+                            editContent={editContent}
+                            setEditContent={setEditContent}
+                            isSaving={isSaving}
+                            isOffline={isOffline}
+                            onStartEdit={() => handleStartEdit(thought, dayGroup.dateKey)}
+                            onCancelEdit={cancelEdit}
+                            onSaveEdit={() => saveEdit(thought.id)}
+                            onDelete={() => deleteThought(thought.id)}
+                          />
+                        </div>
+                      ))}
+
+                      {/* Quick collapse footer button if day has multiple thoughts */}
+                      {dayGroup.thoughts.length > 1 && (
+                        <div className="pt-1">
+                          <button
+                            type="button"
+                            onClick={() => toggleDay(dayGroup.dateKey)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 border border-slate-200 dark:border-slate-700 shadow-2xs transition-all cursor-pointer"
+                          >
+                            <ChevronUp className="w-3.5 h-3.5" />
+                            <span>Collapse</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* Loading more indicator & sentinel node */}
+            <div ref={lastElementRef} className="py-4 flex justify-center">
+              {loadingMore && (
+                <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span className="text-sm font-medium">Loading older thoughts...</span>
+                </div>
+              )}
+              {!hasMore && thoughts.length > 0 && (
+                <div className="text-slate-400 dark:text-slate-500 text-sm font-medium italic">
+                  No more thoughts to load
+                </div>
+              )}
             </div>
           </div>
         )}
