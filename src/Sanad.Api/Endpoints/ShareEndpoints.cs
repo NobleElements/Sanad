@@ -38,101 +38,48 @@ public static class ShareEndpoints
         return await adminDb.Users.FirstOrDefaultAsync(u => u.Username == username);
     }
 
-    public static async Task<IResult> CreateFolderShare(int id, [FromBody] CreateShareRequest req, AdminDbContext adminDb, SanadDbContext sanadDb, ITenantProvider tenantProvider)
+    public static async Task<IResult> CreateFolderShare(int id, [FromBody] CreateShareRequest req, IShareService svc)
     {
-        var user = await GetCurrentUserAsync(adminDb, tenantProvider);
-        if (user == null) return Results.Unauthorized();
+        var link = await svc.CreateFolderShareAsync(id, req.Permission);
+        if (link == null) return Results.NotFound("Folder not found");
 
-        var folder = await sanadDb.Folders.FindAsync(id);
-        if (folder == null) return Results.NotFound("Folder not found");
-
-        var existingLink = await adminDb.SharedLinks.FirstOrDefaultAsync(l => l.UserId == user.Id && l.FolderId == id);
-        if (existingLink != null)
-        {
-            existingLink.Permission = req.Permission;
-            await adminDb.SaveChangesAsync();
-            return Results.Ok(existingLink);
-        }
-
-        var link = new SharedLink { UserId = user.Id, FolderId = id, Permission = req.Permission };
-        adminDb.SharedLinks.Add(link);
-        await adminDb.SaveChangesAsync();
         return Results.Ok(link);
     }
 
-    public static async Task<IResult> CreateFileShare(int id, [FromBody] CreateShareRequest req, AdminDbContext adminDb, SanadDbContext sanadDb, ITenantProvider tenantProvider)
+    public static async Task<IResult> CreateFileShare(int id, [FromBody] CreateShareRequest req, IShareService svc)
     {
-        var user = await GetCurrentUserAsync(adminDb, tenantProvider);
-        if (user == null) return Results.Unauthorized();
+        var link = await svc.CreateFileShareAsync(id, req.Permission);
+        if (link == null) return Results.NotFound("File not found");
 
-        var file = await sanadDb.FileItems.FindAsync(id);
-        if (file == null) return Results.NotFound("File not found");
-
-        var existingLink = await adminDb.SharedLinks.FirstOrDefaultAsync(l => l.UserId == user.Id && l.FileItemId == id);
-        if (existingLink != null)
-        {
-            existingLink.Permission = req.Permission;
-            await adminDb.SaveChangesAsync();
-            return Results.Ok(existingLink);
-        }
-
-        var link = new SharedLink { UserId = user.Id, FileItemId = id, Permission = req.Permission };
-        adminDb.SharedLinks.Add(link);
-        await adminDb.SaveChangesAsync();
         return Results.Ok(link);
     }
 
-    public static async Task<IResult> GetShareLinks(AdminDbContext adminDb, ITenantProvider tenantProvider, SanadDbContext sanadDb)
+    public static async Task<IResult> GetShareLinks(IShareService svc)
     {
-        var user = await GetCurrentUserAsync(adminDb, tenantProvider);
-        if (user == null) return Results.Unauthorized();
+        var shares = await svc.GetSharesAsync();
 
-        var links = await adminDb.SharedLinks.Where(l => l.UserId == user.Id).ToListAsync();
-        
-        // Enrich with names
-        var result = new List<object>();
-        foreach (var link in links)
+        // Projected back to the original anonymous response shape.
+        return Results.Ok(shares.Select(s => new
         {
-            if (link.FolderId.HasValue)
-            {
-                var folder = await sanadDb.Folders.FindAsync(link.FolderId.Value);
-                if (folder != null) result.Add(new { link.Token, link.Permission, Type = "folder", Name = folder.Name, TargetId = folder.Id });
-            }
-            else if (link.FileItemId.HasValue)
-            {
-                var file = await sanadDb.FileItems.FindAsync(link.FileItemId.Value);
-                if (file != null) result.Add(new { link.Token, link.Permission, Type = "file", Name = file.Name, TargetId = file.Id });
-            }
-        }
-
-        return Results.Ok(result);
+            s.Token,
+            s.Permission,
+            s.Type,
+            s.Name,
+            s.TargetId
+        }));
     }
 
-    public static async Task<IResult> RevokeShareLink(string token, AdminDbContext adminDb, ITenantProvider tenantProvider)
+    public static async Task<IResult> RevokeShareLink(string token, IShareService svc)
     {
-        var user = await GetCurrentUserAsync(adminDb, tenantProvider);
-        if (user == null) return Results.Unauthorized();
-
-        var link = await adminDb.SharedLinks.FirstOrDefaultAsync(l => l.Token == token && l.UserId == user.Id);
-        if (link != null)
-        {
-            adminDb.SharedLinks.Remove(link);
-            await adminDb.SaveChangesAsync();
-        }
+        await svc.RevokeShareAsync(token);
         return Results.NoContent();
     }
 
-    public static async Task<IResult> UpdateShareLinkPermission(string token, [FromBody] UpdateShareRequest req, AdminDbContext adminDb, ITenantProvider tenantProvider)
+    public static async Task<IResult> UpdateShareLinkPermission(string token, [FromBody] UpdateShareRequest req, IShareService svc)
     {
-        var user = await GetCurrentUserAsync(adminDb, tenantProvider);
-        if (user == null) return Results.Unauthorized();
-
-        var link = await adminDb.SharedLinks.FirstOrDefaultAsync(l => l.Token == token && l.UserId == user.Id);
+        var link = await svc.UpdateSharePermissionAsync(token, req.Permission);
         if (link == null) return Results.NotFound("Link not found");
 
-        link.Permission = req.Permission;
-        await adminDb.SaveChangesAsync();
-        
         return Results.Ok(link);
     }
 

@@ -36,7 +36,7 @@ public class DiskQuotaService
         return (currentSize + newFileSize) <= limitBytes;
     }
 
-    public async Task UpdateDiskUsageAsync(string username)
+    public virtual async Task UpdateDiskUsageAsync(string username)
     {
         var user = await _adminDb.Users.Include(u => u.Datastore).FirstOrDefaultAsync(u => u.Username == username);
         if (user == null || user.Datastore == null) return;

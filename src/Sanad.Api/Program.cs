@@ -102,6 +102,11 @@ builder.Services.AddScoped<INoteService, NoteService>();
 builder.Services.AddScoped<ICalendarService, CalendarService>();
 builder.Services.AddScoped<IStorageService, StorageService>();
 builder.Services.AddScoped<IAppService, AppService>();
+builder.Services.AddScoped<IAssetService, AssetService>();
+builder.Services.AddScoped<IWhiteboardService, WhiteboardService>();
+builder.Services.AddScoped<ISettingsService, SettingsService>();
+builder.Services.AddScoped<ISearchService, SearchService>();
+builder.Services.AddScoped<IShareService, ShareService>();
 
 // Change to Scoped since it needs ITenantProvider
 builder.Services.AddScoped<FileStorageService>();
@@ -132,8 +137,11 @@ using (var scope = app.Services.CreateScope())
     var stuckUsers = adminDb.Users.Where(u => u.IsMigrating && u.TargetDatastoreId != null).ToList();
     foreach (var user in stuckUsers)
     {
-        Console.WriteLine($"Resuming background migration for user {user.Username} to datastore {user.TargetDatastoreId}");
-        migrationService.StartMigration(user.Id, user.TargetDatastoreId.Value);
+        if (user.TargetDatastoreId is { } targetDatastoreId)
+        {
+            Console.WriteLine($"Resuming background migration for user {user.Username} to datastore {targetDatastoreId}");
+            migrationService.StartMigration(user.Id, targetDatastoreId);
+        }
     }
 }
 

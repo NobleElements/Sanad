@@ -491,3 +491,8 @@ $RECYCLE.BIN/
 # Data directory containing tenant databases and files
 src/Sanad.Api/Data/*
 !src/Sanad.Api/Data/*.cs
+# MCP parity audit harness build outputs (see docs/MCP_PARITY_CHECKLIST.md)
+.mcp-probe/bin/
+.mcp-probe/obj/
+.mcp-probe/trimfacts/
+.mcp-probe/nugetpkgs/

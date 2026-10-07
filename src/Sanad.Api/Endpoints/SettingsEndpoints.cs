@@ -1,6 +1,4 @@
-using Microsoft.EntityFrameworkCore;
-using Sanad.Api.Data;
-using Sanad.Api.Models;
+using Sanad.Api.Services;
 
 namespace Sanad.Api.Endpoints;
 
@@ -10,28 +8,15 @@ public static class SettingsEndpoints
     {
         var group = endpoints.MapGroup("/api/settings").RequireAuthorization();
 
-        group.MapGet("/", async (SanadDbContext db) =>
+        group.MapGet("/", async (ISettingsService svc) =>
         {
-            var settings = await db.UserSettings.ToListAsync();
-            var dict = settings.ToDictionary(s => s.Key, s => s.Value);
+            var dict = await svc.GetSettingsAsync();
             return Results.Ok(dict);
         });
 
-        group.MapPut("/{key}", async (string key, UpdateSettingRequest req, SanadDbContext db) =>
+        group.MapPut("/{key}", async (string key, UpdateSettingRequest req, ISettingsService svc) =>
         {
-            var value = req.Value;
-            var setting = await db.UserSettings.FirstOrDefaultAsync(s => s.Key == key);
-            if (setting == null)
-            {
-                setting = new UserSetting { Key = key, Value = value };
-                db.UserSettings.Add(setting);
-            }
-            else
-            {
-                setting.Value = value;
-            }
-
-            await db.SaveChangesAsync();
+            await svc.SetSettingAsync(key, req.Value);
             return Results.Ok();
         });
     }

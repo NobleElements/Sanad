@@ -32,7 +32,7 @@ public class BookService : IBookService
         return book;
     }
 
-    public async Task<Book> CreateBookAsync(string title, string author, string coverUrl, int totalPages)
+    public async Task<Book> CreateBookAsync(string title, string author, string? coverUrl, int totalPages)
     {
         var book = new Book
         {
@@ -52,7 +52,7 @@ public class BookService : IBookService
         return await UpdateBookAsync(id, updatedBook.Title, updatedBook.Author, updatedBook.CoverUrl, updatedBook.TotalPages);
     }
 
-    public async Task<Book?> UpdateBookAsync(int id, string title, string author, string coverUrl, int totalPages)
+    public async Task<Book?> UpdateBookAsync(int id, string title, string author, string? coverUrl, int totalPages)
     {
         var book = await _db.Books.FindAsync(id);
         if (book == null) return null;

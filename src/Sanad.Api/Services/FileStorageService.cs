@@ -31,7 +31,7 @@ public class FileStorageService
         await chunkStream.CopyToAsync(fileStream);
     }
 
-    public void DeleteFile(string fileName)
+    public virtual void DeleteFile(string fileName)
     {
         var filePath = GetFilePath(fileName);
         if (File.Exists(filePath))

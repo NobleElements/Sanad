@@ -27,27 +27,17 @@ public static class FolderEndpoints
             return Results.Ok(result);
         });
 
-        group.MapPost("/", async ([FromBody] CreateFolderRequest req, SanadDbContext db) =>
+        group.MapPost("/", async ([FromBody] CreateFolderRequest req, Sanad.Api.Services.FileManagerService fileManager) =>
         {
-            var folder = new Folder
-            {
-                Name = req.Name,
-                ParentId = req.ParentId
-            };
-            db.Folders.Add(folder);
-            await db.SaveChangesAsync();
+            var folder = await fileManager.CreateFolderAsync(req.Name, req.ParentId);
             return Results.Created($"/api/folders/{folder.Id}", folder);
         });
 
-        group.MapPut("/{id}", async (int id, [FromBody] UpdateFolderRequest req, SanadDbContext db) =>
+        group.MapPut("/{id}", async (int id, [FromBody] UpdateFolderRequest req, Sanad.Api.Services.FileManagerService fileManager) =>
         {
-            var folder = await db.Folders.FindAsync(id);
+            var folder = await fileManager.UpdateFolderAsync(id, req.Name, req.ParentId, req.ParentId.HasValue);
             if (folder == null) return Results.NotFound();
 
-            if (!string.IsNullOrEmpty(req.Name)) folder.Name = req.Name;
-            if (req.ParentId.HasValue) folder.ParentId = req.ParentId.Value;
-
-            await db.SaveChangesAsync();
             return Results.Ok(folder);
         });
 

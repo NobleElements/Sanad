@@ -40,4 +40,20 @@ public class StorageService : IStorageService
             IsAdmin: user.IsAdmin
         );
     }
+
+    public async Task<List<StorageHistoryDto>?> GetStorageHistoryAsync(string username)
+    {
+        var user = await _adminDb.Users.FirstOrDefaultAsync(u => u.Username == username);
+        if (user == null) return null;
+
+        return await _adminDb.SubscriptionHistories
+            .Include(s => s.Tier)
+            .Where(s => s.UserId == user.Id)
+            .OrderByDescending(s => s.StartedAt)
+            .Select(s => new StorageHistoryDto(
+                s.Tier != null ? s.Tier.Name : "Unknown",
+                s.StartedAt,
+                s.EndedAt))
+            .ToListAsync();
+    }
 }

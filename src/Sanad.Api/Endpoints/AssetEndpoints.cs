@@ -1,6 +1,12 @@
-using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 using Sanad.Api.Data;
 using Sanad.Api.Models;
+using Sanad.Api.Services;
 
 namespace Sanad.Api.Endpoints;
 
@@ -8,114 +14,61 @@ public static class AssetEndpoints
 {
     public static void MapAssetEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/api/finances/assets", GetAssets);
-        app.MapPost("/api/finances/assets", CreateAsset);
-        app.MapPut("/api/finances/assets/{id}", UpdateAsset);
-        app.MapDelete("/api/finances/assets/{id}", DeleteAsset);
-        app.MapPut("/api/finances/assets/reorder", ReorderAssets);
-        app.MapGet("/api/finances/assets/history", GetAssetsHistory);
+        app.MapGet("/api/finances/assets", (IAssetService svc) => GetAssets(svc));
+        app.MapPost("/api/finances/assets", (IAssetService svc, Asset asset) => CreateAsset(svc, asset));
+        app.MapPut("/api/finances/assets/{id}", (IAssetService svc, Guid id, Asset updated) => UpdateAsset(svc, id, updated));
+        app.MapDelete("/api/finances/assets/{id}", (IAssetService svc, Guid id) => DeleteAsset(svc, id));
+        app.MapPut("/api/finances/assets/reorder", (IAssetService svc, List<Guid> orderedIds) => ReorderAssets(svc, orderedIds));
+        app.MapGet("/api/finances/assets/history", (IAssetService svc) => GetAssetsHistory(svc));
     }
 
-    public static async Task<IResult> GetAssets(SanadDbContext db) => 
-        Results.Ok(await db.Assets.Include(a => a.Currency).OrderBy(a => a.Order).ThenByDescending(a => a.CreatedAt).ToListAsync());
+    public static async Task<IResult> GetAssets(IAssetService svc) =>
+        Results.Ok(await svc.GetAssetsAsync());
 
-    public static async Task<IResult> CreateAsset(SanadDbContext db, Asset asset)
+    public static Task<IResult> GetAssets(SanadDbContext db) =>
+        GetAssets(new AssetService(db));
+
+    public static async Task<IResult> CreateAsset(IAssetService svc, Asset asset)
     {
-        asset.Id = Guid.NewGuid();
-        asset.CreatedAt = DateTime.UtcNow;
-        asset.UpdatedAt = DateTime.UtcNow;
-        asset.Order = (await db.Assets.MaxAsync(a => (int?)a.Order) ?? 0) + 1;
-        
-        db.Assets.Add(asset);
-        
-        var snapshot = new AssetSnapshot
-        {
-            AssetId = asset.Id,
-            Amount = asset.CurrentAmount,
-            RecordedAt = DateTime.UtcNow
-        };
-        db.AssetSnapshots.Add(snapshot);
-        
-        await db.SaveChangesAsync();
-        return Results.Created($"/api/finances/assets/{asset.Id}", asset);
+        var created = await svc.CreateAssetAsync(asset);
+        return Results.Created($"/api/finances/assets/{created.Id}", created);
     }
 
-    public static async Task<IResult> UpdateAsset(SanadDbContext db, Guid id, Asset updated)
+    public static Task<IResult> CreateAsset(SanadDbContext db, Asset asset) =>
+        CreateAsset(new AssetService(db), asset);
+
+    public static async Task<IResult> UpdateAsset(IAssetService svc, Guid id, Asset updated)
     {
-        var asset = await db.Assets.FindAsync(id);
+        var asset = await svc.UpdateAssetAsync(id, updated);
         if (asset is null) return Results.NotFound();
-
-        asset.Name = updated.Name;
-        asset.Type = updated.Type;
-        asset.CurrencyId = updated.CurrencyId;
-        asset.Icon = updated.Icon;
-        
-        if (asset.CurrentAmount != updated.CurrentAmount)
-        {
-            asset.CurrentAmount = updated.CurrentAmount;
-            
-            var snapshot = new AssetSnapshot
-            {
-                AssetId = asset.Id,
-                Amount = asset.CurrentAmount,
-                RecordedAt = DateTime.UtcNow
-            };
-            db.AssetSnapshots.Add(snapshot);
-        }
-
-        asset.UpdatedAt = DateTime.UtcNow;
-
-        await db.SaveChangesAsync();
         return Results.Ok(asset);
     }
 
-    public static async Task<IResult> DeleteAsset(SanadDbContext db, Guid id)
+    public static Task<IResult> UpdateAsset(SanadDbContext db, Guid id, Asset updated) =>
+        UpdateAsset(new AssetService(db), id, updated);
+
+    public static async Task<IResult> DeleteAsset(IAssetService svc, Guid id)
     {
-        var asset = await db.Assets.FindAsync(id);
-        if (asset is null) return Results.NotFound();
-
-        var snapshots = await db.AssetSnapshots.Where(s => s.AssetId == id).ToListAsync();
-        db.AssetSnapshots.RemoveRange(snapshots);
-
-        db.Assets.Remove(asset);
-        await db.SaveChangesAsync();
+        var success = await svc.DeleteAssetAsync(id);
+        if (!success) return Results.NotFound();
         return Results.NoContent();
     }
 
-    public static async Task<IResult> ReorderAssets(SanadDbContext db, List<Guid> orderedIds)
+    public static Task<IResult> DeleteAsset(SanadDbContext db, Guid id) =>
+        DeleteAsset(new AssetService(db), id);
+
+    public static async Task<IResult> ReorderAssets(IAssetService svc, List<Guid> orderedIds)
     {
-        var assets = await db.Assets.Where(a => orderedIds.Contains(a.Id)).ToListAsync();
-        for (int i = 0; i < orderedIds.Count; i++)
-        {
-            var asset = assets.FirstOrDefault(a => a.Id == orderedIds[i]);
-            if (asset != null)
-            {
-                asset.Order = i;
-            }
-        }
-        await db.SaveChangesAsync();
+        await svc.ReorderAssetsAsync(orderedIds);
         return Results.Ok();
     }
 
-    public static async Task<IResult> GetAssetsHistory(SanadDbContext db)
-    {
-        var snapshots = await db.AssetSnapshots
-            .Include(s => s.Asset)
-                .ThenInclude(a => a!.Currency)
-            .OrderBy(s => s.RecordedAt)
-            .ToListAsync();
-            
-        // Basic grouping by Day for simplicity.
-        // If we want more advanced charting (like total net worth per day even if not updated), 
-        // we'd do a more complex projection. Here we return raw points for the frontend to format.
-        return Results.Ok(snapshots.Select(s => new {
-            s.Id,
-            s.AssetId,
-            AssetName = s.Asset?.Name,
-            AssetType = s.Asset?.Type,
-            s.Amount,
-            ExchangeRateToDefault = s.Asset?.Currency?.ExchangeRateToDefault ?? 1m,
-            s.RecordedAt
-        }));
-    }
+    public static Task<IResult> ReorderAssets(SanadDbContext db, List<Guid> orderedIds) =>
+        ReorderAssets(new AssetService(db), orderedIds);
+
+    public static async Task<IResult> GetAssetsHistory(IAssetService svc) =>
+        Results.Ok(await svc.GetAssetsHistoryAsync());
+
+    public static Task<IResult> GetAssetsHistory(SanadDbContext db) =>
+        GetAssetsHistory(new AssetService(db));
 }

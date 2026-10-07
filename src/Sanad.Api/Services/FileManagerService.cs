@@ -8,11 +8,15 @@ public class FileManagerService
 {
     private readonly SanadDbContext _db;
     private readonly FileStorageService _storage;
+    private readonly DiskQuotaService _quotaService;
+    private readonly ITenantProvider _tenantProvider;
 
-    public FileManagerService(SanadDbContext db, FileStorageService storage)
+    public FileManagerService(SanadDbContext db, FileStorageService storage, DiskQuotaService quotaService, ITenantProvider tenantProvider)
     {
         _db = db;
         _storage = storage;
+        _quotaService = quotaService;
+        _tenantProvider = tenantProvider;
     }
 
     public async Task<object> GetFolderContentsPaginatedAsync(
@@ -119,6 +123,67 @@ public class FileManagerService
         var folders = await _db.Folders.Where(f => f.Name.ToLower().Contains(s)).ToListAsync();
         var files = await _db.FileItems.Where(f => f.Name.ToLower().Contains(s)).ToListAsync();
         return new { Folders = folders, Files = files };
+    }
+
+    // ----- Folders -----
+
+    public async Task<Folder> CreateFolderAsync(string name, int? parentId = null)
+    {
+        var folder = new Folder
+        {
+            Name = name,
+            ParentId = parentId
+        };
+        _db.Folders.Add(folder);
+        await _db.SaveChangesAsync();
+        return folder;
+    }
+
+    public async Task<Folder?> GetFolderAsync(int id) => await _db.Folders.FindAsync(id);
+
+    public async Task<Folder?> UpdateFolderAsync(int id, string? name, int? parentId, bool moveParent = false)
+    {
+        var folder = await _db.Folders.FindAsync(id);
+        if (folder == null) return null;
+
+        if (!string.IsNullOrEmpty(name)) folder.Name = name;
+        if (moveParent) folder.ParentId = parentId;
+
+        await _db.SaveChangesAsync();
+        return folder;
+    }
+
+    // ----- Files -----
+
+    public async Task<FileItem?> GetFileAsync(int id) => await _db.FileItems.FindAsync(id);
+
+    public async Task<FileItem?> UpdateFileAsync(int id, string? name, int? folderId, bool moveFolder = false)
+    {
+        var file = await _db.FileItems.FindAsync(id);
+        if (file == null) return null;
+
+        if (!string.IsNullOrEmpty(name)) file.Name = name;
+        if (moveFolder) file.FolderId = folderId;
+
+        file.LastModifiedDate = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+        return file;
+    }
+
+    /// <summary>Deletes a file, its bytes on disk, then refreshes the owner's disk usage.</summary>
+    public async Task<bool> DeleteFileAsync(int id)
+    {
+        var file = await _db.FileItems.FindAsync(id);
+        if (file == null) return false;
+
+        _db.FileItems.Remove(file);
+        await _db.SaveChangesAsync();
+
+        _storage.DeleteFile(file.FileName);
+
+        await _quotaService.UpdateDiskUsageAsync(_tenantProvider.GetUsername());
+
+        return true;
     }
 
     public async Task DeleteFolderRecursivelyAsync(int folderId)

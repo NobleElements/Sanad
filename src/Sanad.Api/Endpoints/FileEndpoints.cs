@@ -97,16 +97,16 @@ public static class FileEndpoints
             return Results.NoContent();
         });
 
-        group.MapGet("/{id:int}", async (int id, SanadDbContext db) =>
+        group.MapGet("/{id:int}", async (int id, FileManagerService fileManager) =>
         {
-            var file = await db.FileItems.FindAsync(id);
+            var file = await fileManager.GetFileAsync(id);
             if (file == null) return Results.NotFound();
             return Results.Ok(file);
         });
 
-        group.MapGet("/{id}/download", async (int id, [FromQuery] bool? inline, SanadDbContext db, FileStorageService storage, HttpContext ctx) =>
+        group.MapGet("/{id}/download", async (int id, [FromQuery] bool? inline, FileManagerService fileManager, FileStorageService storage, HttpContext ctx) =>
         {
-            var file = await db.FileItems.FindAsync(id);
+            var file = await fileManager.GetFileAsync(id);
             if (file == null) return Results.NotFound();
 
             var filePath = storage.GetFilePath(file.FileName);
@@ -121,30 +121,18 @@ public static class FileEndpoints
             return Results.File(filePath, file.MimeType, file.Name, enableRangeProcessing: true);
         });
 
-        group.MapPut("/{id}", async (int id, [FromBody] UpdateFileRequest req, SanadDbContext db) =>
+        group.MapPut("/{id}", async (int id, [FromBody] UpdateFileRequest req, FileManagerService fileManager) =>
         {
-            var file = await db.FileItems.FindAsync(id);
+            var file = await fileManager.UpdateFileAsync(id, req.Name, req.FolderId, req.FolderId.HasValue);
             if (file == null) return Results.NotFound();
 
-            if (!string.IsNullOrEmpty(req.Name)) file.Name = req.Name;
-            if (req.FolderId.HasValue) file.FolderId = req.FolderId.Value;
-
-            file.LastModifiedDate = DateTime.UtcNow;
-            await db.SaveChangesAsync();
             return Results.Ok(file);
         });
 
-        group.MapDelete("/{id}", async (int id, SanadDbContext db, FileStorageService storage, DiskQuotaService quotaService, ITenantProvider tenantProvider) =>
+        group.MapDelete("/{id}", async (int id, FileManagerService fileManager) =>
         {
-            var file = await db.FileItems.FindAsync(id);
-            if (file == null) return Results.NotFound();
-
-            db.FileItems.Remove(file);
-            await db.SaveChangesAsync();
-
-            storage.DeleteFile(file.FileName);
-
-            await quotaService.UpdateDiskUsageAsync(tenantProvider.GetUsername());
+            var success = await fileManager.DeleteFileAsync(id);
+            if (!success) return Results.NotFound();
 
             return Results.NoContent();
         });

@@ -21,6 +21,11 @@ public class McpEndpoints
     private readonly IHabitService _habitService;
     private readonly ICalendarService _calendarService;
     private readonly IAppService _appService;
+    private readonly IAssetService _assetService;
+    private readonly IWhiteboardService _whiteboardService;
+    private readonly ISettingsService _settingsService;
+    private readonly ISearchService _globalSearchService;
+    private readonly IShareService _shareService;
     private readonly FileManagerService _fileManager;
     private readonly ITenantProvider _tenantProvider;
 
@@ -38,6 +43,11 @@ public class McpEndpoints
         IHabitService habitService,
         ICalendarService calendarService,
         IAppService appService,
+        IAssetService assetService,
+        IWhiteboardService whiteboardService,
+        ISettingsService settingsService,
+        ISearchService globalSearchService,
+        IShareService shareService,
         FileManagerService fileManager,
         ITenantProvider tenantProvider)
     {
@@ -54,6 +64,11 @@ public class McpEndpoints
         _habitService = habitService;
         _calendarService = calendarService;
         _appService = appService;
+        _assetService = assetService;
+        _whiteboardService = whiteboardService;
+        _settingsService = settingsService;
+        _globalSearchService = globalSearchService;
+        _shareService = shareService;
         _fileManager = fileManager;
         _tenantProvider = tenantProvider;
     }
@@ -79,6 +94,11 @@ public class McpEndpoints
             new HabitService(db),
             new CalendarService(db),
             new AppService(db),
+            new AssetService(db),
+            new WhiteboardService(db),
+            new SettingsService(db),
+            new SearchService(db),
+            new ShareService(adminDb, db, tenantProvider),
             fileManager,
             tenantProvider)
     {
@@ -91,6 +111,10 @@ public class McpEndpoints
     [McpServerTool, Description("Get current storage status for the authenticated user")]
     public async Task<object> GetStorageStatus() => await _storageService.GetStorageStatusAsync(_tenantProvider.GetUsername());
 
+    [McpServerTool, Description("Get storage/subscription tier history for the authenticated user")]
+    public async Task<List<StorageHistoryDto>> GetStorageHistory() =>
+        await _storageService.GetStorageHistoryAsync(_tenantProvider.GetUsername()) ?? new List<StorageHistoryDto>();
+
     // Thoughts Tools
     [McpServerTool, Description("Get a list of thoughts, newest first. Supports pagination and search just like the REST API. Set pageSize to control how many are returned per page; pass a large pageSize (e.g. 1000) to fetch all thoughts.")]
     public async Task<List<Thought>> GetThoughts(int page = 1, int pageSize = 20, string? search = null) =>
@@ -98,6 +122,9 @@ public class McpEndpoints
 
     [McpServerTool, Description("Create a new thought")]
     public async Task<Thought> CreateThought(string content) => await _thoughtService.CreateThoughtAsync(content);
+
+    [McpServerTool, Description("Update the content of an existing thought")]
+    public async Task<Thought?> UpdateThought(string id, string content) => await _thoughtService.UpdateThoughtAsync(id, content);
 
     [McpServerTool, Description("Delete a thought by ID")]
     public async Task<bool> DeleteThought(string id) => await _thoughtService.DeleteThoughtAsync(id);
@@ -108,8 +135,28 @@ public class McpEndpoints
         await _taskService.GetTasksAsync(project, status, unscheduledOnly);
 
     [McpServerTool, Description("Create a new task")]
-    public async Task<TaskItem> CreateTask(string title, string? content = null, string? project = null) =>
-        await _taskService.CreateTaskAsync(new TaskItem { Title = title, Content = content, Project = project, Status = Models.TaskStatus.ToDo });
+    public async Task<TaskItem> CreateTask(
+        string title,
+        string? content = null,
+        string? project = null,
+        string? tags = null,
+        Models.TaskStatus? status = null,
+        int? estimatedMinutes = null,
+        int? order = null,
+        DateTime? startDate = null,
+        DateTime? endDate = null) =>
+        await _taskService.CreateTaskAsync(new TaskItem
+        {
+            Title = title,
+            Content = content,
+            Project = project,
+            Tags = tags,
+            Status = status ?? Models.TaskStatus.ToDo,
+            EstimatedMinutes = estimatedMinutes,
+            Order = order ?? 0,
+            StartDate = startDate,
+            EndDate = endDate
+        });
 
     [McpServerTool, Description("Delete a task by ID")]
     public async Task<bool> DeleteTask(Guid id) => await _taskService.DeleteTaskAsync(id);
@@ -119,6 +166,40 @@ public class McpEndpoints
 
     [McpServerTool, Description("Update the status of a specific task (e.g. ToDo, InProgress, Done)")]
     public async Task<bool> UpdateTaskStatus(Guid taskId, string statusStr) => await _taskService.UpdateTaskStatusAsync(taskId, statusStr);
+
+    [McpServerTool, Description("Fully update an existing task")]
+    public async Task<bool> UpdateTask(
+        Guid id,
+        string title,
+        string? content = null,
+        string? project = null,
+        string? tags = null,
+        Models.TaskStatus? status = null,
+        int? estimatedMinutes = null,
+        int? order = null,
+        DateTime? startDate = null,
+        DateTime? endDate = null) =>
+        await _taskService.UpdateTaskAsync(id, new TaskItem
+        {
+            Title = title,
+            Content = content,
+            Project = project,
+            Tags = tags,
+            Status = status ?? Models.TaskStatus.ToDo,
+            EstimatedMinutes = estimatedMinutes,
+            Order = order ?? 0,
+            StartDate = startDate,
+            EndDate = endDate
+        }) != null;
+
+    [McpServerTool, Description("Reorder tasks and optionally set their status. Pass the full ordered list of task ids.")]
+    public async Task<bool> ReorderTasks(List<TaskUpdateDto> tasks) => await _taskService.ReorderTasksAsync(tasks);
+
+    [McpServerTool, Description("Rename a task project, moving every task from oldName to newName")]
+    public async Task<bool> RenameTaskProject(string oldName, string newName) => await _taskService.RenameProjectAsync(oldName, newName);
+
+    [McpServerTool, Description("Delete a task project by unassigning it from all of its tasks")]
+    public async Task<bool> DeleteTaskProject(string projectName) => await _taskService.DeleteProjectAsync(projectName);
 
     [McpServerTool, Description("Add a rich-text comment to a task")]
     public async Task<TaskComment?> AddTaskComment(Guid taskId, string text) => await _taskService.AddCommentAsync(taskId, text);
@@ -140,16 +221,87 @@ public class McpEndpoints
     public async Task<TransactionCategory> CreateCategory(string name, decimal monthlyBudget, string colorHex = "#cccccc") =>
         await _financeService.CreateCategoryAsync(name, monthlyBudget, colorHex);
 
-    [McpServerTool, Description("Get recent transactions")]
-    public async Task<List<Transaction>> GetTransactions() => await _financeService.GetRecentTransactionsAsync(20);
+    [McpServerTool, Description("Update an existing transaction category")]
+    public async Task<TransactionCategory?> UpdateCategory(Guid id, string name, decimal monthlyBudget, string colorHex = "#cccccc") =>
+        await _financeService.UpdateCategoryAsync(id, name, monthlyBudget, colorHex);
+
+    [McpServerTool, Description("Get transactions for a month (defaults to the current month), newest first. Supports the same paging, search and category filters as the REST API.")]
+    public async Task<object> GetTransactions(
+        int? month = null, int? year = null, int page = 1, int pageSize = 20, string? search = null, Guid? categoryId = null)
+    {
+        var (items, totalCount, hasMore) = await _financeService.GetTransactionsPaginatedAsync(month, year, page, pageSize, search, categoryId);
+        return new { Items = items, TotalCount = totalCount, HasMore = hasMore };
+    }
 
     [McpServerTool, Description("Create a new transaction")]
-    public async Task<Transaction> CreateTransaction(decimal amount, string description, string type, Guid categoryId) =>
-        await _financeService.CreateTransactionAsync(new Transaction { Amount = amount, CategoryId = categoryId, Description = description, Type = type, Date = DateTime.UtcNow })
-        ?? throw new InvalidOperationException("Failed to create transaction. Ensure category exists.");
+    public async Task<Transaction> CreateTransaction(
+        decimal amount, string description, string type, Guid categoryId, DateTime? date = null, Guid? id = null) =>
+        await _financeService.CreateTransactionAsync(new Transaction
+        {
+            Id = id ?? Guid.Empty,
+            Amount = amount,
+            CategoryId = categoryId,
+            Description = description,
+            Type = type,
+            Date = date ?? DateTime.UtcNow
+        }) ?? throw new InvalidOperationException("Failed to create transaction. Ensure category exists.");
+
+    [McpServerTool, Description("Update an existing transaction")]
+    public async Task<Transaction?> UpdateTransaction(
+        Guid id, decimal? amount = null, string? description = null, Guid? categoryId = null, DateTime? date = null, string? type = null) =>
+        await _financeService.UpdateTransactionAsync(id, amount, description, categoryId, date, type);
 
     [McpServerTool, Description("Delete a transaction by ID")]
     public async Task<bool> DeleteTransaction(Guid id) => await _financeService.DeleteTransactionAsync(id);
+
+    [McpServerTool, Description("Get the spending summary for a month (defaults to the current month): per-category spend, remaining budget and total spent")]
+    public async Task<object> GetFinanceSummary(int? month = null, int? year = null) =>
+        await _financeService.GetSummaryAsync(month, year);
+
+    [McpServerTool, Description("Get the overall monthly budget for a month (defaults to the current month)")]
+    public async Task<object> GetMonthlyBudget(int? month = null, int? year = null)
+    {
+        var targetMonth = month ?? DateTime.UtcNow.Month;
+        var targetYear = year ?? DateTime.UtcNow.Year;
+        var amount = await _financeService.GetMonthlyBudgetAsync(targetMonth, targetYear);
+        return new { Amount = amount, Year = targetYear, Month = targetMonth };
+    }
+
+    [McpServerTool, Description("Set the overall monthly budget for a month (defaults to the current month)")]
+    public async Task<MonthlyBudget> SetMonthlyBudget(decimal amount, int? month = null, int? year = null) =>
+        await _financeService.SetMonthlyBudgetAsync(month, year, amount);
+
+    // Currencies Tools
+    [McpServerTool, Description("Get all currencies")]
+    public async Task<List<Currency>> GetCurrencies() => await _financeService.GetCurrenciesAsync();
+
+    [McpServerTool, Description("Create a currency. The first currency created becomes the default with an exchange rate of 1.")]
+    public async Task<Currency> CreateCurrency(
+        string code, string name, string symbol, decimal exchangeRateToDefault = 1.0m) =>
+        await _financeService.CreateCurrencyAsync(new Currency
+        {
+            Code = code,
+            Name = name,
+            Symbol = symbol,
+            ExchangeRateToDefault = exchangeRateToDefault
+        });
+
+    [McpServerTool, Description("Update an existing currency. The exchange rate of the default currency cannot be changed.")]
+    public async Task<Currency?> UpdateCurrency(
+        Guid id, string code, string name, string symbol, decimal exchangeRateToDefault = 1.0m) =>
+        await _financeService.UpdateCurrencyAsync(id, new Currency
+        {
+            Code = code,
+            Name = name,
+            Symbol = symbol,
+            ExchangeRateToDefault = exchangeRateToDefault
+        });
+
+    [McpServerTool, Description("Delete a currency. The default currency and currencies used by assets or debts cannot be deleted.")]
+    public async Task<bool> DeleteCurrency(Guid id) => await _financeService.DeleteCurrencyAsync(id);
+
+    [McpServerTool, Description("Make a currency the default, rebasing every other currency's exchange rate onto it")]
+    public async Task<bool> SetDefaultCurrency(Guid id) => await _financeService.SetDefaultCurrencyAsync(id);
 
     // Debts Tools
     [McpServerTool, Description("Get all debts / liabilities")]
@@ -166,9 +318,50 @@ public class McpEndpoints
     [McpServerTool, Description("Delete a debt by ID")]
     public async Task<bool> DeleteDebt(Guid id) => await _debtService.DeleteDebtAsync(id);
 
+    [McpServerTool, Description("Reorder debts using a list of their IDs")]
+    public async Task<bool> ReorderDebts(List<Guid> orderedIds) => await _debtService.ReorderDebtsAsync(orderedIds);
+
+    [McpServerTool, Description("Get the full history of debt amount snapshots, oldest first")]
+    public async Task<object> GetDebtsHistory() => await _debtService.GetDebtsHistoryAsync();
+
+    // Assets Tools
+    [McpServerTool, Description("Get all assets / holdings")]
+    public async Task<List<Asset>> GetAssets() => await _assetService.GetAssetsAsync();
+
+    [McpServerTool, Description("Create a new asset / holding")]
+    public async Task<Asset> CreateAsset(string name, string type, decimal currentAmount, Guid? currencyId = null, string? icon = null) =>
+        await _assetService.CreateAssetAsync(new Asset
+        {
+            Name = name,
+            Type = type,
+            CurrentAmount = currentAmount,
+            CurrencyId = currencyId,
+            Icon = icon
+        });
+
+    [McpServerTool, Description("Update an asset / holding")]
+    public async Task<Asset?> UpdateAsset(Guid id, string name, string type, decimal currentAmount, Guid? currencyId = null, string? icon = null) =>
+        await _assetService.UpdateAssetAsync(id, new Asset
+        {
+            Name = name,
+            Type = type,
+            CurrentAmount = currentAmount,
+            CurrencyId = currencyId,
+            Icon = icon
+        });
+
+    [McpServerTool, Description("Delete an asset by ID")]
+    public async Task<bool> DeleteAsset(Guid id) => await _assetService.DeleteAssetAsync(id);
+
+    [McpServerTool, Description("Reorder assets using a list of their IDs")]
+    public async Task<bool> ReorderAssets(List<Guid> orderedIds) => await _assetService.ReorderAssetsAsync(orderedIds);
+
+    [McpServerTool, Description("Get the full history of asset amount snapshots, oldest first")]
+    public async Task<object> GetAssetsHistory() => await _assetService.GetAssetsHistoryAsync();
+
     // Notes Tools
-    [McpServerTool, Description("Get recent notes")]
-    public async Task<List<Note>> GetNotes() => await _noteService.GetRecentNotesAsync(20);
+    [McpServerTool, Description("Get recent notes, newest first")]
+    public async Task<List<Note>> GetNotes(int limit = 20) => await _noteService.GetRecentNotesAsync(limit);
 
     [McpServerTool, Description("Create a new note")]
     public async Task<Note> CreateNote(string title, string content, Guid notebookId) =>
@@ -226,6 +419,11 @@ public class McpEndpoints
     public async Task<DailyGoal> SetTodaysGoal(string goalText) =>
         await _goalService.SetGoalAsync(DateTime.Now.ToString("yyyy-MM-dd"), goalText);
 
+    [McpServerTool, Description("Get the daily goal for a specific date (yyyy-MM-dd)")]
+    public async Task<DailyGoal?> GetGoal(string dateStr) => await _goalService.GetGoalAsync(dateStr);
+
+    [McpServerTool, Description("Set the daily goal for a specific date (yyyy-MM-dd)")]
+    public async Task<DailyGoal> SetGoal(string dateStr, string goalText) => await _goalService.SetGoalAsync(dateStr, goalText);
     // Habits Tools
     [McpServerTool, Description("Get all habits and their logs")]
     public async Task<List<Habit>> GetHabits() => await _habitService.GetHabitsAsync();
@@ -285,6 +483,9 @@ public class McpEndpoints
     [McpServerTool, Description("Delete a calendar event category by ID with optional destination category ID for existing events")]
     public async Task<bool> DeleteEventCategory(Guid id, Guid? moveToCategoryId = null) => await _calendarService.DeleteCategoryAsync(id, moveToCategoryId);
 
+    [McpServerTool, Description("Get how many calendar events belong to a category")]
+    public async Task<int> GetEventCategoryEventCount(Guid id) => await _calendarService.GetCategoryEventCountAsync(id);
+
     [McpServerTool, Description("Get calendar events optionally filtered by start and end dates")]
     public async Task<List<CalendarEvent>> GetCalendarEvents(DateTime? start = null, DateTime? end = null) =>
         await _calendarService.GetEventsAsync(start, end);
@@ -318,4 +519,88 @@ public class McpEndpoints
 
     [McpServerTool, Description("Delete a custom app by ID")]
     public async Task<bool> DeleteApp(Guid id) => await _appService.DeleteAppAsync(id);
+
+    // Whiteboards Tools
+    [McpServerTool, Description("Get all whiteboards (metadata only, without the canvas document), most recently updated first")]
+    public async Task<List<WhiteboardSummaryDto>> GetWhiteboards() => await _whiteboardService.GetWhiteboardsAsync();
+
+    [McpServerTool, Description("Get a single whiteboard including its full canvas document")]
+    public async Task<Whiteboard?> GetWhiteboard(Guid id) => await _whiteboardService.GetWhiteboardAsync(id);
+
+    [McpServerTool, Description("Create a new whiteboard")]
+    public async Task<Whiteboard?> CreateWhiteboard(
+        string name, string? icon = null, string? documentJson = null,
+        double? cameraX = null, double? cameraY = null, double? cameraZ = null, bool? isMinimapOpen = null) =>
+        await _whiteboardService.CreateWhiteboardAsync(new CreateWhiteboardRequest(name, icon, documentJson, cameraX, cameraY, cameraZ, isMinimapOpen));
+
+    [McpServerTool, Description("Update a whiteboard's name, icon, canvas document or camera position")]
+    public async Task<Whiteboard?> UpdateWhiteboard(
+        Guid id, string? name = null, string? icon = null, string? documentJson = null,
+        double? cameraX = null, double? cameraY = null, double? cameraZ = null, bool? isMinimapOpen = null) =>
+        await _whiteboardService.UpdateWhiteboardAsync(id, new UpdateWhiteboardRequest(name, icon, documentJson, cameraX, cameraY, cameraZ, isMinimapOpen));
+
+    [McpServerTool, Description("Delete a whiteboard by ID")]
+    public async Task<bool> DeleteWhiteboard(Guid id) => await _whiteboardService.DeleteWhiteboardAsync(id);
+
+    // Folders & Files Tools
+    [McpServerTool, Description("Create a new folder in the File Manager, optionally inside another folder")]
+    public async Task<Folder> CreateFolder(string name, int? parentId = null) =>
+        await _fileManager.CreateFolderAsync(name, parentId);
+
+    [McpServerTool, Description("Rename and/or move a folder")]
+    public async Task<Folder?> UpdateFolder(int id, string? name = null, int? parentId = null) =>
+        await _fileManager.UpdateFolderAsync(id, name, parentId, moveParent: true);
+
+    [McpServerTool, Description("Delete a folder and everything inside it, recursively")]
+    public async Task<bool> DeleteFolder(int id)
+    {
+        if (await _fileManager.GetFolderAsync(id) == null) return false;
+        await _fileManager.DeleteFolderRecursivelyAsync(id);
+        return true;
+    }
+
+    [McpServerTool, Description("Get a single file's metadata from the File Manager")]
+    public async Task<FileItem?> GetFile(int id) => await _fileManager.GetFileAsync(id);
+
+    [McpServerTool, Description("Rename and/or move a file to another folder in the File Manager")]
+    public async Task<FileItem?> UpdateFile(int id, string? name = null, int? folderId = null) =>
+        await _fileManager.UpdateFileAsync(id, name, folderId, moveFolder: true);
+
+    [McpServerTool, Description("Delete a file from the File Manager and free up its storage quota")]
+    public async Task<bool> DeleteFile(int id) => await _fileManager.DeleteFileAsync(id);
+
+    // Share Links Tools
+    [McpServerTool, Description("Create or update a public share link for a folder")]
+    public async Task<SharedLink?> CreateFolderShare(int folderId, SharePermission permission) =>
+        await _shareService.CreateFolderShareAsync(folderId, permission);
+
+    [McpServerTool, Description("Create or update a public share link for a file")]
+    public async Task<SharedLink?> CreateFileShare(int fileId, SharePermission permission) =>
+        await _shareService.CreateFileShareAsync(fileId, permission);
+
+    [McpServerTool, Description("List all share links with the name of the shared folder or file")]
+    public async Task<List<ShareLinkDto>> ListShares() => await _shareService.GetSharesAsync();
+
+    [McpServerTool, Description("Update the permission of an existing share link")]
+    public async Task<SharedLink?> UpdateSharePermission(string token, SharePermission permission) =>
+        await _shareService.UpdateSharePermissionAsync(token, permission);
+
+    [McpServerTool, Description("Revoke a share link, making the public URL stop working")]
+    public async Task<bool> RevokeShare(string token) => await _shareService.RevokeShareAsync(token);
+
+    // Settings Tools
+    [McpServerTool, Description("Get all user settings as a key/value map")]
+    public async Task<Dictionary<string, string>> GetSettings() => await _settingsService.GetSettingsAsync();
+
+    [McpServerTool, Description("Create or update a single user setting")]
+    public async Task<bool> UpdateSetting(string key, string value)
+    {
+        await _settingsService.SetSettingAsync(key, value);
+        return true;
+    }
+
+    // Global Search Tools
+    [McpServerTool, Description("Search across every area of Sanad (thoughts, tasks, calendar, finance, notes, books, files, whiteboards, habits, goals and apps). Optionally restrict to one category with type, e.g. \"tasks\".")]
+    public async Task<SearchResponse> GlobalSearch(string query, string? type = null, int? limit = null) =>
+        await _globalSearchService.SearchAsync(query, type, limit);
 }

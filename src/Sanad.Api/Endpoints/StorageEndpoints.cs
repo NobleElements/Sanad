@@ -56,26 +56,20 @@ public static class StorageEndpoints
             });
         }).AllowAnonymous();
 
-        group.MapGet("/history", async (AdminDbContext db, HttpContext context) =>
+        group.MapGet("/history", async (IStorageService storageService, HttpContext context) =>
         {
             var username = context.User.Identity?.Name;
             if (string.IsNullOrEmpty(username)) return Results.Unauthorized();
 
-            var user = await db.Users.FirstOrDefaultAsync(u => u.Username == username);
-            if (user == null) return Results.NotFound();
+            var history = await storageService.GetStorageHistoryAsync(username);
+            if (history == null) return Results.NotFound();
 
-            var history = await db.SubscriptionHistories
-                .Include(s => s.Tier)
-                .Where(s => s.UserId == user.Id)
-                .OrderByDescending(s => s.StartedAt)
-                .Select(s => new {
-                    tierName = s.Tier != null ? s.Tier.Name : "Unknown",
-                    startedAt = s.StartedAt,
-                    endedAt = s.EndedAt
-                })
-                .ToListAsync();
-
-            return Results.Ok(history);
+            return Results.Ok(history.Select(s => new
+            {
+                tierName = s.TierName,
+                startedAt = s.StartedAt,
+                endedAt = s.EndedAt
+            }));
         });
     }
 }

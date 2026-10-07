@@ -272,8 +272,8 @@ public class PaddleService
         if (dataArray == null || dataArray.Count == 0) throw new Exception("No completed transaction found for this subscription.");
 
         var latestTxn = dataArray[0];
-        var txnId = latestTxn["id"]?.ToString();
-        var itemId = latestTxn["details"]?["line_items"]?[0]?["id"]?.ToString();
+        var txnId = latestTxn?["id"]?.ToString();
+        var itemId = latestTxn?["details"]?["line_items"]?[0]?["id"]?.ToString();
 
         if (string.IsNullOrEmpty(txnId) || string.IsNullOrEmpty(itemId)) 
             throw new Exception("Could not extract transaction or line item ID.");
