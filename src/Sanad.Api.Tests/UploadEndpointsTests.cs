@@ -1,9 +1,12 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Sanad.Api.Endpoints;
+using Sanad.Api.Models;
+using Sanad.Api.Services;
 using Sanad.Api.Utils;
 using Xunit;
 
@@ -162,5 +165,112 @@ public class UploadEndpointsTests
 
         var deleteResult = await UploadEndpoints.DeleteAttachment(dangerousFileName, tenant);
         Assert.IsType<BadRequest<string>>(deleteResult);
+    }
+
+    [Fact]
+    public async Task HandleUploadAsync_ReturnsBadRequest_WhenNotFormContentType()
+    {
+        var context = new DefaultHttpContext();
+        context.Request.ContentType = "application/json";
+        var tenant = new TestTenantProvider("test_user");
+        using var adminDbFixture = TestDbContextFactory.CreateSqliteAdminDb();
+        var quota = new DiskQuotaService(adminDbFixture.Context);
+
+        var (error, origName, url) = await UploadHelper.HandleUploadAsync(context.Request, tenant, quota);
+        Assert.NotNull(error);
+        var badRequest = Assert.IsType<BadRequest<string>>(error);
+        Assert.Equal("Invalid form data", badRequest.Value);
+        Assert.Null(origName);
+        Assert.Null(url);
+    }
+
+    [Fact]
+    public async Task HandleUploadAsync_ReturnsBadRequest_WhenNoFileOrEmptyFile()
+    {
+        var context = new DefaultHttpContext();
+        context.Request.ContentType = "multipart/form-data; boundary=test";
+        context.Request.Form = new FormCollection(new System.Collections.Generic.Dictionary<string, Microsoft.Extensions.Primitives.StringValues>());
+        var tenant = new TestTenantProvider("test_user");
+        using var adminDbFixture = TestDbContextFactory.CreateSqliteAdminDb();
+        var quota = new DiskQuotaService(adminDbFixture.Context);
+
+        var (error, origName, url) = await UploadHelper.HandleUploadAsync(context.Request, tenant, quota);
+        Assert.NotNull(error);
+        var badRequest = Assert.IsType<BadRequest<string>>(error);
+        Assert.Equal("No file uploaded", badRequest.Value);
+        Assert.Null(origName);
+        Assert.Null(url);
+    }
+
+    [Fact]
+    public async Task HandleUploadAsync_ReturnsBadRequest_WhenDiskQuotaExceeded()
+    {
+        using var adminDbFixture = TestDbContextFactory.CreateSqliteAdminDb();
+        var adminDb = adminDbFixture.Context;
+        var tier = new StorageTier { Name = "Tiny", DiskLimitBytes = 50 };
+        adminDb.Tiers.Add(tier);
+        await adminDb.SaveChangesAsync();
+
+        var user = new AppUser { Username = "quota_user", TierId = tier.Id, DiskUsed = 45 };
+        adminDb.Users.Add(user);
+        await adminDb.SaveChangesAsync();
+
+        var quota = new DiskQuotaService(adminDb);
+        var tenant = new TestTenantProvider("quota_user");
+
+        var fileBytes = new byte[100]; // 100 > 5 remaining
+        var stream = new MemoryStream(fileBytes);
+        var formFile = new FormFile(stream, 0, fileBytes.Length, "file", "photo.jpg");
+        var formFiles = new FormFileCollection { formFile };
+
+        var context = new DefaultHttpContext();
+        context.Request.ContentType = "multipart/form-data; boundary=test";
+        context.Request.Form = new FormCollection(new System.Collections.Generic.Dictionary<string, Microsoft.Extensions.Primitives.StringValues>(), formFiles);
+
+        var (error, _, _) = await UploadHelper.HandleUploadAsync(context.Request, tenant, quota);
+        Assert.NotNull(error);
+        var badRequest = Assert.IsType<BadRequest<string>>(error);
+        Assert.Contains("Disk quota exceeded", badRequest.Value);
+    }
+
+    [Fact]
+    public async Task HandleUploadAsync_And_UploadImage_SavesFileAndReturnsOkUrl()
+    {
+        using var tempDir = new DisposableTempDirectory();
+        using var adminDbFixture = TestDbContextFactory.CreateSqliteAdminDb();
+        var adminDb = adminDbFixture.Context;
+        var datastore = adminDb.Datastores.First();
+        datastore.Path = tempDir.Path;
+        var tier = adminDb.Tiers.First();
+        var user = new AppUser { Username = "upload_user", DatastoreId = datastore.Id, TierId = tier.Id, DiskUsed = 0 };
+        adminDb.Users.Add(user);
+        await adminDb.SaveChangesAsync();
+
+        var quota = new DiskQuotaService(adminDb);
+        var tenant = new TestTenantProvider("upload_user", tempDir.Path);
+
+        var content = System.Text.Encoding.UTF8.GetBytes("test image file content");
+        var stream = new MemoryStream(content);
+        var formFile = new FormFile(stream, 0, content.Length, "file", "avatar.png");
+        var formFiles = new FormFileCollection { formFile };
+
+        var context = new DefaultHttpContext();
+        context.Request.ContentType = "multipart/form-data; boundary=test";
+        context.Request.Form = new FormCollection(new System.Collections.Generic.Dictionary<string, Microsoft.Extensions.Primitives.StringValues>(), formFiles);
+
+        var result = await UploadEndpoints.UploadImage(context.Request, tenant, quota);
+        var okResult = Assert.IsAssignableFrom<IValueHttpResult>(result);
+        Assert.NotNull(okResult.Value);
+
+        var json = System.Text.Json.JsonSerializer.SerializeToElement(okResult.Value);
+        var url = json.GetProperty("url").GetString();
+        Assert.NotNull(url);
+        Assert.StartsWith("/api/attachments/", url);
+
+        // Verify file exists on disk
+        var fileName = Path.GetFileName(url);
+        var savedPath = Path.Combine(tempDir.Path, "attachments", fileName);
+        Assert.True(File.Exists(savedPath));
+        Assert.Equal(content.Length, new FileInfo(savedPath).Length);
     }
 }

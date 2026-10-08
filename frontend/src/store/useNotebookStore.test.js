@@ -1,9 +1,23 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import useNotebookStore from './useNotebookStore';
+import useUIStore from './useUIStore';
 import { API_URL } from '../config';
-import { mockFetch, jsonResponse, jsonBody } from '../test/fetchMock';
+import { mockFetch, jsonResponse, jsonBody, errorResponse } from '../test/fetchMock';
+
+const hasToast = (message, type) =>
+  useUIStore.getState().toasts.some(t => t.message === message && (!type || t.type === type));
 
 describe('useNotebookStore', () => {
+  beforeEach(() => {
+    useUIStore.setState({ toasts: [] });
+    useNotebookStore.setState({
+      notebooks: [],
+      notes: [],
+      selectedNotebookId: null,
+      selectedNote: null,
+      searchResults: null
+    });
+  });
   it('fetchNotebooks retrieves notebooks and sets store state', async () => {
     const mockNotebooks = [
       { id: 'nb-1', name: 'Work', notes: [{ id: 'n-1', title: 'Note 1' }] },
@@ -109,5 +123,91 @@ describe('useNotebookStore', () => {
     const state = useNotebookStore.getState();
     expect(state.notes).toHaveLength(0);
     expect(state.notebooks[0].notes).toHaveLength(0);
+  });
+
+  it('deleteNotebook calls DELETE and removes notebook from state', async () => {
+    useNotebookStore.setState({
+      notebooks: [{ id: 'nb-1', name: 'Work' }, { id: 'nb-2', name: 'Home' }]
+    });
+    const fetchMock = mockFetch({ 'DELETE /api/notebooks/nb-1': jsonResponse(null, { status: 204 }) });
+
+    const success = await useNotebookStore.getState().deleteNotebook('nb-1');
+
+    expect(success).toBe(true);
+    expect(fetchMock).toHaveBeenCalledWith(`${API_URL}/notebooks/nb-1`, { method: 'DELETE' });
+    expect(useNotebookStore.getState().notebooks).toEqual([{ id: 'nb-2', name: 'Home' }]);
+  });
+
+  it('fetchNotes serves notebook.notes if cached, else fetches from API', async () => {
+    const cachedNotes = [{ id: 'n-cached', title: 'Cached Note' }];
+    useNotebookStore.setState({
+      notebooks: [{ id: 'nb-1', notes: cachedNotes }]
+    });
+
+    const cachedResult = await useNotebookStore.getState().fetchNotes('nb-1');
+    expect(cachedResult).toEqual(cachedNotes);
+
+    const apiNotes = [{ id: 'n-fresh', title: 'Fresh Note' }];
+    const fetchMock = mockFetch({ 'GET /api/notebooks/nb-2/notes': jsonResponse(apiNotes) });
+
+    const apiResult = await useNotebookStore.getState().fetchNotes('nb-2');
+    expect(fetchMock).toHaveBeenCalledWith(`${API_URL}/notebooks/nb-2/notes`);
+    expect(apiResult).toEqual(apiNotes);
+    expect(useNotebookStore.getState().notes).toEqual(apiNotes);
+  });
+
+  it('fetchNote retrieves note by id and sets selectedNote', async () => {
+    const note = { id: 'n-single', title: 'Single Note', content: 'hello' };
+    const fetchMock = mockFetch({ 'GET /api/notes/n-single': jsonResponse(note) });
+
+    const result = await useNotebookStore.getState().fetchNote('n-single');
+
+    expect(fetchMock).toHaveBeenCalledWith(`${API_URL}/notes/n-single`);
+    expect(result).toEqual(note);
+    expect(useNotebookStore.getState().selectedNote).toEqual(note);
+  });
+
+  it('moveNote updates notebookId via PUT and refreshes notebooks', async () => {
+    const note = { id: 'n-1', title: 'Task Note', content: 'body', notebookId: 'nb-1' };
+    useNotebookStore.setState({
+      notes: [note],
+      notebooks: [{ id: 'nb-1', notes: [note] }, { id: 'nb-2', notes: [] }],
+      selectedNote: note
+    });
+
+    const fetchMock = mockFetch({
+      'PUT /api/notes/n-1': jsonResponse({ success: true }),
+      'GET /api/notebooks': jsonResponse([{ id: 'nb-1', notes: [] }, { id: 'nb-2', notes: [{ ...note, notebookId: 'nb-2' }] }])
+    });
+
+    const success = await useNotebookStore.getState().moveNote('n-1', 'nb-2');
+
+    expect(success).toBe(true);
+    expect(fetchMock).toHaveBeenCalledWith(`${API_URL}/notes/n-1`, expect.objectContaining({
+      method: 'PUT',
+      body: jsonBody({ title: 'Task Note', content: 'body', notebookId: 'nb-2' })
+    }));
+    expect(useNotebookStore.getState().selectedNote.notebookId).toBe('nb-2');
+  });
+
+  it('displays error toasts when actions fail', async () => {
+    mockFetch({
+      'POST /api/notebooks': errorResponse(500),
+      'PUT /api/notebooks/nb-1': errorResponse(500),
+      'DELETE /api/notebooks/nb-1': errorResponse(500),
+      'POST /api/notebooks/nb-1/notes': errorResponse(500)
+    });
+
+    await useNotebookStore.getState().createNotebook('Failing NB');
+    expect(hasToast('Failed to create notebook', 'error')).toBe(true);
+
+    await useNotebookStore.getState().renameNotebook('nb-1', 'Failing Rename');
+    expect(hasToast('Failed to rename notebook', 'error')).toBe(true);
+
+    await useNotebookStore.getState().deleteNotebook('nb-1');
+    expect(hasToast('Failed to delete notebook', 'error')).toBe(true);
+
+    await useNotebookStore.getState().createNote('nb-1');
+    expect(hasToast('Failed to create note', 'error')).toBe(true);
   });
 });

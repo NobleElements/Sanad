@@ -1,7 +1,11 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import useFinanceStore from './useFinanceStore';
+import useUIStore from './useUIStore';
 import { API_URL } from '../config';
-import { mockFetch, jsonResponse } from '../test/fetchMock';
+import { mockFetch, jsonResponse, errorResponse, jsonBody } from '../test/fetchMock';
+
+const hasToast = (message, type) =>
+  useUIStore.getState().toasts.some(t => t.message === message && (!type || t.type === type));
 
 const financeRoutes = ({ month, year, summary, categories, currencies, transactions }) => ({
   [`GET /api/finances/summary?month=${month}&year=${year}`]: jsonResponse(summary),
@@ -11,6 +15,18 @@ const financeRoutes = ({ month, year, summary, categories, currencies, transacti
 });
 
 describe('useFinanceStore', () => {
+  beforeEach(() => {
+    useUIStore.setState({ toasts: [] });
+    useFinanceStore.setState({
+      categories: [],
+      transactions: [],
+      budgetSummary: { categories: [], monthlyBudget: 0, totalSpent: 0 },
+      assets: [],
+      debts: [],
+      currencies: [],
+      isLoaded: false
+    });
+  });
   it('fetchCurrencies loads available currencies into store', async () => {
     const mockCurrencies = [
       { id: 'c1', code: 'USD', name: 'US Dollar', symbol: '$', isDefault: true },
@@ -76,5 +92,106 @@ describe('useFinanceStore', () => {
     expect(state.budgetSummary).toEqual(novemberSummary);
     expect(state.transactions).toEqual(novemberTransactions);
     expect(state.isLoaded).toBe(true);
+  });
+
+  it('addAsset calls POST, refreshes assets, and adds success toast', async () => {
+    const fetchMock = mockFetch({
+      'POST /api/finances/assets': jsonResponse({ id: 'a1' }, { status: 201 }),
+      'GET /api/finances/assets': jsonResponse([{ id: 'a1', name: 'Savings', currentAmount: 1000 }]),
+      'GET /api/finances/assets/history': jsonResponse([]),
+      'GET /api/finances/debts': jsonResponse([]),
+      'GET /api/finances/debts/history': jsonResponse([])
+    });
+
+    const success = await useFinanceStore.getState().addAsset('Savings', 'Bank', 1000, 'c1', 'wallet');
+
+    expect(success).toBe(true);
+    expect(fetchMock).toHaveBeenCalledWith(`${API_URL}/finances/assets`, expect.objectContaining({
+      method: 'POST',
+      body: jsonBody({ name: 'Savings', type: 'Bank', currentAmount: 1000, currencyId: 'c1', icon: 'wallet' })
+    }));
+    expect(hasToast('Asset created', 'success')).toBe(true);
+    expect(useFinanceStore.getState().assets).toEqual([{ id: 'a1', name: 'Savings', currentAmount: 1000 }]);
+  });
+
+  it('reorderAssets updates optimistically and reverts on error', async () => {
+    const a1 = { id: 'a1', name: 'First' };
+    const a2 = { id: 'a2', name: 'Second' };
+    useFinanceStore.setState({ assets: [a1, a2] });
+
+    mockFetch({
+      'PUT /api/finances/assets/reorder': errorResponse(500)
+    });
+
+    await useFinanceStore.getState().reorderAssets(['a2', 'a1']);
+
+    expect(useFinanceStore.getState().assets).toEqual([a1, a2]);
+    expect(hasToast('Failed to save asset order', 'error')).toBe(true);
+  });
+
+  it('addDebt calls POST, refreshes assets/debts, and adds success toast', async () => {
+    const fetchMock = mockFetch({
+      'POST /api/finances/debts': jsonResponse({ id: 'd1' }, { status: 201 }),
+      'GET /api/finances/assets': jsonResponse([]),
+      'GET /api/finances/assets/history': jsonResponse([]),
+      'GET /api/finances/debts': jsonResponse([{ id: 'd1', name: 'Car Loan', currentAmount: 5000 }]),
+      'GET /api/finances/debts/history': jsonResponse([])
+    });
+
+    const success = await useFinanceStore.getState().addDebt('Car Loan', 'Loan', 5000, 'c1', 'car');
+
+    expect(success).toBe(true);
+    expect(fetchMock).toHaveBeenCalledWith(`${API_URL}/finances/debts`, expect.objectContaining({
+      method: 'POST',
+      body: jsonBody({ name: 'Car Loan', type: 'Loan', currentAmount: 5000, currencyId: 'c1', icon: 'car' })
+    }));
+    expect(hasToast('Debt created', 'success')).toBe(true);
+  });
+
+  it('deleteDebt calls DELETE and refreshes', async () => {
+    const fetchMock = mockFetch({
+      'DELETE /api/finances/debts/d1': jsonResponse(null, { status: 204 }),
+      'GET /api/finances/assets': jsonResponse([]),
+      'GET /api/finances/assets/history': jsonResponse([]),
+      'GET /api/finances/debts': jsonResponse([]),
+      'GET /api/finances/debts/history': jsonResponse([])
+    });
+
+    const success = await useFinanceStore.getState().deleteDebt('d1');
+
+    expect(success).toBe(true);
+    expect(fetchMock).toHaveBeenCalledWith(`${API_URL}/finances/debts/d1`, { method: 'DELETE' });
+    expect(hasToast('Debt deleted', 'success')).toBe(true);
+  });
+
+  it('setDefaultCurrency calls PUT and updates store with success toast', async () => {
+    const fetchMock = mockFetch({
+      'PUT /api/finances/currencies/c2/set-default': jsonResponse({ success: true }),
+      'GET /api/finances/currencies': jsonResponse([{ id: 'c2', code: 'EUR', isDefault: true }]),
+      'GET /api/finances/assets': jsonResponse([]),
+      'GET /api/finances/assets/history': jsonResponse([]),
+      'GET /api/finances/debts': jsonResponse([]),
+      'GET /api/finances/debts/history': jsonResponse([])
+    });
+
+    const success = await useFinanceStore.getState().setDefaultCurrency('c2');
+
+    expect(success).toBe(true);
+    expect(fetchMock).toHaveBeenCalledWith(`${API_URL}/finances/currencies/c2/set-default`, { method: 'PUT' });
+    expect(hasToast('Default currency changed', 'success')).toBe(true);
+  });
+
+  it('shows error toast when fetchFinanceData fails', async () => {
+    const month = useFinanceStore.getState().currentMonth;
+    const year = useFinanceStore.getState().currentYear;
+
+    mockFetch({
+      [`GET /api/finances/summary?month=${month}&year=${year}`]: errorResponse(500),
+      'GET /api/finances/categories': jsonResponse([])
+    });
+
+    await useFinanceStore.getState().fetchFinanceData();
+
+    expect(hasToast('Failed to load financial data', 'error')).toBe(true);
   });
 });

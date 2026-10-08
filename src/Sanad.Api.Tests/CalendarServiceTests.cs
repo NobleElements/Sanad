@@ -13,7 +13,8 @@ public class CalendarServiceTests
     [Fact]
     public async Task Event_CreateUpdateDelete_Works()
     {
-        using var db = TestDbContextFactory.CreateInMemorySanadDbContext();
+        using var dbFixture = TestDbContextFactory.CreateSqliteSanadDb();
+        var db = dbFixture.Context;
         var service = new CalendarService(db);
 
         var start = new DateTime(2026, 7, 10, 10, 0, 0, DateTimeKind.Utc);
@@ -72,7 +73,8 @@ public class CalendarServiceTests
     [Fact]
     public async Task Event_WithTaskItem_SyncsDatesToTask()
     {
-        using var db = TestDbContextFactory.CreateInMemorySanadDbContext();
+        using var dbFixture = TestDbContextFactory.CreateSqliteSanadDb();
+        var db = dbFixture.Context;
         var service = new CalendarService(db);
 
         var task = new TaskItem { Title = "Feature A Development" };
@@ -122,7 +124,8 @@ public class CalendarServiceTests
     [Fact]
     public async Task GetEvents_DateRangeFiltering_AndRecurringRules()
     {
-        using var db = TestDbContextFactory.CreateInMemorySanadDbContext();
+        using var dbFixture = TestDbContextFactory.CreateSqliteSanadDb();
+        var db = dbFixture.Context;
         var service = new CalendarService(db);
 
         var baseDate = new DateTime(2026, 5, 10, 0, 0, 0, DateTimeKind.Utc);

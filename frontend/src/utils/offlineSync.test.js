@@ -1,38 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { API_URL } from '../config';
 import { mockFetch, jsonResponse } from '../test/fetchMock';
+import { warmUpApiCache, _resetWarmUpForTesting, getEndpointsToCache } from './offlineSync';
 
-const WARM_UP_PATHS = [
-  '/tasks',
-  '/calendar/categories',
-  '/calendar/events',
-  '/books',
-  '/habits',
-  '/thoughts?page=1',
-  '/notebooks',
-  '/notes/latest',
-  '/finances/currencies',
-  '/finances/categories',
-  '/finances/assets',
-  '/finances/assets/history',
-  '/finances/debts',
-  '/finances/debts/history',
-  '/finances/summary?month=3&year=2026',
-  '/finances/transactions?page=1&limit=50',
-  '/reading/periods',
-  '/reading/current',
-  '/storage/paddle-config',
-  '/storage/history',
-  '/storage/tiers',
-  '/storage',
-  '/subscription/transactions',
-  '/admin/users',
-  '/admin/datastores',
-  '/folders?page=1&pageSize=50&sortBy=name&sortOrder=asc',
-  '/apps',
-  '/whiteboards',
-  '/settings/public'
-];
+const TEST_DATE = new Date('2026-03-15T12:00:00Z');
+const WARM_UP_PATHS = getEndpointsToCache(TEST_DATE);
 
 const warmUpRoutes = (overrides = {}) => ({
   ...Object.fromEntries(WARM_UP_PATHS.map(path => [`GET /api${path}`, jsonResponse([])])),
@@ -46,16 +18,12 @@ const warmUpRoutes = (overrides = {}) => ({
 const calledUrls = (fetchMock) => fetchMock.mock.calls.map(([url]) => url);
 
 describe('offlineSync warmUpApiCache', () => {
-  let warmUpApiCache;
-
-  beforeEach(async () => {
+  beforeEach(() => {
     vi.spyOn(console, 'log').mockImplementation(() => {});
     // The current month/year is part of the finance summary URL
     vi.useFakeTimers({ toFake: ['Date'] });
-    vi.setSystemTime(new Date('2026-03-15T12:00:00'));
-    // Fresh module instance so the module-level hasWarmedUp flag starts false in every test
-    vi.resetModules();
-    ({ warmUpApiCache } = await import('./offlineSync'));
+    vi.setSystemTime(TEST_DATE);
+    _resetWarmUpForTesting();
   });
 
   it('fetches every cache endpoint once, plus the notes of each notebook and the notes sync', async () => {
@@ -106,6 +74,6 @@ describe('offlineSync warmUpApiCache', () => {
     expect(fetchMock).toHaveBeenCalledWith(`${API_URL}/notes/sync?since=2026-03-01T00%3A00%3A00.000Z`);
     expect(fetchMock).toHaveBeenCalledWith(`${API_URL}/notes/n-1`);
     expect(fetchMock).toHaveBeenCalledWith(`${API_URL}/notes/n-2`);
-    expect(localStorage.getItem('last_notes_sync_v2')).toBe(new Date('2026-03-15T12:00:00').toISOString());
+    expect(localStorage.getItem('last_notes_sync_v2')).toBe(TEST_DATE.toISOString());
   });
 });

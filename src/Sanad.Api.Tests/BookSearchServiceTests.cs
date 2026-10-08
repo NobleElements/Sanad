@@ -96,8 +96,7 @@ public class BookSearchServiceTests
                 return new HttpResponseMessage(HttpStatusCode.NotFound);
             }
         };
-
-        var httpClient = new HttpClient(mockHandler);
+        using var httpClient = new HttpClient(mockHandler);
         var service = new BookSearchService(httpClient);
 
         var results = await service.SearchBooksAsync("software architecture");
@@ -135,7 +134,8 @@ public class BookSearchServiceTests
     public async Task SearchBooksAsync_SendsEscapedQueryAndResultLimitToEachProvider()
     {
         var mockHandler = new MockHttpMessageHandler();
-        var service = new BookSearchService(new HttpClient(mockHandler));
+        using var httpClient = new HttpClient(mockHandler);
+        var service = new BookSearchService(httpClient);
 
         // '#' and '&' would truncate or split the query string if they weren't escaped
         const string query = "C# & .NET in depth";
@@ -185,7 +185,8 @@ public class BookSearchServiceTests
             }
         };
 
-        var service = new BookSearchService(new HttpClient(mockHandler));
+        using var httpClient = new HttpClient(mockHandler);
+        var service = new BookSearchService(httpClient);
 
         var results = await service.SearchBooksAsync("clean code");
 
@@ -205,7 +206,8 @@ public class BookSearchServiceTests
         {
             Handler = _ => throw new HttpRequestException("offline")
         };
-        var service = new BookSearchService(new HttpClient(mockHandler));
+        using var httpClient = new HttpClient(mockHandler);
+        var service = new BookSearchService(httpClient);
 
         var results = await service.SearchBooksAsync("anything");
 
@@ -271,8 +273,7 @@ public class BookSearchServiceTests
                 return new HttpResponseMessage(HttpStatusCode.NotFound);
             }
         };
-
-        var httpClient = new HttpClient(mockHandler);
+        using var httpClient = new HttpClient(mockHandler);
         var service = new BookSearchService(httpClient);
 
         // Should NOT throw an exception despite 2 failures

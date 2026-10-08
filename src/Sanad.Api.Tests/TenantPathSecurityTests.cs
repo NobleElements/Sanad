@@ -80,8 +80,8 @@ public class TenantPathSecurityTests
     public void TenantProvider_ResolvesUserFolderInsideTheirDatastore()
     {
         using var datastore = new DisposableTempDirectory();
-        using var services = BuildTenantServices(datastore.Path, "alice");
-        using var scope = services.CreateScope();
+        using var host = new TenantTestHost(datastore.Path, "alice");
+        using var scope = host.Services.CreateScope();
         var tenantProvider = scope.ServiceProvider.GetRequiredService<TenantProvider>();
         tenantProvider.SetOverrideUsername("alice");
 
@@ -95,8 +95,8 @@ public class TenantPathSecurityTests
     public void TenantProvider_RefusesUsernamesThatEscapeTheirFolder(string username)
     {
         using var datastore = new DisposableTempDirectory();
-        using var services = BuildTenantServices(datastore.Path, username);
-        using var scope = services.CreateScope();
+        using var host = new TenantTestHost(datastore.Path, username);
+        using var scope = host.Services.CreateScope();
         var tenantProvider = scope.ServiceProvider.GetRequiredService<TenantProvider>();
         tenantProvider.SetOverrideUsername(username);
 
@@ -104,39 +104,58 @@ public class TenantPathSecurityTests
         Assert.Throws<InvalidOperationException>(() => tenantProvider.GetConnectionString());
     }
 
-    [Fact]
-    public async Task Signup_RejectsUsernamesThatCouldFormAPath()
+    [Theory]
+    [InlineData("../alice")]
+    [InlineData("x/../alice")]
+    [InlineData("/tmp/evil")]
+    [InlineData("..")]
+    [InlineData("alice.")]
+    public async Task Signup_RejectsUsernamesThatCouldFormAPath(string dangerousUsername)
     {
         using var factory = new CustomWebApplicationFactory();
         var client = factory.CreateClient();
 
-        foreach (var username in new[] { "../alice", "x/../alice", "/tmp/evil", "..", "alice." })
-        {
-            var response = await client.PostAsJsonAsync("/api/auth/signup", new SetupRequest(username, "SecurePass123!"));
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        }
+        var response = await client.PostAsJsonAsync("/api/auth/signup", new SetupRequest(dangerousUsername, "SecurePass123!"));
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
         using var scope = factory.Services.CreateScope();
         var adminDb = scope.ServiceProvider.GetRequiredService<AdminDbContext>();
         Assert.Equal(0, await adminDb.Users.CountAsync());
     }
 
-    private static ServiceProvider BuildTenantServices(string datastorePath, string username)
+    private sealed class TenantTestHost : IDisposable
     {
-        var adminDbName = Guid.NewGuid().ToString();
-        var services = new ServiceCollection();
-        services.AddDbContext<AdminDbContext>(options => options.UseInMemoryDatabase(adminDbName));
-        services.AddHttpContextAccessor();
-        services.AddScoped<TenantProvider>();
-        var provider = services.BuildServiceProvider();
+        public ServiceProvider Services { get; }
+        private readonly Microsoft.Data.Sqlite.SqliteConnection _connection;
 
-        using var scope = provider.CreateScope();
-        var adminDb = scope.ServiceProvider.GetRequiredService<AdminDbContext>();
-        var datastore = new Datastore { Id = 50, Name = "Test", Path = datastorePath };
-        adminDb.Datastores.Add(datastore);
-        adminDb.Users.Add(new AppUser { Id = Guid.NewGuid(), Username = username, Datastore = datastore });
-        adminDb.SaveChanges();
+        public TenantTestHost(string datastorePath, string username)
+        {
+            _connection = new Microsoft.Data.Sqlite.SqliteConnection("DataSource=:memory:;Foreign Keys=True;Pooling=False");
+            _connection.Open();
 
-        return provider;
+            var services = new ServiceCollection();
+            services.AddDbContext<AdminDbContext>(options => options.UseSqlite(_connection));
+            services.AddHttpContextAccessor();
+            services.AddScoped<TenantProvider>();
+            Services = services.BuildServiceProvider();
+
+            using var scope = Services.CreateScope();
+            var adminDb = scope.ServiceProvider.GetRequiredService<AdminDbContext>();
+            adminDb.Database.EnsureCreated();
+            var datastore = new Datastore { Id = 50, Name = "Test", Path = datastorePath };
+            adminDb.Datastores.Add(datastore);
+            if (!adminDb.Tiers.Any())
+            {
+                adminDb.Tiers.Add(new StorageTier { Id = 1, Name = "Free", DiskLimitBytes = 1_000_000_000L });
+            }
+            adminDb.Users.Add(new AppUser { Id = Guid.NewGuid(), Username = username, Datastore = datastore, TierId = 1 });
+            adminDb.SaveChanges();
+        }
+
+        public void Dispose()
+        {
+            Services.Dispose();
+            _connection.Dispose();
+        }
     }
 }

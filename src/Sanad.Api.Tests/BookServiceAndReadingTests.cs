@@ -14,7 +14,8 @@ public class BookServiceAndReadingTests
     [Fact]
     public async Task Book_CrudOperations_Work()
     {
-        using var db = TestDbContextFactory.CreateInMemorySanadDbContext();
+        using var dbFixture = TestDbContextFactory.CreateSqliteSanadDb();
+        var db = dbFixture.Context;
         var bookService = new BookService(db);
 
         // 1. Create book
@@ -51,7 +52,8 @@ public class BookServiceAndReadingTests
     [Fact]
     public async Task ReadingPeriod_SettingStatusToReading_PausesOtherActivePeriods()
     {
-        using var db = TestDbContextFactory.CreateInMemorySanadDbContext();
+        using var dbFixture = TestDbContextFactory.CreateSqliteSanadDb();
+        var db = dbFixture.Context;
         var readingService = new ReadingService(db);
         var bookService = new BookService(db);
 

@@ -14,7 +14,8 @@ public class NoteServiceTests
     [Fact]
     public async Task Notebook_CreateUpdateDelete_Works()
     {
-        using var db = TestDbContextFactory.CreateInMemorySanadDbContext();
+        using var dbFixture = TestDbContextFactory.CreateSqliteSanadDb();
+        var db = dbFixture.Context;
         var service = new NoteService(db, new TestTenantProvider());
 
         // 1. Create
@@ -46,7 +47,8 @@ public class NoteServiceTests
     [Fact]
     public async Task Note_CreateUpdateMoveDelete_Works()
     {
-        using var db = TestDbContextFactory.CreateInMemorySanadDbContext();
+        using var dbFixture = TestDbContextFactory.CreateSqliteSanadDb();
+        var db = dbFixture.Context;
         var service = new NoteService(db, new TestTenantProvider());
 
         var nb1 = await service.CreateNotebookAsync("Folder A");
@@ -83,7 +85,8 @@ public class NoteServiceTests
     [Fact]
     public async Task SyncNotes_ReturnsOnlyNotesModifiedSinceTimestamp()
     {
-        using var db = TestDbContextFactory.CreateInMemorySanadDbContext();
+        using var dbFixture = TestDbContextFactory.CreateSqliteSanadDb();
+        var db = dbFixture.Context;
         var service = new NoteService(db, new TestTenantProvider());
 
         var notebook = await service.CreateNotebookAsync("Sync Notebook");
@@ -147,7 +150,8 @@ public class NoteServiceTests
         var victimDb = Path.Combine(victimDir, "sanad.db");
         File.WriteAllText(victimDb, "bob's data");
 
-        using var db = TestDbContextFactory.CreateInMemorySanadDbContext();
+        using var dbFixture = TestDbContextFactory.CreateSqliteSanadDb();
+        var db = dbFixture.Context;
         var service = new NoteService(db, new TestTenantProvider("alice", tenantPath));
         var notebook = await service.CreateNotebookAsync("Notebook");
         var note = await service.CreateNoteAsync(notebook.Id, "Note",
@@ -168,7 +172,8 @@ public class NoteServiceTests
         var image = Path.Combine(attachmentsDir, "pic.png");
         File.WriteAllText(image, "image");
 
-        using var db = TestDbContextFactory.CreateInMemorySanadDbContext();
+        using var dbFixture = TestDbContextFactory.CreateSqliteSanadDb();
+        var db = dbFixture.Context;
         var service = new NoteService(db, new TestTenantProvider("alice", tenantDir.Path));
         var notebook = await service.CreateNotebookAsync("Notebook");
         await service.CreateNoteAsync(notebook.Id, "Note", @"<img src=""/api/attachments/pic.png"" />");

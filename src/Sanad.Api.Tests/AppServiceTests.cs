@@ -13,7 +13,8 @@ public class AppServiceTests
     [Fact]
     public async Task CustomApps_CrudOperations_Work()
     {
-        using var db = TestDbContextFactory.CreateInMemorySanadDbContext();
+        using var dbFixture = TestDbContextFactory.CreateSqliteSanadDb();
+        var db = dbFixture.Context;
         var service = new AppService(db);
 
         // 1. Create app
@@ -59,7 +60,8 @@ public class AppServiceTests
     [Fact]
     public async Task GetApps_OrdersByCreatedAtDescending()
     {
-        using var db = TestDbContextFactory.CreateInMemorySanadDbContext();
+        using var dbFixture = TestDbContextFactory.CreateSqliteSanadDb();
+        var db = dbFixture.Context;
         var service = new AppService(db);
 
         var older = await service.CreateAppAsync("Old App", "<div>1</div>", "icon1", true, false);

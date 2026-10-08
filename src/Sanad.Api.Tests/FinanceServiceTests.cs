@@ -14,7 +14,8 @@ public class FinanceServiceTests
     [Fact]
     public async Task Currency_DefaultRulesAndExchangeRateRebasing_Work()
     {
-        using var db = TestDbContextFactory.CreateInMemorySanadDbContext();
+        using var dbFixture = TestDbContextFactory.CreateSqliteSanadDb();
+        var db = dbFixture.Context;
         var service = new FinanceService(db);
 
         // 1. First currency created automatically becomes default
@@ -54,7 +55,8 @@ public class FinanceServiceTests
     [Fact]
     public async Task DeleteCurrency_RemovesUnreferencedCurrency_AndRefusesOneUsedByADebt()
     {
-        using var db = TestDbContextFactory.CreateInMemorySanadDbContext();
+        using var dbFixture = TestDbContextFactory.CreateSqliteSanadDb();
+        var db = dbFixture.Context;
         var service = new FinanceService(db);
 
         await service.CreateCurrencyAsync(new Currency { Code = "USD", Name = "US Dollar", Symbol = "$" });
@@ -82,7 +84,8 @@ public class FinanceServiceTests
     [Fact]
     public async Task SetDefaultCurrency_RejectsNonPositiveRate_AndLeavesRatesUntouched()
     {
-        using var db = TestDbContextFactory.CreateInMemorySanadDbContext();
+        using var dbFixture = TestDbContextFactory.CreateSqliteSanadDb();
+        var db = dbFixture.Context;
         var service = new FinanceService(db);
 
         var usd = await service.CreateCurrencyAsync(new Currency { Code = "USD", Name = "US Dollar", Symbol = "$" });
@@ -105,7 +108,8 @@ public class FinanceServiceTests
     [Fact]
     public async Task SetDefaultCurrency_RoundsRebasedRatesToSixDecimals()
     {
-        using var db = TestDbContextFactory.CreateInMemorySanadDbContext();
+        using var dbFixture = TestDbContextFactory.CreateSqliteSanadDb();
+        var db = dbFixture.Context;
         var service = new FinanceService(db);
 
         var usd = await service.CreateCurrencyAsync(new Currency { Code = "USD", Name = "US Dollar", Symbol = "$" });
@@ -129,7 +133,8 @@ public class FinanceServiceTests
     [Fact]
     public async Task Transactions_PaginationAndFiltering_Work()
     {
-        using var db = TestDbContextFactory.CreateInMemorySanadDbContext();
+        using var dbFixture = TestDbContextFactory.CreateSqliteSanadDb();
+        var db = dbFixture.Context;
         var service = new FinanceService(db);
 
         var catA = await service.CreateCategoryAsync("Groceries", 300);
@@ -185,7 +190,8 @@ public class FinanceServiceTests
     [Fact]
     public async Task FinanceSummary_CalculatesAccurately()
     {
-        using var db = TestDbContextFactory.CreateInMemorySanadDbContext();
+        using var dbFixture = TestDbContextFactory.CreateSqliteSanadDb();
+        var db = dbFixture.Context;
         var service = new FinanceService(db);
 
         var month = 9;

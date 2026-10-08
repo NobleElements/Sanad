@@ -98,11 +98,7 @@ describe('PromptModal Component', () => {
   it('calls onCancel when the header close button is clicked', () => {
     const { onCancel, onConfirm } = renderOpen();
 
-    // The close (X) button has no accessible name, so locate it as the only button
-    // in the header next to the dialog title
-    const header = screen.getByRole('heading', { name: 'Edit Item' }).parentElement.parentElement;
-    const [closeBtn] = within(header).getAllByRole('button');
-    fireEvent.click(closeBtn);
+    fireEvent.click(screen.getByRole('button', { name: /close/i }));
 
     expect(onCancel).toHaveBeenCalledTimes(1);
     expect(onConfirm).not.toHaveBeenCalled();

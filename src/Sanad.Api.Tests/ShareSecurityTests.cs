@@ -3,6 +3,7 @@ using System.IO;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Sanad.Api.Data;
@@ -18,8 +19,10 @@ public class ShareSecurityTests
     [Fact]
     public async Task ShareService_CreateUpdateRevoke_Works()
     {
-        using var adminDb = TestDbContextFactory.CreateInMemoryAdminDbContext();
-        using var sanadDb = TestDbContextFactory.CreateInMemorySanadDbContext();
+        using var adminFixture = TestDbContextFactory.CreateSqliteAdminDb();
+        using var sanadFixture = TestDbContextFactory.CreateSqliteSanadDb();
+        var adminDb = adminFixture.Context;
+        var sanadDb = sanadFixture.Context;
 
         var user = new AppUser { Id = Guid.NewGuid(), Username = "sharer" };
         adminDb.Users.Add(user);
@@ -57,16 +60,16 @@ public class ShareSecurityTests
         Assert.Single(await shareService.GetSharesAsync());
     }
 
-    [Fact]
-    public async Task DeletePublicSharedFile_EnforcesEditPermission_RejectsViewOnly()
+    private static (ServiceProvider Provider, SqliteConnection AdminConn, SqliteConnection SanadConn) CreateShareTestServices()
     {
         var services = new ServiceCollection();
+        var adminConn = new SqliteConnection("DataSource=:memory:;Foreign Keys=True;Pooling=False");
+        adminConn.Open();
+        var sanadConn = new SqliteConnection("DataSource=:memory:;Foreign Keys=True;Pooling=False");
+        sanadConn.Open();
 
-        var adminDbName = Guid.NewGuid().ToString();
-        var sanadDbName = Guid.NewGuid().ToString();
-
-        services.AddDbContext<AdminDbContext>(options => options.UseInMemoryDatabase(databaseName: adminDbName));
-        services.AddDbContext<SanadDbContext>(options => options.UseInMemoryDatabase(databaseName: sanadDbName));
+        services.AddDbContext<AdminDbContext>(options => options.UseSqlite(adminConn));
+        services.AddDbContext<SanadDbContext>(options => options.UseSqlite(sanadConn));
         services.AddHttpContextAccessor();
         services.AddScoped<TenantProvider>();
         services.AddScoped<ITenantProvider>(sp => sp.GetRequiredService<TenantProvider>());
@@ -74,61 +77,111 @@ public class ShareSecurityTests
         services.AddScoped<DiskQuotaService>(sp => new NoOpDiskQuotaService(sp.GetRequiredService<AdminDbContext>()));
 
         var sp = services.BuildServiceProvider();
-        var scopeFactory = sp.GetRequiredService<IServiceScopeFactory>();
-
-        using var scope = scopeFactory.CreateScope();
-        var adminDb = scope.ServiceProvider.GetRequiredService<AdminDbContext>();
-        var sanadDb = scope.ServiceProvider.GetRequiredService<SanadDbContext>();
-
-        var user = new AppUser { Id = Guid.NewGuid(), Username = "owner" };
-        adminDb.Users.Add(user);
-
-        var file = new FileItem { Id = 100, Name = "Confidential.pdf", FileName = "phys.pdf" };
-        sanadDb.FileItems.Add(file);
-        await adminDb.SaveChangesAsync();
-        await sanadDb.SaveChangesAsync();
-
-        // 1. Create a View-only share link
-        var viewLink = new SharedLink
+        using (var scope = sp.CreateScope())
         {
-            UserId = user.Id,
-            FileItemId = file.Id,
-            Permission = SharePermission.View
-        };
-        adminDb.SharedLinks.Add(viewLink);
-        await adminDb.SaveChangesAsync();
+            var adminDb = scope.ServiceProvider.GetRequiredService<AdminDbContext>();
+            adminDb.Database.EnsureCreated();
+            if (!adminDb.Datastores.Any())
+            {
+                adminDb.Datastores.Add(new Datastore { Id = 1, Name = "Default", Path = "Data", IsDefault = true });
+            }
+            if (!adminDb.Tiers.Any())
+            {
+                adminDb.Tiers.Add(new StorageTier { Id = 1, Name = "Free", DiskLimitBytes = 1_000_000_000L, Price = 0m });
+            }
+            adminDb.SaveChanges();
 
-        // 2. Attempt to delete file using View-only token -> Must return 403 Forbid
-        var viewDeleteResult = await ShareEndpoints.DeletePublicSharedFile(viewLink.Token, adminDb, scopeFactory);
-        Assert.IsType<ForbidHttpResult>(viewDeleteResult);
-        // The handler works in its own scope, so look past this context's tracked copy
-        sanadDb.ChangeTracker.Clear();
-        Assert.NotNull(await sanadDb.FileItems.FindAsync(file.Id)); // File was NOT deleted
+            scope.ServiceProvider.GetRequiredService<SanadDbContext>().Database.EnsureCreated();
+        }
+        return (sp, adminConn, sanadConn);
+    }
 
-        // 3. Upgrade link permission to Edit
-        viewLink.Permission = SharePermission.Edit;
-        await adminDb.SaveChangesAsync();
+    [Fact]
+    public async Task DeletePublicSharedFile_WithViewOnlyPermission_ReturnsForbid()
+    {
+        var (sp, adminConn, sanadConn) = CreateShareTestServices();
+        using (adminConn)
+        using (sanadConn)
+        using (sp)
+        {
+            var scopeFactory = sp.GetRequiredService<IServiceScopeFactory>();
+            using var scope = scopeFactory.CreateScope();
+            var adminDb = scope.ServiceProvider.GetRequiredService<AdminDbContext>();
+            var sanadDb = scope.ServiceProvider.GetRequiredService<SanadDbContext>();
 
-        // 4. Attempt to delete file using Edit token -> Must succeed with NoContent (204)
-        var editDeleteResult = await ShareEndpoints.DeletePublicSharedFile(viewLink.Token, adminDb, scopeFactory);
-        Assert.IsType<NoContent>(editDeleteResult);
+            var user = new AppUser { Id = Guid.NewGuid(), Username = "owner" };
+            adminDb.Users.Add(user);
+            var file = new FileItem { Id = 100, Name = "Confidential.pdf", FileName = "phys.pdf" };
+            sanadDb.FileItems.Add(file);
+            var viewLink = new SharedLink { UserId = user.Id, FileItemId = file.Id, Permission = SharePermission.View };
+            adminDb.SharedLinks.Add(viewLink);
+            await adminDb.SaveChangesAsync();
+            await sanadDb.SaveChangesAsync();
 
-        sanadDb.ChangeTracker.Clear();
-        adminDb.ChangeTracker.Clear();
+            var result = await ShareEndpoints.DeletePublicSharedFile(viewLink.Token, adminDb, scopeFactory);
+            Assert.IsType<ForbidHttpResult>(result);
 
-        Assert.Null(await sanadDb.FileItems.FindAsync(file.Id)); // File was successfully deleted
-        Assert.Null(await adminDb.SharedLinks.FindAsync(viewLink.Id)); // SharedLink was removed
+            sanadDb.ChangeTracker.Clear();
+            Assert.NotNull(await sanadDb.FileItems.FindAsync(file.Id));
+        }
+    }
 
-        // 5. Attempt with unknown / revoked token -> Must return 404 NotFound
-        var unknownResult = await ShareEndpoints.DeletePublicSharedFile("unknown-token", adminDb, scopeFactory);
-        Assert.IsType<NotFound>(unknownResult);
+    [Fact]
+    public async Task DeletePublicSharedFile_WithEditPermission_DeletesFileAndReturnsNoContent()
+    {
+        var (sp, adminConn, sanadConn) = CreateShareTestServices();
+        using (adminConn)
+        using (sanadConn)
+        using (sp)
+        {
+            var scopeFactory = sp.GetRequiredService<IServiceScopeFactory>();
+            using var scope = scopeFactory.CreateScope();
+            var adminDb = scope.ServiceProvider.GetRequiredService<AdminDbContext>();
+            var sanadDb = scope.ServiceProvider.GetRequiredService<SanadDbContext>();
+
+            var user = new AppUser { Id = Guid.NewGuid(), Username = "owner" };
+            adminDb.Users.Add(user);
+            var file = new FileItem { Id = 100, Name = "Confidential.pdf", FileName = "phys.pdf" };
+            sanadDb.FileItems.Add(file);
+            var editLink = new SharedLink { UserId = user.Id, FileItemId = file.Id, Permission = SharePermission.Edit };
+            adminDb.SharedLinks.Add(editLink);
+            await adminDb.SaveChangesAsync();
+            await sanadDb.SaveChangesAsync();
+
+            var result = await ShareEndpoints.DeletePublicSharedFile(editLink.Token, adminDb, scopeFactory);
+            Assert.IsType<NoContent>(result);
+
+            sanadDb.ChangeTracker.Clear();
+            adminDb.ChangeTracker.Clear();
+            Assert.Null(await sanadDb.FileItems.FindAsync(file.Id));
+            Assert.Null(await adminDb.SharedLinks.FindAsync(editLink.Id));
+        }
+    }
+
+    [Fact]
+    public async Task DeletePublicSharedFile_WithInvalidToken_ReturnsNotFound()
+    {
+        var (sp, adminConn, sanadConn) = CreateShareTestServices();
+        using (adminConn)
+        using (sanadConn)
+        using (sp)
+        {
+            var scopeFactory = sp.GetRequiredService<IServiceScopeFactory>();
+            using var scope = scopeFactory.CreateScope();
+            var adminDb = scope.ServiceProvider.GetRequiredService<AdminDbContext>();
+
+            var result = await ShareEndpoints.DeletePublicSharedFile("unknown-token", adminDb, scopeFactory);
+            Assert.IsType<NotFound>(result);
+        }
     }
 
     [Fact]
     public async Task RevokeShare_ReturnsFalseAndKeepsLink_ForUnknownOrAnotherUsersToken()
     {
-        using var adminDb = TestDbContextFactory.CreateInMemoryAdminDbContext();
-        using var sanadDb = TestDbContextFactory.CreateInMemorySanadDbContext();
+        using var adminFixture = TestDbContextFactory.CreateSqliteAdminDb();
+        using var sanadFixture = TestDbContextFactory.CreateSqliteSanadDb();
+        var adminDb = adminFixture.Context;
+        var sanadDb = sanadFixture.Context;
 
         var owner = new AppUser { Id = Guid.NewGuid(), Username = "owner" };
         adminDb.Users.AddRange(owner, new AppUser { Id = Guid.NewGuid(), Username = "intruder" });
@@ -251,6 +304,8 @@ public class ShareSecurityTests
         public int OtherFolderId => 11;
 
         private readonly DisposableTempDirectory _datastore = new();
+        private readonly SqliteConnection _adminConnection;
+        private readonly SqliteConnection _sanadConnection;
         private readonly ServiceProvider _services;
         private readonly IServiceScope _scope;
 
@@ -261,11 +316,14 @@ public class ShareSecurityTests
 
         private PublicShareHost()
         {
-            var adminDbName = Guid.NewGuid().ToString();
-            var sanadDbName = Guid.NewGuid().ToString();
+            _adminConnection = new SqliteConnection("DataSource=:memory:;Foreign Keys=True;Pooling=False");
+            _adminConnection.Open();
+            _sanadConnection = new SqliteConnection("DataSource=:memory:;Foreign Keys=True;Pooling=False");
+            _sanadConnection.Open();
+
             var services = new ServiceCollection();
-            services.AddDbContext<AdminDbContext>(options => options.UseInMemoryDatabase(adminDbName));
-            services.AddDbContext<SanadDbContext>(options => options.UseInMemoryDatabase(sanadDbName));
+            services.AddDbContext<AdminDbContext>(options => options.UseSqlite(_adminConnection));
+            services.AddDbContext<SanadDbContext>(options => options.UseSqlite(_sanadConnection));
             services.AddHttpContextAccessor();
             services.AddScoped<TenantProvider>();
             services.AddScoped<ITenantProvider>(sp => sp.GetRequiredService<TenantProvider>());
@@ -277,16 +335,31 @@ public class ShareSecurityTests
             _scope = ScopeFactory.CreateScope();
             AdminDb = _scope.ServiceProvider.GetRequiredService<AdminDbContext>();
             SanadDb = _scope.ServiceProvider.GetRequiredService<SanadDbContext>();
+            AdminDb.Database.EnsureCreated();
+            SanadDb.Database.EnsureCreated();
         }
 
         public static async Task<PublicShareHost> CreateAsync()
         {
             var host = new PublicShareHost();
-            var datastore = new Datastore { Id = 1, Name = "Test", Path = host._datastore.Path, IsDefault = true };
-            host.AdminDb.Datastores.Add(datastore);
-            // TierId is a required FK, so quota lookups (which Include the tier) skip users without one.
-            var tier = new StorageTier { Id = 1, Name = "Free", DiskLimitBytes = 1024 * 1024 };
-            host.AdminDb.Users.Add(new AppUser { Id = host.OwnerId, Username = Owner, Datastore = datastore, Tier = tier });
+            var datastore = await host.AdminDb.Datastores.FindAsync(1);
+            if (datastore == null)
+            {
+                datastore = new Datastore { Id = 1, Name = "Test", Path = host._datastore.Path, IsDefault = true };
+                host.AdminDb.Datastores.Add(datastore);
+            }
+            else
+            {
+                datastore.Path = host._datastore.Path;
+            }
+
+            var tier = await host.AdminDb.Tiers.FindAsync(1);
+            if (tier == null)
+            {
+                tier = new StorageTier { Id = 1, Name = "Free", DiskLimitBytes = 1024 * 1024 };
+                host.AdminDb.Tiers.Add(tier);
+            }
+            host.AdminDb.Users.Add(new AppUser { Id = host.OwnerId, Username = Owner, DatastoreId = datastore.Id, TierId = tier.Id });
             await host.AdminDb.SaveChangesAsync();
 
             host.SanadDb.Folders.AddRange(new Folder { Id = 10, Name = "Shared" }, new Folder { Id = 11, Name = "Private" });
@@ -318,6 +391,8 @@ public class ShareSecurityTests
         {
             _scope.Dispose();
             _services.Dispose();
+            _adminConnection.Dispose();
+            _sanadConnection.Dispose();
             _datastore.Dispose();
         }
     }

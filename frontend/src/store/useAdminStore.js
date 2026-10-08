@@ -76,8 +76,8 @@ const useAdminStore = create((set, get) => ({
     });
   },
 
-  resetPassword: async (id) => {
-    const newPassword = window.prompt("Enter new password for this user:");
+  resetPassword: async (id, password) => {
+    const newPassword = password ?? window.prompt("Enter new password for this user:");
     if (!newPassword) return;
 
     try {
@@ -87,13 +87,13 @@ const useAdminStore = create((set, get) => ({
         body: JSON.stringify({ newPassword })
       });
       if (res.ok) {
-        alert("Password reset successfully.");
+        useUIStore.getState().addToast("Password reset successfully.", 'success');
       } else {
-        alert("Failed to reset password.");
+        useUIStore.getState().addToast("Failed to reset password.", 'error');
       }
     } catch (e) {
       console.error(e);
-      alert("Error resetting password.");
+      useUIStore.getState().addToast("Error resetting password.", 'error');
     }
   },
 
@@ -154,15 +154,15 @@ const useAdminStore = create((set, get) => ({
             body: JSON.stringify({ targetDatastoreId: parseInt(targetDsId) })
           });
           if (res.ok) {
-            alert("Migration started successfully. It will run in the background.");
+            useUIStore.getState().addToast("Migration started successfully. It will run in the background.", 'success');
             get().fetchData(queryParamsStr);
           } else {
             const error = await res.text();
-            alert("Migration failed: " + error);
+            useUIStore.getState().addToast("Migration failed: " + error, 'error');
           }
         } catch (e) {
           console.error(e);
-          alert("Error triggering migration.");
+          useUIStore.getState().addToast("Error triggering migration.", 'error');
         }
       }
     });
@@ -180,7 +180,7 @@ const useAdminStore = create((set, get) => ({
         return true;
       } else {
         const error = await res.text();
-        alert("Failed to create datastore: " + error);
+        useUIStore.getState().addToast("Failed to create datastore: " + error, 'error');
         return false;
       }
     } catch (e) {
@@ -212,7 +212,7 @@ const useAdminStore = create((set, get) => ({
         return true;
       } else {
         const error = await res.text();
-        alert("Failed to update datastore: " + error);
+        useUIStore.getState().addToast("Failed to update datastore: " + error, 'error');
         return false;
       }
     } catch (e) { 
@@ -233,7 +233,7 @@ const useAdminStore = create((set, get) => ({
           if (res.ok) get().fetchData(queryParamsStr);
           else {
             const error = await res.text();
-            alert(error);
+            useUIStore.getState().addToast(error, 'error');
           }
         } catch (e) { console.error(e); }
       }
@@ -252,25 +252,25 @@ const useAdminStore = create((set, get) => ({
             method: 'POST'
           });
           if (res.ok) {
-            alert("Subscription canceled successfully.");
+            useUIStore.getState().addToast("Subscription canceled successfully.", 'success');
             get().fetchData(queryParamsStr);
           } else {
             const err = await res.text();
-            alert(`Failed to cancel subscription: ${err}`);
+            useUIStore.getState().addToast(`Failed to cancel subscription: ${err}`, 'error');
           }
         } catch (e) {
           console.error(e);
-          alert("Network error.");
+          useUIStore.getState().addToast("Network error.", 'error');
         }
       }
     });
   },
 
-  refundSubscription: async (userId, queryParamsStr) => {
-    const amountStr = window.prompt("Enter amount to refund (e.g., 5.00):");
+  refundSubscription: async (userId, amountParam, queryParamsStr) => {
+    const amountStr = amountParam !== undefined ? String(amountParam) : window.prompt("Enter amount to refund (e.g., 5.00):");
     if (!amountStr) return;
     const amount = parseFloat(amountStr);
-    if (isNaN(amount) || amount <= 0) return alert("Invalid amount.");
+    if (isNaN(amount) || amount <= 0) return useUIStore.getState().addToast("Invalid amount.", 'error');
 
     useConfirmStore.getState().showConfirm({
       title: 'Issue Refund',
@@ -285,15 +285,15 @@ const useAdminStore = create((set, get) => ({
             body: JSON.stringify({ amount })
           });
           if (res.ok) {
-            alert("Refund issued successfully.");
+            useUIStore.getState().addToast("Refund issued successfully.", 'success');
             get().fetchData(queryParamsStr);
           } else {
             const err = await res.text();
-            alert(`Failed to issue refund: ${err}`);
+            useUIStore.getState().addToast(`Failed to issue refund: ${err}`, 'error');
           }
         } catch (e) {
           console.error(e);
-          alert("Network error.");
+          useUIStore.getState().addToast("Network error.", 'error');
         }
       }
     });

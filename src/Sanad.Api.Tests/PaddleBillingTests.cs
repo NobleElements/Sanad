@@ -40,7 +40,7 @@ public class PaddleBillingTests
         using (connection)
         using (adminDb)
         {
-            var httpClient = new HttpClient(mockHandler);
+            using var httpClient = new HttpClient(mockHandler);
             var paddleService = new PaddleService(httpClient, adminDb);
 
             var result = await paddleService.VerifyConfigurationAsync("sandbox", "test_key");
@@ -91,11 +91,11 @@ public class PaddleBillingTests
         string? capturedBody = null;
         var mockHandler = new MockHttpMessageHandler
         {
-            Handler = req =>
+            AsyncHandler = async (req, ct) =>
             {
                 if (req.Method == HttpMethod.Post && req.RequestUri?.AbsolutePath == "/prices")
                 {
-                    capturedBody = req.Content?.ReadAsStringAsync().GetAwaiter().GetResult();
+                    capturedBody = req.Content != null ? await req.Content.ReadAsStringAsync(ct) : null;
                     return new HttpResponseMessage(HttpStatusCode.OK)
                     {
                         Content = new StringContent(
@@ -115,7 +115,7 @@ public class PaddleBillingTests
             adminDb.SystemSettings.Add(new SystemSetting { Key = "PaddleApiKey", Value = "pdl_key" });
             await adminDb.SaveChangesAsync();
 
-            var httpClient = new HttpClient(mockHandler);
+            using var httpClient = new HttpClient(mockHandler);
             var paddleService = new PaddleService(httpClient, adminDb);
 
             // $5/month -> $60/year -> 6000 cents

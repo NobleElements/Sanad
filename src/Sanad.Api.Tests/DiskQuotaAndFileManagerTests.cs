@@ -16,11 +16,13 @@ public class DiskQuotaAndFileManagerTests
     [Fact]
     public async Task CanUpload_EnforcesTierLimits_AndAdminsAreExempt()
     {
-        using var adminDb = TestDbContextFactory.CreateInMemoryAdminDbContext();
+        using var adminDbFixture = TestDbContextFactory.CreateSqliteAdminDb();
+        var adminDb = adminDbFixture.Context;
         var quotaService = new DiskQuotaService(adminDb);
 
         var tier = new StorageTier { Name = "Basic", DiskLimitBytes = 1000 };
         adminDb.Tiers.Add(tier);
+        await adminDb.SaveChangesAsync();
 
         var regularUser = new AppUser
         {
@@ -60,14 +62,28 @@ public class DiskQuotaAndFileManagerTests
     }
 
     [Fact]
+    public async Task CanUpload_UserWithNonExistentTier_IsRefusedByRelationalConstraint()
+    {
+        using var adminDbFixture = TestDbContextFactory.CreateSqliteAdminDb();
+        var adminDb = adminDbFixture.Context;
+
+        // In a real relational database, foreign keys prevent dangling tier references
+        adminDb.Users.Add(new AppUser { Id = Guid.NewGuid(), Username = "tierless", TierId = 999, DiskUsed = 0 });
+        await Assert.ThrowsAsync<DbUpdateException>(() => adminDb.SaveChangesAsync());
+    }
+
+    [Fact]
     public async Task CanUpload_UserWhoseTierRowIsMissing_IsRefused()
     {
-        using var adminDb = TestDbContextFactory.CreateInMemoryAdminDbContext();
+        using var adminDbFixture = TestDbContextFactory.CreateSqliteAdminDb();
+        var adminDb = adminDbFixture.Context;
         var quotaService = new DiskQuotaService(adminDb);
 
-        // TierId points at a tier that doesn't exist (SQLite's foreign key would reject this row outright)
+        // Temporarily disable foreign keys to simulate orphaned legacy data
+        await adminDb.Database.ExecuteSqlRawAsync("PRAGMA foreign_keys = OFF;");
         adminDb.Users.Add(new AppUser { Id = Guid.NewGuid(), Username = "tierless", TierId = 999, DiskUsed = 0 });
         await adminDb.SaveChangesAsync();
+        await adminDb.Database.ExecuteSqlRawAsync("PRAGMA foreign_keys = ON;");
         adminDb.ChangeTracker.Clear();
 
         // Tier is a required relationship, so Include(u => u.Tier) is an inner join and the user isn't found
@@ -78,8 +94,10 @@ public class DiskQuotaAndFileManagerTests
     [Fact]
     public async Task GetFolderContentsPaginated_SortsAndFiltersCorrectly()
     {
-        using var sanadDb = TestDbContextFactory.CreateInMemorySanadDbContext();
-        using var adminDb = TestDbContextFactory.CreateInMemoryAdminDbContext();
+        using var sanadDbFixture = TestDbContextFactory.CreateSqliteSanadDb();
+        var sanadDb = sanadDbFixture.Context;
+        using var adminDbFixture = TestDbContextFactory.CreateSqliteAdminDb();
+        var adminDb = adminDbFixture.Context;
         var tenant = new TestTenantProvider();
         var fileManager = new FileManagerService(sanadDb, new NoOpFileStorageService(), new NoOpDiskQuotaService(adminDb), tenant);
 

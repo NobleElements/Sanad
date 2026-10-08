@@ -12,11 +12,7 @@ using Xunit;
 
 namespace Sanad.Api.Tests;
 
-/// <summary>
-/// Covers the MCP tools that were widened in Phase 1 of the parity checklist so that
-/// they expose the same inputs (and shapes) as their REST counterparts.
-/// </summary>
-public class McpParityTests
+public class McpEndpointsTests
 {
     private static SanadDbContext CreateDb() => TestDbContextFactory.CreateInMemorySanadDbContext();
 
@@ -656,10 +652,8 @@ public class McpParityTests
     [Fact]
     public async Task McpGetStorageHistory_ReturnsTierHistoryForCurrentUser()
     {
-        var adminOptions = new DbContextOptionsBuilder<AdminDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
-        using var adminDb = new AdminDbContext(adminOptions);
+        using var adminDbFixture = TestDbContextFactory.CreateSqliteAdminDb();
+        var adminDb = adminDbFixture.Context;
 
         // StorageTier is created first so its generated Id can back the user and history rows.
         var tier = new StorageTier { Name = "Pro", DiskLimitBytes = 10L * Constants.GigaByte };
@@ -689,10 +683,8 @@ public class McpParityTests
     [Fact]
     public async Task McpGetStorageHistory_ReturnsEmptyWhenUserHasNoHistory()
     {
-        var adminOptions = new DbContextOptionsBuilder<AdminDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
-        using var adminDb = new AdminDbContext(adminOptions);
+        using var adminDbFixture = TestDbContextFactory.CreateSqliteAdminDb();
+        var adminDb = adminDbFixture.Context;
         adminDb.Users.Add(new AppUser { Id = Guid.NewGuid(), Username = "testuser" });
         await adminDb.SaveChangesAsync();
 
@@ -1017,10 +1009,8 @@ public class McpParityTests
     [Fact]
     public async Task McpShareTools_CreateListUpdateRevoke()
     {
-        var adminOptions = new DbContextOptionsBuilder<AdminDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
-        using var adminDb = new AdminDbContext(adminOptions);
+        using var adminDbFixture = TestDbContextFactory.CreateSqliteAdminDb();
+        var adminDb = adminDbFixture.Context;
         adminDb.Users.Add(new AppUser { Id = Guid.NewGuid(), Username = "testuser" });
         await adminDb.SaveChangesAsync();
 

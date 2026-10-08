@@ -74,17 +74,14 @@ public class NoteService : INoteService
         if (notebook == null) return false;
 
         var filesToDelete = new List<string>();
-        try
+        var username = _tenantProvider.GetUsername();
+        if (!string.IsNullOrEmpty(username))
         {
             var basePath = _tenantProvider.GetTenantBasePath();
             foreach (var note in notebook.Notes)
             {
                 filesToDelete.AddRange(Utils.UploadHelper.GetAttachmentPathsFromHtml(note.Content, basePath));
             }
-        }
-        catch
-        {
-            // Ignore in test contexts without HTTP user
         }
 
         _db.Notes.RemoveRange(notebook.Notes);
@@ -172,13 +169,10 @@ public class NoteService : INoteService
         if (note == null) return false;
 
         var filesToDelete = new List<string>();
-        try
+        var username = _tenantProvider.GetUsername();
+        if (!string.IsNullOrEmpty(username))
         {
             filesToDelete.AddRange(Utils.UploadHelper.GetAttachmentPathsFromHtml(note.Content, _tenantProvider.GetTenantBasePath()));
-        }
-        catch
-        {
-            // Ignore in test contexts without HTTP user
         }
 
         _db.Notes.Remove(note);

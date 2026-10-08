@@ -69,12 +69,17 @@ public static class TestTempRoot
 public class MockHttpMessageHandler : HttpMessageHandler
 {
     public Func<HttpRequestMessage, HttpResponseMessage> Handler { get; set; } = _ => new HttpResponseMessage(HttpStatusCode.OK);
+    public Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>>? AsyncHandler { get; set; }
     public List<HttpRequestMessage> RecordedRequests { get; } = new();
 
-    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         RecordedRequests.Add(request);
-        return Task.FromResult(Handler(request));
+        if (AsyncHandler != null)
+        {
+            return await AsyncHandler(request, cancellationToken);
+        }
+        return Handler(request);
     }
 }
 
@@ -164,51 +169,147 @@ public static class WireJson
 /// </summary>
 public static class TestDbContextFactory
 {
-    public static SanadDbContext CreateInMemorySanadDbContext()
-    {
-        var options = new DbContextOptionsBuilder<SanadDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
-        return new SanadDbContext(options);
-    }
+    /// <summary>
+    /// Legacy alias routed to real relational SQLite in-memory to prevent UseInMemoryDatabase issues.
+    /// </summary>
+    public static SanadDbContext CreateInMemorySanadDbContext() => CreateSqliteInMemorySanadDbContext().Context;
 
-    public static AdminDbContext CreateInMemoryAdminDbContext()
-    {
-        var options = new DbContextOptionsBuilder<AdminDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
-        return new AdminDbContext(options);
-    }
+    /// <summary>
+    /// Legacy alias routed to real relational SQLite in-memory to prevent UseInMemoryDatabase issues.
+    /// </summary>
+    public static AdminDbContext CreateInMemoryAdminDbContext() => CreateSqliteInMemoryAdminDbContext().Context;
 
     /// <summary>
     /// Creates a real relational SQLite in-memory context with foreign key enforcement and transactions.
-    /// The returned SqliteConnection must be kept open for the lifetime of the database.
+    /// The returned SqliteConnection is tied to the context lifetime.
     /// </summary>
     public static (SanadDbContext Context, SqliteConnection Connection) CreateSqliteInMemorySanadDbContext()
     {
-        var connection = new SqliteConnection("DataSource=:memory:;Foreign Keys=True");
+        var connection = new SqliteConnection("DataSource=:memory:;Foreign Keys=True;Pooling=False");
         connection.Open();
 
         var options = new DbContextOptionsBuilder<SanadDbContext>()
             .UseSqlite(connection)
             .Options;
 
-        var context = new SanadDbContext(options);
+        var context = new SqliteSanadDbContext(options, connection);
         context.Database.EnsureCreated();
         return (context, connection);
     }
 
     public static (AdminDbContext Context, SqliteConnection Connection) CreateSqliteInMemoryAdminDbContext()
     {
-        var connection = new SqliteConnection("DataSource=:memory:;Foreign Keys=True");
+        var connection = new SqliteConnection("DataSource=:memory:;Foreign Keys=True;Pooling=False");
         connection.Open();
 
         var options = new DbContextOptionsBuilder<AdminDbContext>()
             .UseSqlite(connection)
             .Options;
 
-        var context = new AdminDbContext(options);
+        var context = new SqliteAdminDbContext(options, connection);
         context.Database.EnsureCreated();
+
+        if (!context.Datastores.Any())
+        {
+            context.Datastores.Add(new Datastore { Id = 1, Name = "Default", Path = "Data", IsDefault = true });
+        }
+        if (!context.Tiers.Any())
+        {
+            context.Tiers.AddRange(
+                new StorageTier { Id = 1, Name = "Free", DiskLimitBytes = 1_000_000_000L, Price = 0m },
+                new StorageTier { Id = 2, Name = "Supporter", DiskLimitBytes = 5_000_000_000L, Price = 1m },
+                new StorageTier { Id = 3, Name = "Individual", DiskLimitBytes = 10_000_000_000L, Price = 3m },
+                new StorageTier { Id = 4, Name = "Data Hoarder", DiskLimitBytes = 200_000_000_000L, Price = 12m }
+            );
+        }
+        context.SaveChanges();
+        context.ChangeTracker.Clear();
+
         return (context, connection);
     }
+
+    public static SqliteInMemorySanadDb CreateSqliteSanadDb() => new();
+    public static SqliteInMemoryAdminDb CreateSqliteAdminDb() => new();
+}
+
+public class SqliteSanadDbContext : SanadDbContext
+{
+    private readonly SqliteConnection _connection;
+
+    public SqliteSanadDbContext(DbContextOptions<SanadDbContext> options, SqliteConnection connection) : base(options)
+    {
+        _connection = connection;
+    }
+
+    public override void Dispose()
+    {
+        base.Dispose();
+        _connection.Dispose();
+    }
+
+    public override async ValueTask DisposeAsync()
+    {
+        await base.DisposeAsync();
+        await _connection.DisposeAsync();
+    }
+}
+
+public class SqliteAdminDbContext : AdminDbContext
+{
+    private readonly SqliteConnection _connection;
+
+    public SqliteAdminDbContext(DbContextOptions<AdminDbContext> options, SqliteConnection connection) : base(options)
+    {
+        _connection = connection;
+    }
+
+    public override void Dispose()
+    {
+        base.Dispose();
+        _connection.Dispose();
+    }
+
+    public override async ValueTask DisposeAsync()
+    {
+        await base.DisposeAsync();
+        await _connection.DisposeAsync();
+    }
+}
+
+public sealed class SqliteInMemorySanadDb : IDisposable
+{
+    public SanadDbContext Context { get; }
+    public SqliteConnection Connection { get; }
+
+    public SqliteInMemorySanadDb()
+    {
+        (Context, Connection) = TestDbContextFactory.CreateSqliteInMemorySanadDbContext();
+    }
+
+    public void Dispose()
+    {
+        Context.Dispose();
+        Connection.Dispose();
+    }
+
+    public static implicit operator SanadDbContext(SqliteInMemorySanadDb wrapper) => wrapper.Context;
+}
+
+public sealed class SqliteInMemoryAdminDb : IDisposable
+{
+    public AdminDbContext Context { get; }
+    public SqliteConnection Connection { get; }
+
+    public SqliteInMemoryAdminDb()
+    {
+        (Context, Connection) = TestDbContextFactory.CreateSqliteInMemoryAdminDbContext();
+    }
+
+    public void Dispose()
+    {
+        Context.Dispose();
+        Connection.Dispose();
+    }
+
+    public static implicit operator AdminDbContext(SqliteInMemoryAdminDb wrapper) => wrapper.Context;
 }

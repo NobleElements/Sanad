@@ -33,15 +33,11 @@ export const _resetWarmUpForTesting = () => {
   hasWarmedUp = false;
 };
 
-export const warmUpApiCache = async () => {
-  if (hasWarmedUp) return;
-  hasWarmedUp = true;
-
-  const now = new Date();
+export const getEndpointsToCache = (now = new Date()) => {
   const currentMonth = now.getMonth() + 1;
   const currentYear = now.getFullYear();
 
-  const endpointsToCache = [
+  return [
     '/tasks',
     '/calendar/categories',
     '/calendar/events',
@@ -72,6 +68,13 @@ export const warmUpApiCache = async () => {
     '/whiteboards',
     '/settings/public'
   ];
+};
+
+export const warmUpApiCache = async () => {
+  if (hasWarmedUp) return;
+  hasWarmedUp = true;
+
+  const endpointsToCache = getEndpointsToCache(new Date());
 
   console.log('[Offline Sync] Warming up API cache...');
 

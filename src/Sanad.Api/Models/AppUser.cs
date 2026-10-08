@@ -15,7 +15,7 @@ public class AppUser
     public bool IsAdmin { get; set; }
     public bool IsBlocked { get; set; }
     
-    public int TierId { get; set; }
+    public int TierId { get; set; } = 1;
     public StorageTier? Tier { get; set; }
     
     public DateTime TierStartedAt { get; set; } = DateTime.UtcNow;

@@ -41,7 +41,7 @@ export default function PromptModal({
               {message}
             </p>
           </div>
-          <button onClick={onCancel} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-400 transition-colors">
+          <button onClick={onCancel} aria-label="Close" className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-400 transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>

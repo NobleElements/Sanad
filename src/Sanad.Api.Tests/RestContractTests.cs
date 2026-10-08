@@ -23,7 +23,7 @@ namespace Sanad.Api.Tests;
 /// </summary>
 public class RestContractTests
 {
-    private static SanadDbContext CreateDb() => TestDbContextFactory.CreateInMemorySanadDbContext();
+    private static SqliteInMemorySanadDb CreateDb() => TestDbContextFactory.CreateSqliteSanadDb();
 
     private static ISearchService Search(SanadDbContext db) => new SearchService(db);
     private static ISettingsService Settings(SanadDbContext db) => new SettingsService(db);
@@ -48,35 +48,76 @@ public class RestContractTests
     // ---------- Assets ----------
 
     [Fact]
-    public async Task Assets_RestResultTypesUnchanged()
+    public async Task Assets_CreateAndGet_ReturnsExpectedTypes()
     {
-        using var db = CreateDb();
+        using var dbFixture = CreateDb();
+        var db = dbFixture.Context;
         var svc = new AssetService(db);
 
         var created = await AssetEndpoints.CreateAsset(svc, new Asset { Name = "Cash", Type = "Cash", CurrentAmount = 100 });
         Assert.IsType<Created<Asset>>(created);
 
         var listed = await AssetEndpoints.GetAssets(svc);
-        Assert.IsType<Ok<List<Asset>>>(listed);
+        var okList = Assert.IsType<Ok<List<Asset>>>(listed);
+        Assert.Single(okList.Value!);
+    }
 
-        var updated = await AssetEndpoints.UpdateAsset(svc, db.Assets.Single().Id, new Asset { Name = "Cash", Type = "Cash", CurrentAmount = 200 });
+    [Fact]
+    public async Task Assets_UpdateAsset_ReturnsOkWhenFound_AndNotFoundOtherwise()
+    {
+        using var dbFixture = CreateDb();
+        var db = dbFixture.Context;
+        var svc = new AssetService(db);
+
+        var asset = new Asset { Name = "Cash", Type = "Cash", CurrentAmount = 100 };
+        db.Assets.Add(asset);
+        await db.SaveChangesAsync();
+
+        var updated = await AssetEndpoints.UpdateAsset(svc, asset.Id, new Asset { Name = "Cash", Type = "Cash", CurrentAmount = 200 });
         Assert.IsType<Ok<Asset>>(updated);
 
-        Assert.IsType<NotFound>(await AssetEndpoints.UpdateAsset(svc, Guid.NewGuid(), new Asset { Name = "x", Type = "Cash" }));
+        var notFound = await AssetEndpoints.UpdateAsset(svc, Guid.NewGuid(), new Asset { Name = "x", Type = "Cash" });
+        Assert.IsType<NotFound>(notFound);
+    }
 
-        var reordered = await AssetEndpoints.ReorderAssets(svc, new List<Guid> { db.Assets.Single().Id });
+    [Fact]
+    public async Task Assets_ReorderAndHistory_ReturnsExpectedShapes()
+    {
+        using var dbFixture = CreateDb();
+        var db = dbFixture.Context;
+        var svc = new AssetService(db);
+
+        var asset = new Asset { Name = "Cash", Type = "Cash", CurrentAmount = 100 };
+        await AssetEndpoints.CreateAsset(svc, asset);
+        await AssetEndpoints.UpdateAsset(svc, asset.Id, new Asset { Name = "Cash", Type = "Cash", CurrentAmount = 200 });
+
+        var reordered = await AssetEndpoints.ReorderAssets(svc, new List<Guid> { asset.Id });
         Assert.IsType<Ok>(reordered);
 
         var history = await AssetEndpoints.GetAssetsHistory(svc);
         var okHistory = Assert.IsType<Ok<object>>(history);
         Assert.NotNull(okHistory.Value);
         var historyJson = JsonSerializer.SerializeToElement(okHistory.Value, WireJson.Http);
-        Assert.Equal(2, historyJson.GetArrayLength()); // one snapshot on create, one for the 100 -> 200 change
+        Assert.Equal(2, historyJson.GetArrayLength());
         Assert.Equal("Cash", historyJson[0].GetProperty("assetName").GetString());
+    }
 
-        var deleted = await AssetEndpoints.DeleteAsset(svc, db.Assets.Single().Id);
+    [Fact]
+    public async Task Assets_DeleteAsset_ReturnsNoContentWhenFound_AndNotFoundOtherwise()
+    {
+        using var dbFixture = CreateDb();
+        var db = dbFixture.Context;
+        var svc = new AssetService(db);
+
+        var asset = new Asset { Name = "Cash", Type = "Cash", CurrentAmount = 100 };
+        db.Assets.Add(asset);
+        await db.SaveChangesAsync();
+
+        var deleted = await AssetEndpoints.DeleteAsset(svc, asset.Id);
         Assert.IsType<NoContent>(deleted);
-        Assert.IsType<NotFound>(await AssetEndpoints.DeleteAsset(svc, Guid.NewGuid()));
+
+        var notFound = await AssetEndpoints.DeleteAsset(svc, Guid.NewGuid());
+        Assert.IsType<NotFound>(notFound);
     }
 
     // ---------- Storage history ----------
@@ -84,10 +125,8 @@ public class RestContractTests
     [Fact]
     public async Task StorageHistory_RestShapeUnchanged()
     {
-        var adminOptions = new DbContextOptionsBuilder<AdminDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
-        using var adminDb = new AdminDbContext(adminOptions);
+        using var adminFixture = TestDbContextFactory.CreateSqliteAdminDb();
+        var adminDb = adminFixture.Context;
 
         var tier = new StorageTier { Name = "Pro", DiskLimitBytes = 1024 };
         adminDb.Tiers.Add(tier);
@@ -121,7 +160,8 @@ public class RestContractTests
     [Fact]
     public async Task Search_RestReturnsSameResponseShape()
     {
-        using var db = CreateDb();
+        using var dbFixture = CreateDb();
+        var db = dbFixture.Context;
         db.Thoughts.Add(new Thought { Content = "Findable thought" });
         await db.SaveChangesAsync();
 
@@ -144,7 +184,8 @@ public class RestContractTests
     [Fact]
     public async Task Search_RestTypeFilterAndLimitStillApply()
     {
-        using var db = CreateDb();
+        using var dbFixture = CreateDb();
+        var db = dbFixture.Context;
         for (var i = 0; i < 5; i++) db.TaskItems.Add(new TaskItem { Title = $"Alpha task {i}" });
         db.Thoughts.Add(new Thought { Content = "Alpha thought" });
         await db.SaveChangesAsync();
@@ -165,7 +206,8 @@ public class RestContractTests
     [Fact]
     public async Task Settings_RoundTrip()
     {
-        using var db = CreateDb();
+        using var dbFixture = CreateDb();
+        var db = dbFixture.Context;
         var svc = Settings(db);
 
         Assert.Empty(await svc.GetSettingsAsync());
@@ -185,7 +227,8 @@ public class RestContractTests
     [Fact]
     public async Task Whiteboards_RestResultTypesUnchanged()
     {
-        using var db = CreateDb();
+        using var dbFixture = CreateDb();
+        var db = dbFixture.Context;
         var svc = Whiteboards(db);
 
         var created = await svc.CreateWhiteboardAsync(new CreateWhiteboardRequest("Board", null, "{\"records\":[]}"));
@@ -217,14 +260,13 @@ public class RestContractTests
     [Fact]
     public async Task ShareLinks_RestListShapeUnchanged()
     {
-        var adminOptions = new DbContextOptionsBuilder<AdminDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
-        using var adminDb = new AdminDbContext(adminOptions);
+        using var adminFixture = TestDbContextFactory.CreateSqliteAdminDb();
+        var adminDb = adminFixture.Context;
         adminDb.Users.Add(new AppUser { Id = Guid.NewGuid(), Username = "testuser" });
         await adminDb.SaveChangesAsync();
 
-        using var db = CreateDb();
+        using var dbFixture = CreateDb();
+        var db = dbFixture.Context;
         var folder = new Folder { Name = "Docs" };
         var file = new FileItem { Name = "notes.txt", FileName = "notes-guid.txt" };
         db.Folders.Add(folder);
@@ -287,12 +329,11 @@ public class RestContractTests
     [Fact]
     public async Task FoldersAndFiles_RestResultTypesUnchanged()
     {
-        using var db = CreateDb();
+        using var dbFixture = CreateDb();
+        var db = dbFixture.Context;
         var tenant = new TestTenantProvider();
-        var adminOptions = new DbContextOptionsBuilder<AdminDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
-        using var adminDb = new AdminDbContext(adminOptions);
+        using var adminFixture = TestDbContextFactory.CreateSqliteAdminDb();
+        var adminDb = adminFixture.Context;
 
         var fileManager = new FileManagerService(db, new NoOpFileStorageService(), new NoOpDiskQuotaService(adminDb), tenant);
 
