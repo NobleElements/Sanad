@@ -114,17 +114,19 @@ public class TaskService : ITaskService
         var filesToDelete = new List<string>();
         try
         {
-            var username = _tenantProvider.GetUsername();
+            var basePath = _tenantProvider.GetTenantBasePath();
             if (task.Attachments != null)
             {
                 foreach (var attachment in task.Attachments)
                 {
-                    var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Data", username, attachment.FilePath.TrimStart('/'));
-                    filesToDelete.Add(filePath);
+                    if (Utils.UploadHelper.ResolveAttachmentPath(attachment.FilePath, basePath) is { } filePath)
+                    {
+                        filesToDelete.Add(filePath);
+                    }
                 }
             }
 
-            filesToDelete.AddRange(Utils.UploadHelper.GetAttachmentPathsFromHtml(task.Content, username));
+            filesToDelete.AddRange(Utils.UploadHelper.GetAttachmentPathsFromHtml(task.Content, basePath));
         }
         catch
         {
@@ -220,7 +222,7 @@ public class TaskService : ITaskService
         var canUpload = await _quotaService.CanUploadAsync(username, file.Length);
         if (!canUpload) return null;
 
-        var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "Data", username, "attachments");
+        var uploadsDir = Path.Combine(_tenantProvider.GetTenantBasePath(), "attachments");
         Directory.CreateDirectory(uploadsDir);
 
         var (uniqueFileName, filePath) = Utils.FileUtils.GenerateUniqueFile(uploadsDir, Path.GetExtension(file.FileName));
@@ -254,7 +256,7 @@ public class TaskService : ITaskService
         var canUpload = await _quotaService.CanUploadAsync(username, fileInfo.Length);
         if (!canUpload) return null;
 
-        var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "Data", username, "attachments");
+        var uploadsDir = Path.Combine(_tenantProvider.GetTenantBasePath(), "attachments");
         Directory.CreateDirectory(uploadsDir);
 
         var fileName = Path.GetFileName(localFilePath);
@@ -293,13 +295,12 @@ public class TaskService : ITaskService
         var attachment = await query.FirstOrDefaultAsync();
         if (attachment == null) return false;
 
-        var username = _tenantProvider.GetUsername();
-        var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Data", username, attachment.FilePath.TrimStart('/'));
+        var filePath = Utils.UploadHelper.ResolveAttachmentPath(attachment.FilePath, _tenantProvider.GetTenantBasePath());
 
         _db.TaskAttachments.Remove(attachment);
         await _db.SaveChangesAsync();
 
-        if (File.Exists(filePath))
+        if (filePath != null && File.Exists(filePath))
         {
             try
             {

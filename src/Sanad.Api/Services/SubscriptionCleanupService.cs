@@ -39,7 +39,7 @@ public class SubscriptionCleanupService : BackgroundService
         }
     }
 
-    private async Task CleanupExpiredSubscriptionsAsync(CancellationToken cancellationToken)
+    public async Task CleanupExpiredSubscriptionsAsync(CancellationToken cancellationToken = default)
     {
         using var scope = _serviceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AdminDbContext>();

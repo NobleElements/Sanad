@@ -3,8 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Sanad.Api.Data;
 using Sanad.Api.Endpoints;
 using Sanad.Api.Models;
@@ -20,26 +23,27 @@ namespace Sanad.Api.Tests;
 /// </summary>
 public class RestContractTests
 {
-    private class DummyTenantProvider : ITenantProvider
-    {
-        public string Username { get; init; } = "testuser";
-        public string GetUsername() => Username;
-        public Guid GetTenantId() => Guid.Empty;
-        public string GetConnectionString() => "";
-        public string GetTenantBasePath() => "/tmp/dummy_tenant";
-    }
-
-    private static SanadDbContext CreateDb()
-    {
-        var options = new DbContextOptionsBuilder<SanadDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
-        return new SanadDbContext(options);
-    }
+    private static SanadDbContext CreateDb() => TestDbContextFactory.CreateInMemorySanadDbContext();
 
     private static ISearchService Search(SanadDbContext db) => new SearchService(db);
     private static ISettingsService Settings(SanadDbContext db) => new SettingsService(db);
     private static IWhiteboardService Whiteboards(SanadDbContext db) => new WhiteboardService(db);
+
+    // ---------- JSON wire format ----------
+
+    [Fact]
+    public void WireJsonHttp_MatchesTheAppsConfiguredResponseOptions()
+    {
+        // The shape checks below serialize with WireJson.Http; make sure that's what the app really uses.
+        using var factory = new CustomWebApplicationFactory();
+        var appOptions = factory.Services.GetRequiredService<IOptions<Microsoft.AspNetCore.Http.Json.JsonOptions>>().Value.SerializerOptions;
+
+        var sample = new SearchResponse(
+            new List<SearchResultItem> { new("1", "thought", "Thoughts", "Title", "Snippet", "/thoughts", "icon") },
+            1);
+        Assert.Equal(JsonSerializer.Serialize(sample, appOptions), JsonSerializer.Serialize(sample, WireJson.Http));
+        Assert.Equal(appOptions.ReferenceHandler?.GetType(), WireJson.Http.ReferenceHandler?.GetType());
+    }
 
     // ---------- Assets ----------
 
@@ -64,7 +68,11 @@ public class RestContractTests
         Assert.IsType<Ok>(reordered);
 
         var history = await AssetEndpoints.GetAssetsHistory(svc);
-        Assert.IsType<Ok<object>>(history);
+        var okHistory = Assert.IsType<Ok<object>>(history);
+        Assert.NotNull(okHistory.Value);
+        var historyJson = JsonSerializer.SerializeToElement(okHistory.Value, WireJson.Http);
+        Assert.Equal(2, historyJson.GetArrayLength()); // one snapshot on create, one for the 100 -> 200 change
+        Assert.Equal("Cash", historyJson[0].GetProperty("assetName").GetString());
 
         var deleted = await AssetEndpoints.DeleteAsset(svc, db.Assets.Single().Id);
         Assert.IsType<NoContent>(deleted);
@@ -124,9 +132,9 @@ public class RestContractTests
         Assert.Equal(1, response.TotalCount);
 
         var item = Assert.Single(response.Results);
-        // Property names the frontend's search page relies on.
-        var json = JsonSerializer.SerializeToElement(item);
-        foreach (var property in new[] { "Id", "Type", "Category", "Title", "Snippet", "Url", "Icon" })
+        // Property names the frontend's search page relies on, as they appear in the HTTP response.
+        var json = JsonSerializer.SerializeToElement(item, WireJson.Http);
+        foreach (var property in new[] { "id", "type", "category", "title", "snippet", "url", "icon" })
         {
             Assert.True(json.TryGetProperty(property, out _), $"missing {property}");
         }
@@ -185,7 +193,8 @@ public class RestContractTests
         Assert.Equal("🎨", created!.Icon);
         Assert.True(created.IsMinimapOpen);
 
-        // Blank names are rejected by the handler as a 400.
+        // Blank names are rejected with null (the inline POST handler in WhiteboardEndpoints turns that into a 400;
+        // it isn't callable from here, so only the service half is covered).
         Assert.Null(await svc.CreateWhiteboardAsync(new CreateWhiteboardRequest("  ", null, null)));
 
         var summaries = await svc.GetWhiteboardsAsync();
@@ -222,7 +231,7 @@ public class RestContractTests
         db.FileItems.Add(file);
         await db.SaveChangesAsync();
 
-        var svc = new ShareService(adminDb, db, new DummyTenantProvider());
+        var svc = new ShareService(adminDb, db, new TestTenantProvider());
 
         var folderLink = await svc.CreateFolderShareAsync(folder.Id, SharePermission.View);
         Assert.NotNull(folderLink);
@@ -237,6 +246,19 @@ public class RestContractTests
         Assert.Equal(2, shares.Count);
 
         // The REST handler projects these back to the original anonymous shape.
+        var listed = Assert.IsAssignableFrom<IValueHttpResult>(await ShareEndpoints.GetShareLinks(svc));
+        var listedJson = JsonSerializer.SerializeToElement(listed.Value, WireJson.Http);
+        Assert.Equal(2, listedJson.GetArrayLength());
+        foreach (var entry in listedJson.EnumerateArray())
+        {
+            var names = entry.EnumerateObject().Select(p => p.Name).OrderBy(n => n, StringComparer.Ordinal);
+            Assert.Equal(new[] { "name", "permission", "targetId", "token", "type" }, names);
+        }
+        var listedFolder = listedJson.EnumerateArray().Single(e => e.GetProperty("type").GetString() == "folder");
+        Assert.Equal(folderLink!.Token, listedFolder.GetProperty("token").GetString());
+        Assert.Equal("Docs", listedFolder.GetProperty("name").GetString());
+        Assert.Equal(folder.Id, listedFolder.GetProperty("targetId").GetInt32());
+
         var folderDto = shares.Single(s => s.Type == "folder");
         Assert.Equal("Docs", folderDto.Name);
         Assert.Equal(folder.Id, folderDto.TargetId);
@@ -266,13 +288,13 @@ public class RestContractTests
     public async Task FoldersAndFiles_RestResultTypesUnchanged()
     {
         using var db = CreateDb();
-        var tenant = new DummyTenantProvider();
+        var tenant = new TestTenantProvider();
         var adminOptions = new DbContextOptionsBuilder<AdminDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
         using var adminDb = new AdminDbContext(adminOptions);
 
-        var fileManager = new FileManagerService(db, new FakeStorage(), new NoOpQuota(adminDb), tenant);
+        var fileManager = new FileManagerService(db, new NoOpFileStorageService(), new NoOpDiskQuotaService(adminDb), tenant);
 
         var folder = await fileManager.CreateFolderAsync("Docs");
         Assert.Equal("Docs", folder.Name);
@@ -301,17 +323,5 @@ public class RestContractTests
         Assert.True(await fileManager.DeleteFileAsync(file.Id));
         Assert.Null(await fileManager.GetFileAsync(file.Id));
         Assert.False(await fileManager.DeleteFileAsync(file.Id));
-    }
-
-    private sealed class FakeStorage : FileStorageService
-    {
-        public FakeStorage() : base(null!, new DummyTenantProvider()) { }
-        public override void DeleteFile(string fileName) { }
-    }
-
-    private sealed class NoOpQuota : DiskQuotaService
-    {
-        public NoOpQuota(AdminDbContext db) : base(db) { }
-        public override Task UpdateDiskUsageAsync(string username) => Task.CompletedTask;
     }
 }

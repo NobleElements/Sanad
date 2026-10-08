@@ -112,7 +112,7 @@ const useHabitStore = create((set, get) => ({
     } catch (err) {
       useUIStore.getState().showError('Failed to save habit order');
       // Rollback
-      get().fetchHabits();
+      await get().fetchHabits();
     }
   }
 }));

@@ -30,9 +30,6 @@ public static class TaskEndpoints
         return Results.Ok(tasks);
     }
 
-    public static Task<IResult> GetTasks(SanadDbContext db, string? project, Models.TaskStatus? status, bool? unscheduledOnly) =>
-        GetTasks(new TaskService(db, null!, null!), project, status, unscheduledOnly);
-
     public static async Task<IResult> GetTask(ITaskService svc, Guid id)
     {
         var task = await svc.GetTaskDetailsAsync(id);
@@ -40,18 +37,12 @@ public static class TaskEndpoints
         return Results.Ok(new { Task = task, Comments = task.Comments, Attachments = task.Attachments });
     }
 
-    public static Task<IResult> GetTask(SanadDbContext db, Guid id) =>
-        GetTask(new TaskService(db, null!, null!), id);
-
     public static async Task<IResult> CreateTask(ITaskService svc, TaskItem input)
     {
         if (string.IsNullOrWhiteSpace(input.Title)) return Results.BadRequest("Title is required");
         var task = await svc.CreateTaskAsync(input);
         return Results.Created($"/api/tasks/{task.Id}", task);
     }
-
-    public static Task<IResult> CreateTask(SanadDbContext db, TaskItem input) =>
-        CreateTask(new TaskService(db, null!, null!), input);
 
     public static async Task<IResult> UpdateTask(ITaskService svc, Guid id, TaskItem updatedTask)
     {
@@ -61,9 +52,6 @@ public static class TaskEndpoints
         return Results.NoContent();
     }
 
-    public static Task<IResult> UpdateTask(SanadDbContext db, Guid id, TaskItem updatedTask) =>
-        UpdateTask(new TaskService(db, null!, null!), id, updatedTask);
-
     public static async Task<IResult> UpdateTaskStatus(ITaskService svc, Guid id, StatusUpdateRequest request)
     {
         var success = await svc.UpdateTaskStatusAsync(id, request.Status);
@@ -71,17 +59,11 @@ public static class TaskEndpoints
         return Results.NoContent();
     }
 
-    public static Task<IResult> UpdateTaskStatus(SanadDbContext db, Guid id, StatusUpdateRequest request) =>
-        UpdateTaskStatus(new TaskService(db, null!, null!), id, request);
-
     public static async Task<IResult> ReorderTasks(ITaskService svc, ReorderTasksRequest request)
     {
         await svc.ReorderTasksAsync(request.Tasks);
         return Results.NoContent();
     }
-
-    public static Task<IResult> ReorderTasks(SanadDbContext db, ReorderTasksRequest request) =>
-        ReorderTasks(new TaskService(db, null!, null!), request);
 
     public static async Task<IResult> DeleteTask(ITaskService svc, Guid id)
     {
@@ -90,9 +72,6 @@ public static class TaskEndpoints
         return Results.NoContent();
     }
 
-    public static Task<IResult> DeleteTask(SanadDbContext db, Guid id, Services.ITenantProvider tenantProvider) =>
-        DeleteTask(new TaskService(db, tenantProvider, null!), id);
-
     public static async Task<IResult> CreateTaskComment(ITaskService svc, Guid id, TaskComment comment)
     {
         if (string.IsNullOrWhiteSpace(comment.Text)) return Results.BadRequest("Comment text is required");
@@ -100,9 +79,6 @@ public static class TaskEndpoints
         if (created == null) return Results.NotFound();
         return Results.Created($"/api/tasks/{id}/comments/{created.Id}", created);
     }
-
-    public static Task<IResult> CreateTaskComment(SanadDbContext db, Guid id, TaskComment comment) =>
-        CreateTaskComment(new TaskService(db, null!, null!), id, comment);
 
     public static async Task<IResult> CreateTaskAttachment(HttpRequest request, SanadDbContext db, Guid id, Services.ITenantProvider tenantProvider, Services.DiskQuotaService quotaService)
     {
@@ -131,18 +107,12 @@ public static class TaskEndpoints
         return Results.NoContent();
     }
 
-    public static Task<IResult> DeleteTaskComment(SanadDbContext db, Guid id, Guid commentId) =>
-        DeleteTaskComment(new TaskService(db, null!, null!), id, commentId);
-
     public static async Task<IResult> DeleteTaskAttachment(ITaskService svc, Guid id, Guid attachmentId)
     {
         var success = await svc.DeleteAttachmentAsync(id, attachmentId);
         if (!success) return Results.NotFound();
         return Results.NoContent();
     }
-
-    public static Task<IResult> DeleteTaskAttachment(SanadDbContext db, Guid id, Guid attachmentId, Services.ITenantProvider tenantProvider) =>
-        DeleteTaskAttachment(new TaskService(db, tenantProvider, null!), id, attachmentId);
 
     public static async Task<IResult> RenameProject(ITaskService svc, RenameProjectRequest request)
     {

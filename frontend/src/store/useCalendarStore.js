@@ -137,8 +137,10 @@ const useCalendarStore = create((set, get) => ({
 
   updateCategory: async (id, categoryData) => {
     // Optimistic update
+    const previous = get().categories.find((c) => c.id === id);
+    const optimistic = previous && { ...previous, ...categoryData };
     set((state) => ({
-      categories: state.categories.map((c) => (c.id === id ? { ...c, ...categoryData } : c)),
+      categories: state.categories.map((c) => (c.id === id ? optimistic : c)),
     }));
     try {
       const response = await fetch(`${API_URL}/calendar/categories/${id}`, {
@@ -153,6 +155,10 @@ const useCalendarStore = create((set, get) => ({
       }));
       return updatedCategory;
     } catch (error) {
+      // Roll back, unless a newer update has already replaced our optimistic copy
+      set((state) => ({
+        categories: state.categories.map((c) => (c === optimistic ? previous : c)),
+      }));
       console.error('Error updating calendar category:', error);
       throw error;
     }
@@ -240,8 +246,10 @@ const useCalendarStore = create((set, get) => ({
   },
 
   updateEvent: async (id, eventData) => {
+    const previous = get().events.find((e) => e.id === id);
+    const optimistic = previous && { ...previous, ...eventData };
     set((state) => ({
-      events: state.events.map((e) => (e.id === id ? { ...e, ...eventData } : e)),
+      events: state.events.map((e) => (e.id === id ? optimistic : e)),
     }));
     try {
       const response = await fetch(`${API_URL}/calendar/events/${id}`, {
@@ -263,6 +271,10 @@ const useCalendarStore = create((set, get) => ({
       
       return updatedEvent;
     } catch (error) {
+      // Roll back, unless a newer update has already replaced our optimistic copy
+      set((state) => ({
+        events: state.events.map((e) => (e === optimistic ? previous : e)),
+      }));
       console.error('Error updating calendar event:', error);
       throw error;
     }

@@ -59,7 +59,8 @@ builder.Services.AddScoped<ITenantProvider, TenantProvider>();
 builder.Services.AddScoped<DiskQuotaService>();
 
 // Configure Admin DB
-var adminDbPath = Path.Combine(Directory.GetCurrentDirectory(), "Data", "admin.db");
+var dataDirectory = builder.Configuration["DataDirectory"] ?? Path.Combine(Directory.GetCurrentDirectory(), "Data");
+var adminDbPath = Path.Combine(dataDirectory, "admin.db");
 Directory.CreateDirectory(Path.GetDirectoryName(adminDbPath)!);
 builder.Services.AddDbContext<AdminDbContext>(options =>
     options.UseSqlite($"Data Source={adminDbPath}"));

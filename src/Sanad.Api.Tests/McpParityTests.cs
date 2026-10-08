@@ -18,21 +18,7 @@ namespace Sanad.Api.Tests;
 /// </summary>
 public class McpParityTests
 {
-    private class DummyTenantProvider : ITenantProvider
-    {
-        public string GetUsername() => "testuser";
-        public Guid GetTenantId() => Guid.Empty;
-        public string GetConnectionString() => "";
-        public string GetTenantBasePath() => "/tmp/dummy_tenant";
-    }
-
-    private static SanadDbContext CreateDb()
-    {
-        var options = new DbContextOptionsBuilder<SanadDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
-        return new SanadDbContext(options);
-    }
+    private static SanadDbContext CreateDb() => TestDbContextFactory.CreateInMemorySanadDbContext();
 
     /// <summary>
     /// Builds an McpEndpoints wired to the real services backed by the given context.
@@ -41,8 +27,8 @@ public class McpParityTests
     /// </summary>
     private static McpEndpoints CreateMcp(SanadDbContext db, AdminDbContext? adminDb = null)
     {
-        var tenant = new DummyTenantProvider();
-        var fileManager = new FileManagerService(db, new FakeFileStorageService(), new NoOpDiskQuotaService(adminDb), tenant);
+        var tenant = new TestTenantProvider();
+        var fileManager = new FileManagerService(db, new NoOpFileStorageService(), new NoOpDiskQuotaService(adminDb), tenant);
 
         return new McpEndpoints(
             db,
@@ -51,21 +37,6 @@ public class McpParityTests
             tenant,
             new NoOpDiskQuotaService(adminDb),
             adminDb!);
-    }
-
-    /// <summary>Skips real disk IO: the tests only assert on database state.</summary>
-    private sealed class FakeFileStorageService : FileStorageService
-    {
-        public FakeFileStorageService() : base(null!, new DummyTenantProvider()) { }
-
-        public override void DeleteFile(string fileName) { }
-    }
-
-    private sealed class NoOpDiskQuotaService : DiskQuotaService
-    {
-        public NoOpDiskQuotaService(AdminDbContext? adminDb) : base(adminDb!) { }
-
-        public override Task UpdateDiskUsageAsync(string username) => Task.CompletedTask;
     }
 
     // ---------- Thoughts ----------
@@ -117,25 +88,26 @@ public class McpParityTests
 
         var mcp = CreateMcp(db);
 
+        // Serialized the way the MCP SDK returns tool results (camelCase)
         var result = await mcp.GetTransactions(3, 2026, 1, 10, null, null);
-        var json = JsonSerializer.SerializeToElement(result);
-        Assert.Equal(4, json.GetProperty("TotalCount").GetInt32());
-        Assert.False(json.GetProperty("HasMore").GetBoolean());
-        Assert.Equal(4, json.GetProperty("Items").GetArrayLength());
+        var json = JsonSerializer.SerializeToElement(result, WireJson.Mcp);
+        Assert.Equal(4, json.GetProperty("totalCount").GetInt32());
+        Assert.False(json.GetProperty("hasMore").GetBoolean());
+        Assert.Equal(4, json.GetProperty("items").GetArrayLength());
 
         // paging
-        var firstPage = JsonSerializer.SerializeToElement(await mcp.GetTransactions(3, 2026, 1, 2, null, null));
-        Assert.Equal(2, firstPage.GetProperty("Items").GetArrayLength());
-        Assert.True(firstPage.GetProperty("HasMore").GetBoolean());
+        var firstPage = JsonSerializer.SerializeToElement(await mcp.GetTransactions(3, 2026, 1, 2, null, null), WireJson.Mcp);
+        Assert.Equal(2, firstPage.GetProperty("items").GetArrayLength());
+        Assert.True(firstPage.GetProperty("hasMore").GetBoolean());
 
         // search
-        var searched = JsonSerializer.SerializeToElement(await mcp.GetTransactions(3, 2026, 1, 20, "Coffee", null));
-        Assert.Equal(2, searched.GetProperty("TotalCount").GetInt32());
+        var searched = JsonSerializer.SerializeToElement(await mcp.GetTransactions(3, 2026, 1, 20, "Coffee", null), WireJson.Mcp);
+        Assert.Equal(2, searched.GetProperty("totalCount").GetInt32());
 
         // category filter
-        var byCategory = JsonSerializer.SerializeToElement(await mcp.GetTransactions(3, 2026, 1, 20, null, rent.Id));
-        Assert.Equal(1, byCategory.GetProperty("TotalCount").GetInt32());
-        Assert.Equal(rent.Id, byCategory.GetProperty("Items")[0].GetProperty("CategoryId").GetGuid());
+        var byCategory = JsonSerializer.SerializeToElement(await mcp.GetTransactions(3, 2026, 1, 20, null, rent.Id), WireJson.Mcp);
+        Assert.Equal(1, byCategory.GetProperty("totalCount").GetInt32());
+        Assert.Equal(rent.Id, byCategory.GetProperty("items")[0].GetProperty("categoryId").GetGuid());
     }
 
     [Fact]
@@ -264,9 +236,12 @@ public class McpParityTests
         using var db = CreateDb();
         var mcp = CreateMcp(db);
 
+        // "Today" is the server's local date (DateTime.Now), not the UTC date. Sample it on both sides of
+        // the call so a run that crosses local midnight still passes.
+        var localDateBefore = DateTime.Now.ToString("yyyy-MM-dd");
         var goal = await mcp.SetTodaysGoal("Today only");
-        var today = DateTime.Now.ToString("yyyy-MM-dd");
-        Assert.Equal(today, goal.DateStr);
+        var localDateAfter = DateTime.Now.ToString("yyyy-MM-dd");
+        Assert.Contains(goal.DateStr, new[] { localDateBefore, localDateAfter });
 
         var fetched = await mcp.GetTodaysGoal();
         Assert.NotNull(fetched);
@@ -314,6 +289,7 @@ public class McpParityTests
 
         Assert.NotNull(updated);
         Assert.Equal("revised", updated!.Content);
+        db.ChangeTracker.Clear();
         Assert.Equal("revised", (await db.Thoughts.FindAsync(thought.Id))!.Content);
     }
 
@@ -344,6 +320,8 @@ public class McpParityTests
             Sanad.Api.Models.TaskStatus.Done, 45, 7, null, end);
 
         Assert.True(ok);
+        // Read back from the store, not the tracked instance, to prove the update was saved
+        db.ChangeTracker.Clear();
         var stored = await db.TaskItems.FindAsync(task.Id);
         Assert.NotNull(stored);
         Assert.Equal("New title", stored!.Title);
@@ -384,10 +362,12 @@ public class McpParityTests
         });
 
         Assert.True(ok);
+        db.ChangeTracker.Clear();
         var ordered = await db.TaskItems.OrderBy(t => t.Order).ToListAsync();
         Assert.Equal(new[] { "C", "B", "A" }, ordered.Select(t => t.Title));
         Assert.Equal(Sanad.Api.Models.TaskStatus.Done, ordered[0].Status);
         Assert.Equal(Sanad.Api.Models.TaskStatus.InProgress, ordered[1].Status);
+        Assert.Equal(Sanad.Api.Models.TaskStatus.ToDo, ordered[2].Status);
     }
 
     [Fact]
@@ -476,6 +456,12 @@ public class McpParityTests
         Assert.Equal("Lunch", updated.Description);
         Assert.Equal("Expense", updated.Type);
         Assert.Equal(original, updated.Date);
+
+        db.ChangeTracker.Clear();
+        var stored = await db.Transactions.SingleAsync();
+        Assert.Equal(42, stored.Amount);
+        Assert.Equal(rent.Id, stored.CategoryId);
+        Assert.Equal("Lunch", stored.Description);
     }
 
     [Fact]
@@ -504,13 +490,14 @@ public class McpParityTests
             new Transaction { Amount = 999, CategoryId = food.Id, Type = "Income", Date = new DateTime(2026, 6, 9, 0, 0, 0, DateTimeKind.Utc) });
         await db.SaveChangesAsync();
 
-        var summary = JsonSerializer.SerializeToElement(await mcp.GetFinanceSummary(6, 2026));
+        var summary = JsonSerializer.SerializeToElement(await mcp.GetFinanceSummary(6, 2026), WireJson.Mcp);
 
-        Assert.Equal(1000m, summary.GetProperty("MonthlyBudget").GetDecimal());
-        Assert.Equal(150m, summary.GetProperty("TotalSpent").GetDecimal());
-        var categoryEntry = summary.GetProperty("Categories")[0];
-        Assert.Equal(150m, categoryEntry.GetProperty("Spent").GetDecimal());
-        Assert.Equal(350m, categoryEntry.GetProperty("Remaining").GetDecimal());
+        Assert.Equal(1000m, summary.GetProperty("monthlyBudget").GetDecimal());
+        Assert.Equal(150m, summary.GetProperty("totalSpent").GetDecimal());
+        var categoryEntry = summary.GetProperty("categories")[0];
+        Assert.Equal("Food", categoryEntry.GetProperty("category").GetProperty("name").GetString());
+        Assert.Equal(150m, categoryEntry.GetProperty("spent").GetDecimal());
+        Assert.Equal(350m, categoryEntry.GetProperty("remaining").GetDecimal());
     }
 
     [Fact]
@@ -520,21 +507,21 @@ public class McpParityTests
         var mcp = CreateMcp(db);
 
         await mcp.SetMonthlyBudget(750, 2, 2026);
-        var budget = JsonSerializer.SerializeToElement(await mcp.GetMonthlyBudget(2, 2026));
-        Assert.Equal(750m, budget.GetProperty("Amount").GetDecimal());
-        Assert.Equal(2, budget.GetProperty("Month").GetInt32());
-        Assert.Equal(2026, budget.GetProperty("Year").GetInt32());
+        var budget = JsonSerializer.SerializeToElement(await mcp.GetMonthlyBudget(2, 2026), WireJson.Mcp);
+        Assert.Equal(750m, budget.GetProperty("amount").GetDecimal());
+        Assert.Equal(2, budget.GetProperty("month").GetInt32());
+        Assert.Equal(2026, budget.GetProperty("year").GetInt32());
 
         // No explicit month/year → current month, and an unset budget reads as 0.
-        var current = JsonSerializer.SerializeToElement(await mcp.GetMonthlyBudget());
-        Assert.Equal(DateTime.UtcNow.Month, current.GetProperty("Month").GetInt32());
-        Assert.Equal(0m, current.GetProperty("Amount").GetDecimal());
+        var current = JsonSerializer.SerializeToElement(await mcp.GetMonthlyBudget(), WireJson.Mcp);
+        Assert.Equal(DateTime.UtcNow.Month, current.GetProperty("month").GetInt32());
+        Assert.Equal(0m, current.GetProperty("amount").GetDecimal());
 
         // Setting it twice updates rather than duplicating.
         await mcp.SetMonthlyBudget(900, 2, 2026);
         Assert.Equal(1, await db.MonthlyBudgets.CountAsync(b => b.Year == 2026 && b.Month == 2));
-        var updated = JsonSerializer.SerializeToElement(await mcp.GetMonthlyBudget(2, 2026));
-        Assert.Equal(900m, updated.GetProperty("Amount").GetDecimal());
+        var updated = JsonSerializer.SerializeToElement(await mcp.GetMonthlyBudget(2, 2026), WireJson.Mcp);
+        Assert.Equal(900m, updated.GetProperty("amount").GetDecimal());
     }
 
     // ---------- Phase 2: currencies ----------
@@ -588,6 +575,7 @@ public class McpParityTests
 
         Assert.True(await mcp.SetDefaultCurrency(eur.Id));
 
+        db.ChangeTracker.Clear();
         var currencies = await mcp.GetCurrencies();
         var newDefault = currencies.Single(c => c.Id == eur.Id);
         var oldDefault = currencies.Single(c => c.Id == usd.Id);
@@ -635,11 +623,11 @@ public class McpParityTests
         // Same amount → no extra snapshot.
         await mcp.UpdateDebt(debt.Id, "Car loan", "Loan", 8000);
 
-        var history = JsonSerializer.SerializeToElement(await mcp.GetDebtsHistory());
+        var history = JsonSerializer.SerializeToElement(await mcp.GetDebtsHistory(), WireJson.Mcp);
         Assert.Equal(2, history.GetArrayLength());
-        Assert.Equal("Car loan", history[0].GetProperty("DebtName").GetString());
-        Assert.Equal(10000m, history[0].GetProperty("Amount").GetDecimal());
-        Assert.Equal(8000m, history[1].GetProperty("Amount").GetDecimal());
+        Assert.Equal("Car loan", history[0].GetProperty("debtName").GetString());
+        Assert.Equal(10000m, history[0].GetProperty("amount").GetDecimal());
+        Assert.Equal(8000m, history[1].GetProperty("amount").GetDecimal());
     }
 
     // ---------- Phase 2: calendar ----------
@@ -818,11 +806,11 @@ public class McpParityTests
         var asset = await mcp.CreateAsset("Cash", "Cash", 100);
         await mcp.UpdateAsset(asset.Id, "Cash", "Cash", 400);
 
-        var history = JsonSerializer.SerializeToElement(await mcp.GetAssetsHistory());
+        var history = JsonSerializer.SerializeToElement(await mcp.GetAssetsHistory(), WireJson.Mcp);
         Assert.Equal(2, history.GetArrayLength());
-        Assert.Equal("Cash", history[0].GetProperty("AssetName").GetString());
-        Assert.Equal(100m, history[0].GetProperty("Amount").GetDecimal());
-        Assert.Equal(400m, history[1].GetProperty("Amount").GetDecimal());
+        Assert.Equal("Cash", history[0].GetProperty("assetName").GetString());
+        Assert.Equal(100m, history[0].GetProperty("amount").GetDecimal());
+        Assert.Equal(400m, history[1].GetProperty("amount").GetDecimal());
     }
 
     // ---------- Phase 4: whiteboards ----------
@@ -889,8 +877,8 @@ public class McpParityTests
         Assert.Equal(new[] { "Recent", "Old" }, list.Select(w => w.Name));
 
         // The summary projection has no canvas payload at all.
-        var json = JsonSerializer.SerializeToElement(list[0]);
-        Assert.False(json.TryGetProperty("DocumentJson", out _));
+        var json = JsonSerializer.SerializeToElement(list[0], WireJson.Mcp);
+        Assert.Equal("Recent", json.GetProperty("name").GetString());
         Assert.False(json.TryGetProperty("documentJson", out _));
     }
 
@@ -1002,7 +990,8 @@ public class McpParityTests
         await db.SaveChangesAsync();
 
         var all = await mcp.GlobalSearch(term);
-        Assert.True(all.TotalCount >= 3);
+        Assert.Equal(3, all.TotalCount);
+        Assert.Equal(3, all.Results.Count);
         Assert.Contains(all.Results, r => r.Type == "thought");
         Assert.Contains(all.Results, r => r.Type == "task");
         Assert.Contains(all.Results, r => r.Type == "habit");

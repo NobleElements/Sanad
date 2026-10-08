@@ -16,29 +16,14 @@ public static class PaddleWebhookEndpoints
             var body = await new StreamReader(context.Request.Body).ReadToEndAsync();
             
             var settings = await db.SystemSettings.ToDictionaryAsync(s => s.Key, s => s.Value);
-            if (settings.TryGetValue("PaddleWebhookSecret", out var secret) && !string.IsNullOrEmpty(secret))
+            if (!settings.TryGetValue("PaddleWebhookSecret", out var secret) || string.IsNullOrEmpty(secret))
             {
-                var signatureHeader = context.Request.Headers["Paddle-Signature"].ToString();
-                if (string.IsNullOrEmpty(signatureHeader)) return Results.BadRequest("Missing Signature");
-
-                var parts = signatureHeader.Split(';');
-                string ts = "";
-                string h1 = "";
-                foreach (var part in parts)
-                {
-                    if (part.StartsWith("ts=")) ts = part.Substring(3);
-                    if (part.StartsWith("h1=")) h1 = part.Substring(3);
-                }
-
-                if (string.IsNullOrEmpty(ts) || string.IsNullOrEmpty(h1)) return Results.BadRequest("Invalid Signature Format");
-
-                var signedPayload = $"{ts}:{body}";
-                using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(secret));
-                var computedHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(signedPayload));
-                var computedHashHex = Convert.ToHexString(computedHash).ToLowerInvariant();
-
-                if (computedHashHex != h1) return Results.BadRequest("Signature Mismatch");
+                // Fail closed: without a secret, forged events can't be told apart from real ones.
+                return Results.Problem("Paddle webhook secret is not configured.", statusCode: StatusCodes.Status503ServiceUnavailable);
             }
+
+            var signatureError = VerifySignature(context.Request.Headers["Paddle-Signature"].ToString(), body, secret, DateTimeOffset.UtcNow);
+            if (signatureError != null) return Results.BadRequest(signatureError);
 
             var payload = JsonNode.Parse(body);
             if (payload == null) return Results.BadRequest();
@@ -178,5 +163,43 @@ public static class PaddleWebhookEndpoints
             await db.SaveChangesAsync();
             return Results.Ok();
         }).AllowAnonymous();
+    }
+
+    // Signatures older (or newer) than this are rejected so captured requests can't be replayed later.
+    public static readonly TimeSpan SignatureTolerance = TimeSpan.FromMinutes(5);
+
+    /// <summary>
+    /// Verifies a "ts=...;h1=..." Paddle-Signature header. Returns null when valid, otherwise the error message.
+    /// Several h1 values may be present while Paddle rotates secrets; any one matching is enough.
+    /// </summary>
+    public static string? VerifySignature(string? signatureHeader, string body, string secret, DateTimeOffset now)
+    {
+        if (string.IsNullOrEmpty(signatureHeader)) return "Missing Signature";
+
+        string ts = "";
+        var signatures = new List<string>();
+        foreach (var part in signatureHeader.Split(';'))
+        {
+            if (part.StartsWith("ts=")) ts = part.Substring(3);
+            if (part.StartsWith("h1=")) signatures.Add(part.Substring(3));
+        }
+
+        if (!long.TryParse(ts, out var timestamp) || signatures.Count == 0) return "Invalid Signature Format";
+
+        if (Math.Abs(now.ToUnixTimeSeconds() - timestamp) > SignatureTolerance.TotalSeconds) return "Signature Expired";
+
+        using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(secret));
+        var computedHash = hmac.ComputeHash(Encoding.UTF8.GetBytes($"{ts}:{body}"));
+
+        foreach (var signature in signatures)
+        {
+            byte[] provided;
+            try { provided = Convert.FromHexString(signature); }
+            catch (FormatException) { continue; }
+
+            if (CryptographicOperations.FixedTimeEquals(computedHash, provided)) return null;
+        }
+
+        return "Signature Mismatch";
     }
 }

@@ -20,9 +20,9 @@ const useFinanceStore = create((set, get) => ({
   transactionSearchQuery: '',
   transactionFilterCategoryId: '',
 
-  setDate: (month, year) => {
+  setDate: async (month, year) => {
     set({ currentMonth: month, currentYear: year, transactionsPage: 1 });
-    get().fetchFinanceData();
+    await get().fetchFinanceData();
   },
 
   setTransactionSearchQuery: (query) => {

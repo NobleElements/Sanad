@@ -219,9 +219,13 @@ const MenuBar = ({ editor, onImageUpload, currentFontSize }) => {
 
 export default function TipTapEditor({ content, onChange, onImageUpload }) {
   const editor = useEditor({
+    enableCoreExtensions: {
+      textDirection: false,
+    },
     extensions: [
       StarterKit.configure({
         codeBlock: false,
+        link: false,
       }),
       TaskList,
       TaskItem.configure({
@@ -355,7 +359,7 @@ export default function TipTapEditor({ content, onChange, onImageUpload }) {
 
   useEffect(() => {
     if (editor && content !== editor.getHTML()) {
-      editor.commands.setContent(content || '', false);
+      editor.commands.setContent(content || '', { emitUpdate: false });
     }
   }, [content, editor]);
 

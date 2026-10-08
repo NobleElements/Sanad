@@ -25,17 +25,11 @@ public static class DebtEndpoints
     public static async Task<IResult> GetDebts(IDebtService svc) =>
         Results.Ok(await svc.GetDebtsAsync());
 
-    public static Task<IResult> GetDebts(SanadDbContext db) =>
-        GetDebts(new DebtService(db));
-
     public static async Task<IResult> CreateDebt(IDebtService svc, Debt debt)
     {
         var created = await svc.CreateDebtAsync(debt);
         return Results.Created($"/api/finances/debts/{created.Id}", created);
     }
-
-    public static Task<IResult> CreateDebt(SanadDbContext db, Debt debt) =>
-        CreateDebt(new DebtService(db), debt);
 
     public static async Task<IResult> UpdateDebt(IDebtService svc, Guid id, Debt updated)
     {
@@ -44,9 +38,6 @@ public static class DebtEndpoints
         return Results.Ok(debt);
     }
 
-    public static Task<IResult> UpdateDebt(SanadDbContext db, Guid id, Debt updated) =>
-        UpdateDebt(new DebtService(db), id, updated);
-
     public static async Task<IResult> DeleteDebt(IDebtService svc, Guid id)
     {
         var success = await svc.DeleteDebtAsync(id);
@@ -54,21 +45,12 @@ public static class DebtEndpoints
         return Results.NoContent();
     }
 
-    public static Task<IResult> DeleteDebt(SanadDbContext db, Guid id) =>
-        DeleteDebt(new DebtService(db), id);
-
     public static async Task<IResult> ReorderDebts(IDebtService svc, List<Guid> orderedIds)
     {
         await svc.ReorderDebtsAsync(orderedIds);
         return Results.Ok();
     }
 
-    public static Task<IResult> ReorderDebts(SanadDbContext db, List<Guid> orderedIds) =>
-        ReorderDebts(new DebtService(db), orderedIds);
-
     public static async Task<IResult> GetDebtsHistory(IDebtService svc) =>
         Results.Ok(await svc.GetDebtsHistoryAsync());
-
-    public static Task<IResult> GetDebtsHistory(SanadDbContext db) =>
-        GetDebtsHistory(new DebtService(db));
 }

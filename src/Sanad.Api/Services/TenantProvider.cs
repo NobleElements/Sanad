@@ -55,19 +55,15 @@ public class TenantProvider : ITenantProvider
         var adminDb = scope.ServiceProvider.GetRequiredService<AdminDbContext>();
         
         var user = adminDb.Users.Include(u => u.Datastore).FirstOrDefault(u => u.Username == username);
-        if (user == null || user.Datastore == null)
-        {
-            // Fallback for extreme cases (e.g., deleted user still authenticated)
-            return Path.Combine(Directory.GetCurrentDirectory(), "Data", username);
-        }
-
-        var dsPath = user.Datastore.Path;
+        var dsPath = user?.Datastore?.Path ?? "Data"; // "Data" covers extreme cases (e.g., deleted user still authenticated)
         if (!Path.IsPathRooted(dsPath))
         {
             dsPath = Path.Combine(Directory.GetCurrentDirectory(), dsPath);
         }
 
-        return Path.Combine(dsPath, username);
+        // Not UnauthorizedAccessException: Program.cs maps that to the shared design-time database.
+        return Utils.FileUtils.ResolveChildPath(dsPath, username)
+            ?? throw new InvalidOperationException("Username cannot be used as a tenant folder name.");
     }
 
     public string GetConnectionString()

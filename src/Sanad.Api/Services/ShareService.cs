@@ -121,11 +121,10 @@ public class ShareService : IShareService
         if (user == null) return false;
 
         var link = await _adminDb.SharedLinks.FirstOrDefaultAsync(l => l.Token == token && l.UserId == user.Id);
-        if (link != null)
-        {
-            _adminDb.SharedLinks.Remove(link);
-            await _adminDb.SaveChangesAsync();
-        }
+        if (link == null) return false;
+
+        _adminDb.SharedLinks.Remove(link);
+        await _adminDb.SaveChangesAsync();
 
         return true;
     }

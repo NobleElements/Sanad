@@ -24,7 +24,7 @@ public static class UploadHelper
             return (Results.BadRequest("Disk quota exceeded. Please upgrade your tier or delete files."), null, null);
         }
 
-        var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "Data", username, "attachments");
+        var uploadsDir = Path.Combine(tenantProvider.GetTenantBasePath(), "attachments");
         Directory.CreateDirectory(uploadsDir);
 
         var (uniqueFileName, filePath) = FileUtils.GenerateUniqueFile(uploadsDir, Path.GetExtension(file.FileName));
@@ -57,20 +57,35 @@ public static class UploadHelper
         return urls;
     }
 
-    public static List<string> GetAttachmentPathsFromHtml(string? htmlContent, string username)
+    public static List<string> GetAttachmentPathsFromHtml(string? htmlContent, string tenantBasePath)
     {
         var paths = new List<string>();
         var urls = ExtractImageUrls(htmlContent);
         foreach (var url in urls)
         {
-            if (url.StartsWith("/api/attachments/"))
+            if (url.StartsWith("/api/attachments/") && ResolveAttachmentPath(url, tenantBasePath) is { } filePath)
             {
-                var fileName = url.Substring("/api/attachments/".Length);
-                var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Data", username, "attachments", fileName);
                 paths.Add(filePath);
             }
         }
         return paths;
+    }
+
+    /// <summary>
+    /// Maps an attachment URL ("/api/attachments/x", legacy "/attachments/x", or a bare path) to its file in the
+    /// tenant's attachments folder. Returns null if the name would resolve outside that folder.
+    /// </summary>
+    public static string? ResolveAttachmentPath(string? fileUrl, string tenantBasePath)
+    {
+        if (string.IsNullOrEmpty(fileUrl)) return null;
+
+        var fileName = fileUrl.StartsWith("/api/attachments/")
+            ? fileUrl.Substring("/api/attachments/".Length)
+            : (fileUrl.StartsWith("/attachments/")
+                ? fileUrl.Substring("/attachments/".Length)
+                : Path.GetFileName(fileUrl));
+
+        return FileUtils.ResolveChildPath(Path.Combine(tenantBasePath, "attachments"), fileName);
     }
 
     public static void DeleteFiles(IEnumerable<string> filePaths)

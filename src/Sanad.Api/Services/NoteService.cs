@@ -76,10 +76,10 @@ public class NoteService : INoteService
         var filesToDelete = new List<string>();
         try
         {
-            var username = _tenantProvider.GetUsername();
+            var basePath = _tenantProvider.GetTenantBasePath();
             foreach (var note in notebook.Notes)
             {
-                filesToDelete.AddRange(Utils.UploadHelper.GetAttachmentPathsFromHtml(note.Content, username));
+                filesToDelete.AddRange(Utils.UploadHelper.GetAttachmentPathsFromHtml(note.Content, basePath));
             }
         }
         catch
@@ -174,8 +174,7 @@ public class NoteService : INoteService
         var filesToDelete = new List<string>();
         try
         {
-            var username = _tenantProvider.GetUsername();
-            filesToDelete.AddRange(Utils.UploadHelper.GetAttachmentPathsFromHtml(note.Content, username));
+            filesToDelete.AddRange(Utils.UploadHelper.GetAttachmentPathsFromHtml(note.Content, _tenantProvider.GetTenantBasePath()));
         }
         catch
         {

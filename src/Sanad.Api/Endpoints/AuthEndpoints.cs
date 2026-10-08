@@ -49,6 +49,11 @@ public static class AuthEndpoints
                 return Results.BadRequest("Username and password are required.");
             }
 
+            if (!Utils.FileUtils.IsValidUsername(request.Username))
+            {
+                return Results.BadRequest("Username may only contain letters, numbers, '.', '_' and '-' (up to 64 characters), and cannot start or end with '.'.");
+            }
+
             var existingUser = await db.Users.FirstOrDefaultAsync(u => u.Username == request.Username);
             if (existingUser != null)
             {

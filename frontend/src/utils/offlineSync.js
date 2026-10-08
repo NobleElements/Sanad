@@ -29,6 +29,10 @@ const syncNotesCache = async () => {
   }
 };
 
+export const _resetWarmUpForTesting = () => {
+  hasWarmedUp = false;
+};
+
 export const warmUpApiCache = async () => {
   if (hasWarmedUp) return;
   hasWarmedUp = true;
@@ -71,9 +75,7 @@ export const warmUpApiCache = async () => {
 
   console.log('[Offline Sync] Warming up API cache...');
 
-  // Fire and forget all requests to warm up the cache
-  // We use Promise.allSettled so that one failure doesn't stop others
-  Promise.allSettled(
+  return Promise.allSettled(
     endpointsToCache.map(endpoint => 
       fetch(`${API_URL}${endpoint}`)
         .then(async (res) => {
@@ -93,6 +95,6 @@ export const warmUpApiCache = async () => {
     )
   ).then(() => {
     console.log('[Offline Sync] API cache warm up complete.');
-    syncNotesCache();
+    return syncNotesCache();
   });
 };

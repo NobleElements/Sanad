@@ -115,7 +115,7 @@ export const useFileManagerStore = create((set, get) => ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, parentId: currentFolderId })
       });
-      if (response.ok) get().fetchContents();
+      if (response.ok) await get().fetchContents();
     } catch (err) {
       console.error(err);
     }
@@ -126,8 +126,8 @@ export const useFileManagerStore = create((set, get) => ({
       const url = isFolder ? `/api/folders/${id}` : `/api/files/${id}`;
       const response = await fetch(url, { method: 'DELETE' });
       if (response.ok) {
-        get().fetchContents();
-        useSubscriptionStore.getState().fetchSubscriptionData();
+        await get().fetchContents();
+        await useSubscriptionStore.getState().fetchSubscriptionData();
       }
     } catch (err) {
       console.error(err);
@@ -141,7 +141,7 @@ export const useFileManagerStore = create((set, get) => ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ folderId: newFolderId })
       });
-      if (response.ok) get().fetchContents();
+      if (response.ok) await get().fetchContents();
     } catch(err) { console.error(err); }
   },
 

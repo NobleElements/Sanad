@@ -37,33 +37,37 @@ public static class FileEndpoints
                 MimeType = req.MimeType,
                 Extension = Path.GetExtension(req.Name),
                 FolderId = req.FolderId,
-                UploadedBytes = 0
+                UploadedBytes = 0,
+                Owner = username
             };
 
             return Results.Ok(new { UploadId = uploadId });
         });
 
-        group.MapPost("/upload/{uploadId}/chunk", async (string uploadId, HttpRequest req, FileStorageService storage) =>
+        group.MapPost("/upload/{uploadId}/chunk", async (string uploadId, HttpRequest req, FileStorageService storage, ITenantProvider tenantProvider) =>
         {
-            if (!UploadSessions.TryGetValue(uploadId, out var session))
+            if (!UploadSessions.TryGetValue(uploadId, out var session) || session.Owner != tenantProvider.GetUsername())
                 return Results.NotFound("Upload session not found");
 
-            if (session.UploadedBytes + (req.ContentLength ?? 0) > session.SizeBytes) 
+            // Without Content-Length the size check below can't bound how much gets written.
+            if (req.ContentLength is not { } chunkLength)
+                return Results.StatusCode(StatusCodes.Status411LengthRequired);
+
+            if (session.UploadedBytes + chunkLength > session.SizeBytes) 
             {
                 return Results.BadRequest("Uploaded chunks exceed the declared file size.");
             }
 
             await storage.AppendChunkAsync(session.PhysicalName, req.Body);
             
-            // Note: client should send the actual bytes appended in headers or we calculate from stream length
-            session.UploadedBytes += req.ContentLength ?? 0;
+            session.UploadedBytes += chunkLength;
 
             return Results.Ok(new { UploadedBytes = session.UploadedBytes });
         });
 
         group.MapPost("/upload/{uploadId}/complete", async (string uploadId, SanadDbContext db, DiskQuotaService quotaService, ITenantProvider tenantProvider) =>
         {
-            if (!UploadSessions.TryGetValue(uploadId, out var session))
+            if (!UploadSessions.TryGetValue(uploadId, out var session) || session.Owner != tenantProvider.GetUsername())
                 return Results.NotFound("Upload session not found");
 
             var fileItem = new FileItem
@@ -88,9 +92,10 @@ public static class FileEndpoints
             return Results.Ok(fileItem);
         });
 
-        group.MapDelete("/upload/{uploadId}", (string uploadId, FileStorageService storage) =>
+        group.MapDelete("/upload/{uploadId}", (string uploadId, FileStorageService storage, ITenantProvider tenantProvider) =>
         {
-            if (UploadSessions.TryRemove(uploadId, out var session))
+            if (UploadSessions.TryGetValue(uploadId, out var existing) && existing.Owner == tenantProvider.GetUsername()
+                && UploadSessions.TryRemove(uploadId, out var session))
             {
                 storage.DeleteFile(session.PhysicalName);
             }
@@ -163,4 +168,6 @@ public class UploadSession
     public long SizeBytes { get; set; }
     public long UploadedBytes { get; set; }
     public int? FolderId { get; set; }
+    // Who may continue this session: the username for private uploads, "share:{token}" for public ones.
+    public string Owner { get; set; } = string.Empty;
 }

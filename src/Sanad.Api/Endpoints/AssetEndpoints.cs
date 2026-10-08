@@ -25,17 +25,11 @@ public static class AssetEndpoints
     public static async Task<IResult> GetAssets(IAssetService svc) =>
         Results.Ok(await svc.GetAssetsAsync());
 
-    public static Task<IResult> GetAssets(SanadDbContext db) =>
-        GetAssets(new AssetService(db));
-
     public static async Task<IResult> CreateAsset(IAssetService svc, Asset asset)
     {
         var created = await svc.CreateAssetAsync(asset);
         return Results.Created($"/api/finances/assets/{created.Id}", created);
     }
-
-    public static Task<IResult> CreateAsset(SanadDbContext db, Asset asset) =>
-        CreateAsset(new AssetService(db), asset);
 
     public static async Task<IResult> UpdateAsset(IAssetService svc, Guid id, Asset updated)
     {
@@ -44,9 +38,6 @@ public static class AssetEndpoints
         return Results.Ok(asset);
     }
 
-    public static Task<IResult> UpdateAsset(SanadDbContext db, Guid id, Asset updated) =>
-        UpdateAsset(new AssetService(db), id, updated);
-
     public static async Task<IResult> DeleteAsset(IAssetService svc, Guid id)
     {
         var success = await svc.DeleteAssetAsync(id);
@@ -54,21 +45,12 @@ public static class AssetEndpoints
         return Results.NoContent();
     }
 
-    public static Task<IResult> DeleteAsset(SanadDbContext db, Guid id) =>
-        DeleteAsset(new AssetService(db), id);
-
     public static async Task<IResult> ReorderAssets(IAssetService svc, List<Guid> orderedIds)
     {
         await svc.ReorderAssetsAsync(orderedIds);
         return Results.Ok();
     }
 
-    public static Task<IResult> ReorderAssets(SanadDbContext db, List<Guid> orderedIds) =>
-        ReorderAssets(new AssetService(db), orderedIds);
-
     public static async Task<IResult> GetAssetsHistory(IAssetService svc) =>
         Results.Ok(await svc.GetAssetsHistoryAsync());
-
-    public static Task<IResult> GetAssetsHistory(SanadDbContext db) =>
-        GetAssetsHistory(new AssetService(db));
 }

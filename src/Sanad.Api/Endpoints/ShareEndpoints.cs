@@ -32,6 +32,9 @@ public static class ShareEndpoints
 
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, UploadSession> PublicUploadSessions = new();
 
+    // Ties a public upload session to the link that started it, so another link can't complete it.
+    private static string PublicSessionOwner(string token) => $"share:{token}";
+
     private static async Task<AppUser?> GetCurrentUserAsync(AdminDbContext adminDb, ITenantProvider tenantProvider)
     {
         var username = tenantProvider.GetUsername();
@@ -258,7 +261,8 @@ public static class ShareEndpoints
                 MimeType = req.MimeType,
                 Extension = Path.GetExtension(req.Name),
                 FolderId = link.FolderId.Value,
-                UploadedBytes = 0
+                UploadedBytes = 0,
+                Owner = PublicSessionOwner(token)
             };
 
             return Results.Ok(new { UploadId = uploadId });
@@ -273,10 +277,14 @@ public static class ShareEndpoints
             if (link == null || sanadDb == null || !link.FolderId.HasValue) return Results.NotFound();
             if (link.Permission != SharePermission.Edit) return Results.Forbid();
 
-            if (!PublicUploadSessions.TryGetValue(uploadId, out var session))
+            if (!PublicUploadSessions.TryGetValue(uploadId, out var session) || session.Owner != PublicSessionOwner(token))
                 return Results.NotFound("Upload session not found");
 
-            if (session.UploadedBytes + (req.ContentLength ?? 0) > session.SizeBytes)
+            // Without Content-Length the size check below can't bound how much gets written.
+            if (req.ContentLength is not { } chunkLength)
+                return Results.StatusCode(StatusCodes.Status411LengthRequired);
+
+            if (session.UploadedBytes + chunkLength > session.SizeBytes)
             {
                 return Results.BadRequest("Uploaded chunks exceed the declared file size.");
             }
@@ -284,7 +292,7 @@ public static class ShareEndpoints
             var storage = scope!.ServiceProvider.GetRequiredService<FileStorageService>();
             await storage.AppendChunkAsync(session.PhysicalName, req.Body);
             
-            session.UploadedBytes += req.ContentLength ?? 0;
+            session.UploadedBytes += chunkLength;
 
             return Results.Ok(new { UploadedBytes = session.UploadedBytes });
         }
@@ -298,7 +306,7 @@ public static class ShareEndpoints
             if (link == null || sanadDb == null || !link.FolderId.HasValue) return Results.NotFound();
             if (link.Permission != SharePermission.Edit) return Results.Forbid();
 
-            if (!PublicUploadSessions.TryGetValue(uploadId, out var session))
+            if (!PublicUploadSessions.TryGetValue(uploadId, out var session) || session.Owner != PublicSessionOwner(token))
                 return Results.NotFound("Upload session not found");
 
             var fileItem = new FileItem

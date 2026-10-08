@@ -20,7 +20,20 @@ public static class UploadEndpoints
         var username = tenantProvider.GetUsername();
         if (string.IsNullOrEmpty(username)) return Results.Unauthorized();
 
-        var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Data", username, "attachments", fileName);
+        if (string.IsNullOrWhiteSpace(fileName) || fileName.Contains("..") || fileName.Contains('/') || fileName.Contains('\\') || Path.GetFileName(fileName) != fileName)
+        {
+            return Results.BadRequest("Invalid file name");
+        }
+
+        var attachmentsDir = Path.Combine(tenantProvider.GetTenantBasePath(), "attachments");
+        var filePath = Path.GetFullPath(Path.Combine(attachmentsDir, fileName));
+        var fullAttachmentsDir = Path.GetFullPath(attachmentsDir) + Path.DirectorySeparatorChar;
+
+        if (!filePath.StartsWith(fullAttachmentsDir, StringComparison.OrdinalIgnoreCase))
+        {
+            return Results.BadRequest("Invalid file path");
+        }
+
         if (!File.Exists(filePath)) return Results.NotFound();
 
         return Results.File(filePath);
@@ -33,7 +46,19 @@ public static class UploadEndpoints
         var username = tenantProvider.GetUsername();
         if (string.IsNullOrEmpty(username)) return Results.Unauthorized();
 
-        var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Data", username, "attachments", fileName);
+        if (string.IsNullOrWhiteSpace(fileName) || fileName.Contains("..") || fileName.Contains('/') || fileName.Contains('\\') || Path.GetFileName(fileName) != fileName)
+        {
+            return Results.BadRequest("Invalid file name");
+        }
+
+        var attachmentsDir = Path.Combine(tenantProvider.GetTenantBasePath(), "attachments");
+        var filePath = Path.GetFullPath(Path.Combine(attachmentsDir, fileName));
+        var fullAttachmentsDir = Path.GetFullPath(attachmentsDir) + Path.DirectorySeparatorChar;
+
+        if (!filePath.StartsWith(fullAttachmentsDir, StringComparison.OrdinalIgnoreCase))
+        {
+            return Results.BadRequest("Invalid file path");
+        }
         
         if (File.Exists(filePath))
         {

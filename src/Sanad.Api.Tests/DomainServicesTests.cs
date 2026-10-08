@@ -12,144 +12,152 @@ namespace Sanad.Api.Tests;
 
 public class DomainServicesTests
 {
-    private class DummyTenantProvider : ITenantProvider
-    {
-        public string GetUsername() => "testuser";
-        public Guid GetTenantId() => Guid.Empty;
-        public string GetConnectionString() => "";
-        public string GetTenantBasePath() => "/tmp/dummy_tenant";
-    }
-
     [Fact]
     public async Task ReadingService_CalculatesProgressAndAutoCompletes()
     {
-        var options = new DbContextOptionsBuilder<SanadDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
-
-        using var db = new SanadDbContext(options);
-        var readingService = new ReadingService(db);
-
-        var book = new Book { Title = "Atomic Habits", Author = "James Clear", TotalPages = 200 };
-        db.Books.Add(book);
-        await db.SaveChangesAsync();
-
-        // 1. Start period with plans
-        var plans = new List<PlanDto>
+        var (db, conn) = TestDbContextFactory.CreateSqliteInMemorySanadDbContext();
+        using (conn)
+        using (db)
         {
-            new PlanDto("Chapter 1", 1, 50),
-            new PlanDto("Chapter 2", 50, 100),
-            new PlanDto("Chapter 3", 100, 200)
-        };
-        var period = await readingService.StartReadingPeriodAsync(book.Id, plans);
-        Assert.Equal("Reading", period.Status);
+            var readingService = new ReadingService(db);
 
-        // 2. Log reading: pages 1 to 40
-        var log = await readingService.LogReadingAsync(period.Id, 1, 40);
-        Assert.NotNull(log);
-        Assert.Equal(40, log.EndPage);
+            var book = new Book { Title = "Atomic Habits", Author = "James Clear", TotalPages = 200 };
+            db.Books.Add(book);
+            await db.SaveChangesAsync();
 
-        // Check progress
-        var progress = await readingService.GetCurrentReadingAsync();
-        Assert.NotNull(progress);
-        Assert.Equal(40, progress.CurrentPage);
-        Assert.Equal("Chapter 1", progress.CurrentChapter);
-        Assert.Equal(10, progress.PagesLeftInChapter);
+            // 1. Start period with plans
+            var plans = new List<PlanDto>
+            {
+                new PlanDto("Chapter 1", 1, 50),
+                new PlanDto("Chapter 2", 50, 100),
+                new PlanDto("Chapter 3", 100, 200)
+            };
+            var period = await readingService.StartReadingPeriodAsync(book.Id, plans);
+            Assert.Equal("Reading", period.Status);
 
-        // 3. Log reading to 200 (finishes book)
-        await readingService.LogReadingAsync(period.Id, 40, 200);
+            // 2. Log reading: pages 1 to 40
+            var log = await readingService.LogReadingAsync(period.Id, 1, 40);
+            Assert.NotNull(log);
+            Assert.Equal(40, log.EndPage);
 
-        var finishedPeriod = await db.ReadingPeriods.FindAsync(period.Id);
-        Assert.NotNull(finishedPeriod);
-        Assert.Equal("Completed", finishedPeriod.Status);
-        Assert.NotNull(finishedPeriod.EndDate);
+            db.ChangeTracker.Clear();
+
+            // Check progress
+            var progress = await readingService.GetCurrentReadingAsync();
+            Assert.NotNull(progress);
+            Assert.Equal(40, progress.CurrentPage);
+            Assert.Equal("Chapter 1", progress.CurrentChapter);
+            Assert.Equal(10, progress.PagesLeftInChapter);
+
+            // 3. Log reading to 200 (finishes book)
+            await readingService.LogReadingAsync(period.Id, 40, 200);
+
+            db.ChangeTracker.Clear();
+
+            var finishedPeriod = await db.ReadingPeriods.FindAsync(period.Id);
+            Assert.NotNull(finishedPeriod);
+            Assert.Equal("Completed", finishedPeriod.Status);
+            Assert.NotNull(finishedPeriod.EndDate);
+        }
     }
 
     [Fact]
     public async Task DebtService_CreatesSnapshotsOnAmountChanges()
     {
-        var options = new DbContextOptionsBuilder<SanadDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
+        var (db, conn) = TestDbContextFactory.CreateSqliteInMemorySanadDbContext();
+        using (conn)
+        using (db)
+        {
+            var debtService = new DebtService(db);
 
-        using var db = new SanadDbContext(options);
-        var debtService = new DebtService(db);
+            // Create debt -> initial snapshot
+            var debt = await debtService.CreateDebtAsync("Student Loan", "Loan", 10000m);
+            Assert.Equal(1, await db.DebtSnapshots.CountAsync());
 
-        // Create debt -> initial snapshot
-        var debt = await debtService.CreateDebtAsync("Student Loan", "Loan", 10000m);
-        Assert.Equal(1, await db.DebtSnapshots.CountAsync());
+            // Update with same amount -> no new snapshot
+            await debtService.UpdateDebtAsync(debt.Id, "Student Loan", "Loan", 10000m);
+            Assert.Equal(1, await db.DebtSnapshots.CountAsync());
 
-        // Update with same amount -> no new snapshot
-        await debtService.UpdateDebtAsync(debt.Id, "Student Loan", "Loan", 10000m);
-        Assert.Equal(1, await db.DebtSnapshots.CountAsync());
+            // Update with new amount -> new snapshot created
+            await debtService.UpdateDebtAsync(debt.Id, "Student Loan", "Loan", 9000m);
+            Assert.Equal(2, await db.DebtSnapshots.CountAsync());
 
-        // Update with new amount -> new snapshot created
-        await debtService.UpdateDebtAsync(debt.Id, "Student Loan", "Loan", 9000m);
-        Assert.Equal(2, await db.DebtSnapshots.CountAsync());
+            db.ChangeTracker.Clear();
 
-        var latest = await db.DebtSnapshots.OrderByDescending(s => s.RecordedAt).FirstAsync();
-        Assert.Equal(9000m, latest.Amount);
+            // Snapshots created in the same tick tie on RecordedAt, so compare the set of amounts instead of picking a "latest"
+            var amounts = (await db.DebtSnapshots.Select(s => s.Amount).ToListAsync()).OrderBy(a => a);
+            Assert.Equal(new[] { 9000m, 10000m }, amounts);
 
-        // Delete debt -> cleans up debt and its snapshots
-        var deleted = await debtService.DeleteDebtAsync(debt.Id);
-        Assert.True(deleted);
-        Assert.Equal(0, await db.Debts.CountAsync());
-        Assert.Equal(0, await db.DebtSnapshots.CountAsync());
+            // Delete debt -> cleans up debt and its snapshots
+            var deleted = await debtService.DeleteDebtAsync(debt.Id);
+            Assert.True(deleted);
+
+            db.ChangeTracker.Clear();
+
+            Assert.Equal(0, await db.Debts.CountAsync());
+            Assert.Equal(0, await db.DebtSnapshots.CountAsync());
+        }
     }
 
     [Fact]
     public async Task ThoughtService_CrudOperationsWork()
     {
-        var options = new DbContextOptionsBuilder<SanadDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
+        var (db, conn) = TestDbContextFactory.CreateSqliteInMemorySanadDbContext();
+        using (conn)
+        using (db)
+        {
+            var thoughtService = new ThoughtService(db);
 
-        using var db = new SanadDbContext(options);
-        var thoughtService = new ThoughtService(db);
+            var thought = await thoughtService.CreateThoughtAsync("Deep thought about services");
+            Assert.NotNull(thought);
+            Assert.Equal("Deep thought about services", thought.Content);
 
-        var thought = await thoughtService.CreateThoughtAsync("Deep thought about services");
-        Assert.NotNull(thought);
-        Assert.Equal("Deep thought about services", thought.Content);
+            var list = await thoughtService.GetThoughtsAsync(1, 10, "services");
+            Assert.Single(list);
 
-        var list = await thoughtService.GetThoughtsAsync(1, 10, "services");
-        Assert.Single(list);
+            var updated = await thoughtService.UpdateThoughtAsync(thought.Id, "Updated thought");
+            Assert.NotNull(updated);
+            Assert.Equal("Updated thought", updated.Content);
 
-        var updated = await thoughtService.UpdateThoughtAsync(thought.Id, "Updated thought");
-        Assert.NotNull(updated);
-        Assert.Equal("Updated thought", updated.Content);
+            var deleted = await thoughtService.DeleteThoughtAsync(thought.Id);
+            Assert.True(deleted);
 
-        var deleted = await thoughtService.DeleteThoughtAsync(thought.Id);
-        Assert.True(deleted);
-        Assert.Empty(await thoughtService.GetThoughtsAsync());
+            db.ChangeTracker.Clear();
+            Assert.Empty(await thoughtService.GetThoughtsAsync());
+        }
     }
 
     [Fact]
     public async Task HabitService_TogglingAndReorderingWorks()
     {
-        var options = new DbContextOptionsBuilder<SanadDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
+        var (db, conn) = TestDbContextFactory.CreateSqliteInMemorySanadDbContext();
+        using (conn)
+        using (db)
+        {
+            var habitService = new HabitService(db);
 
-        using var db = new SanadDbContext(options);
-        var habitService = new HabitService(db);
+            var h1 = await habitService.CreateHabitAsync("Workout", "dumbbell", "daily");
+            var h2 = await habitService.CreateHabitAsync("Read", "book", "daily");
 
-        var h1 = await habitService.CreateHabitAsync("Workout", "dumbbell", "daily");
-        var h2 = await habitService.CreateHabitAsync("Read", "book", "daily");
+            var today = DateTime.UtcNow.Date;
+            var log = await habitService.ToggleHabitLogAsync(h1.Id, today);
+            Assert.NotNull(log);
+            Assert.True(log.Completed);
 
-        var today = DateTime.UtcNow.Date;
-        var log = await habitService.ToggleHabitLogAsync(h1.Id, today);
-        Assert.NotNull(log);
-        Assert.True(log.Completed);
+            // Toggle again -> completed false
+            var log2 = await habitService.ToggleHabitLogAsync(h1.Id, today);
+            Assert.NotNull(log2);
+            Assert.False(log2.Completed);
 
-        // Toggle again -> completed false
-        var log2 = await habitService.ToggleHabitLogAsync(h1.Id, today);
-        Assert.NotNull(log2);
-        Assert.False(log2.Completed);
+            // Reorder. New habits all start at Order 0 and tie-break newest first ([h2, h1]),
+            // so ask for the opposite order to prove the reorder is what changed it.
+            await habitService.ReorderHabitsAsync(new List<string> { h1.Id, h2.Id });
 
-        // Reorder
-        await habitService.ReorderHabitsAsync(new List<string> { h2.Id, h1.Id });
-        var habits = await habitService.GetHabitsAsync();
-        Assert.Equal(h2.Id, habits[0].Id);
-        Assert.Equal(h1.Id, habits[1].Id);
+            db.ChangeTracker.Clear();
+
+            var habits = await habitService.GetHabitsAsync();
+            Assert.Equal(new[] { h1.Id, h2.Id }, habits.Select(h => h.Id));
+            Assert.Equal(new[] { 0, 1 }, habits.Select(h => h.Order));
+        }
     }
 }
