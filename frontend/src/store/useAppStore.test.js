@@ -107,6 +107,7 @@ describe('useAppStore', () => {
 
     const result = await useAppStore.getState().deleteApp('app-1');
 
+    expect(result).toBe(true);
     expect(fetchMock).toHaveBeenCalledWith(`${API_URL}/apps/app-1`, { method: 'DELETE' });
     expect(useAppStore.getState().apps).toEqual([{ id: 'app-2', name: 'App 2' }]);
   });

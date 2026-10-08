@@ -45,7 +45,7 @@ public class DiskUsageSyncService : BackgroundService
         }
     }
 
-    private async Task SyncDiskUsageAsync(CancellationToken stoppingToken)
+    public async Task SyncDiskUsageAsync(CancellationToken stoppingToken = default)
     {
         using var scope = _services.CreateScope();
         var adminDb = scope.ServiceProvider.GetRequiredService<AdminDbContext>();

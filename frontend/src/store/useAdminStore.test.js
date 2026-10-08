@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import useAdminStore from './useAdminStore';
 import useConfirmStore from './useConfirmStore';
 import useUIStore from './useUIStore';

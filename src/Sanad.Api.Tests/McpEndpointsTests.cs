@@ -21,14 +21,23 @@ public class McpEndpointsTests
     /// The tenant-scoped services that would touch the filesystem are stubbed; everything
     /// else is constructed from <paramref name="db"/> exactly like the DI container does.
     /// </summary>
-    private static McpEndpoints CreateMcp(SanadDbContext db, AdminDbContext? adminDb = null)
+    private class StubBookSearchService : IBookSearchService
+    {
+        public Task<List<BookSearchResult>> SearchBooksAsync(string query) =>
+            Task.FromResult(new List<BookSearchResult>
+            {
+                new() { ExternalApiId = "b_mock_1", Title = "Mock Book", Author = "Mock Author", CoverUrl = "https://cover.jpg", TotalPages = 320, Source = "Mock" }
+            });
+    }
+
+    private static McpEndpoints CreateMcp(SanadDbContext db, AdminDbContext? adminDb = null, IBookSearchService? searchService = null)
     {
         var tenant = new TestTenantProvider();
         var fileManager = new FileManagerService(db, new NoOpFileStorageService(), new NoOpDiskQuotaService(adminDb), tenant);
 
         return new McpEndpoints(
             db,
-            null!,
+            searchService ?? new StubBookSearchService(),
             fileManager,
             tenant,
             new NoOpDiskQuotaService(adminDb),
@@ -1054,5 +1063,41 @@ public class McpEndpointsTests
         Assert.Null(await mcp.CreateFolderShare(9999, SharePermission.View));
         Assert.Null(await mcp.CreateFileShare(9999, SharePermission.View));
         Assert.Null(await mcp.UpdateSharePermission("nope", SharePermission.View));
+    }
+
+    // ---------- Books ----------
+
+    [Fact]
+    public async Task McpBookTools_CrudAndSearch()
+    {
+        using var db = CreateDb();
+        var mcp = CreateMcp(db);
+
+        // 1. Search books (calls IBookSearchService)
+        var searchResults = await mcp.SearchBooks("Mock");
+        Assert.Single(searchResults);
+        Assert.Equal("Mock Book", searchResults[0].Title);
+
+        // 2. Create book
+        var book = await mcp.CreateBook("The Pragmatic Programmer", "Andy Hunt", "http://cover.jpg", 352);
+        Assert.NotNull(book);
+        Assert.Equal("The Pragmatic Programmer", book.Title);
+        Assert.Equal(352, book.TotalPages);
+
+        // 3. Get books
+        var allBooks = await mcp.GetBooks();
+        Assert.Single(allBooks);
+        Assert.Equal("The Pragmatic Programmer", allBooks[0].Title);
+
+        // 4. Update book
+        var updated = await mcp.UpdateBook(book.Id, "The Pragmatic Programmer 20th", "Andy Hunt", "http://cover2.jpg", 360);
+        Assert.NotNull(updated);
+        Assert.Equal("The Pragmatic Programmer 20th", updated!.Title);
+        Assert.Equal(360, updated.TotalPages);
+
+        // 5. Delete book
+        var deleted = await mcp.DeleteBook(book.Id);
+        Assert.True(deleted);
+        Assert.Empty(await mcp.GetBooks());
     }
 }

@@ -106,4 +106,37 @@ describe('useTaskStore', () => {
     expect(useTaskStore.getState().tasks).toEqual(initialTasks);
     expect(hasToast('Failed to reorder tasks', 'error')).toBe(true);
   });
+
+  it('createTask shows error toast and returns false on failure', async () => {
+    mockFetch({
+      'POST /api/tasks': errorResponse(500)
+    });
+
+    const success = await useTaskStore.getState().createTask({ title: 'Broken Task' });
+
+    expect(success).toBe(false);
+    expect(hasToast('Failed to create task', 'error')).toBe(true);
+  });
+
+  it('updateTaskStatus shows error toast and returns false on failure', async () => {
+    mockFetch({
+      'PATCH /api/tasks/t1/status': errorResponse(500)
+    });
+
+    const success = await useTaskStore.getState().updateTaskStatus('t1', { status: 2 });
+
+    expect(success).toBe(false);
+    expect(hasToast('Failed to update task status', 'error')).toBe(true);
+  });
+
+  it('deleteTask shows error toast and returns false on failure', async () => {
+    mockFetch({
+      'DELETE /api/tasks/t1': errorResponse(500)
+    });
+
+    const success = await useTaskStore.getState().deleteTask('t1');
+
+    expect(success).toBe(false);
+    expect(hasToast('Failed to delete task', 'error')).toBe(true);
+  });
 });

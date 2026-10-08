@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import useSettingsStore from './useSettingsStore';
 import { API_URL } from '../config';
 import { mockFetch, jsonResponse, errorResponse, jsonBody } from '../test/fetchMock';
@@ -86,6 +86,7 @@ describe('useSettingsStore', () => {
   });
 
   it('toggleFeature rolls back optimistic update on API error', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     mockFetch({
       'PUT /api/settings/habits': errorResponse(500)
     });
@@ -95,5 +96,6 @@ describe('useSettingsStore', () => {
     await useSettingsStore.getState().toggleFeature('habits');
 
     expect(useSettingsStore.getState().features.habits).toBe(true);
+    expect(consoleSpy).toHaveBeenCalled();
   });
 });

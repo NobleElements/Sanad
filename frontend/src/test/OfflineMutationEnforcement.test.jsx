@@ -2,8 +2,12 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Thoughts from '../pages/Thoughts';
+import Tasks from '../pages/Tasks';
+import Habits from '../pages/Habits';
 import useUIStore from '../store/useUIStore';
 import useConfirmStore from '../store/useConfirmStore';
+import useTaskStore from '../store/useTaskStore';
+import useHabitStore from '../store/useHabitStore';
 import { API_URL } from '../config';
 import { mockFetch, jsonResponse, jsonBody } from './fetchMock';
 
@@ -102,5 +106,52 @@ describe('Offline Mutating Actions Enforcement', () => {
     fireEvent.click(deleteBtn);
     expect(screen.queryByDisplayValue('Important insight')).not.toBeInTheDocument();
     expect(useConfirmStore.getState().isOpen).toBe(false);
+  });
+
+  describe('Tasks offline enforcement', () => {
+    it('disables Create Task button with offline hint when offline', async () => {
+      useUIStore.setState({ isOffline: true });
+      useTaskStore.setState({
+        tasks: [{ id: 't-offline-1', title: 'Offline Task Item', status: 'ToDo' }],
+        isLoaded: true
+      });
+      mockFetch({
+        'GET /api/tasks': jsonResponse([{ id: 't-offline-1', title: 'Offline Task Item', status: 'ToDo' }])
+      });
+
+      render(
+        <MemoryRouter>
+          <Tasks />
+        </MemoryRouter>
+      );
+
+      await screen.findByText('Offline Task Item');
+      const newTaskBtn = screen.getByRole('button', { name: /Create Task/i });
+      expect(newTaskBtn).toBeDisabled();
+      expect(newTaskBtn).toHaveAccessibleDescription(OFFLINE_HINT);
+    });
+  });
+
+  describe('Habits offline enforcement', () => {
+    it('disables Add Habit button with offline hint when offline', async () => {
+      useUIStore.setState({ isOffline: true });
+      useHabitStore.setState({
+        habits: [],
+        isLoaded: true
+      });
+      mockFetch({
+        'GET /api/habits': jsonResponse([])
+      });
+
+      render(
+        <MemoryRouter>
+          <Habits />
+        </MemoryRouter>
+      );
+
+      const addHabitBtn = await screen.findByRole('button', { name: /Add Habit/i });
+      expect(addHabitBtn).toBeDisabled();
+      expect(addHabitBtn).toHaveAccessibleDescription(OFFLINE_HINT);
+    });
   });
 });

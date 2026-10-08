@@ -19,15 +19,14 @@ public class TaskApiTests
 {
     // Real, lightweight stand-ins for the dependencies these tests don't exercise, so a code path that
     // starts using them fails on a real object rather than a null.
-    private static DiskQuotaService Quota() => new NoOpDiskQuotaService(TestDbContextFactory.CreateInMemoryAdminDbContext());
+    private static DiskQuotaService Quota() => new NoOpDiskQuotaService(null);
 
     private static McpEndpoints CreateMcp(SanadDbContext context, ITenantProvider tenant)
     {
-        var adminDb = TestDbContextFactory.CreateInMemoryAdminDbContext();
-        var quota = new NoOpDiskQuotaService(adminDb);
+        var quota = new NoOpDiskQuotaService(null);
         var fileManager = new FileManagerService(context, new NoOpFileStorageService(), quota, tenant);
         var bookSearch = new BookSearchService(new HttpClient(new MockHttpMessageHandler()));
-        return new McpEndpoints(context, bookSearch, fileManager, tenant, quota, adminDb);
+        return new McpEndpoints(context, bookSearch, fileManager, tenant, quota, null!);
     }
 
     [Fact]

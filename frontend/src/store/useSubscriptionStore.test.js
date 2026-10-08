@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import useSubscriptionStore from './useSubscriptionStore';
 import { API_URL } from '../config';
-import { mockFetch, jsonResponse, errorResponse } from '../test/fetchMock';
+import { mockFetch, jsonResponse } from '../test/fetchMock';
 
 describe('useSubscriptionStore', () => {
   beforeEach(() => {
@@ -38,13 +38,7 @@ describe('useSubscriptionStore', () => {
   });
 
   it('fetchSubscriptionData sets error state on fetch failure', async () => {
-    mockFetch({
-      'GET /api/storage/tiers': errorResponse(500),
-      'GET /api/storage': jsonResponse({})
-    });
-
-    // Promise.all rejects when one of the fetches rejects or throws, but errorResponse has status 500 which doesn't throw.
-    // However, if unmocked or network throws:
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const fetchMock = vi.fn().mockRejectedValue(new Error('Network error'));
     vi.stubGlobal('fetch', fetchMock);
 
@@ -53,5 +47,6 @@ describe('useSubscriptionStore', () => {
     const state = useSubscriptionStore.getState();
     expect(state.error).toBe('Failed to load subscription data');
     expect(state.loading).toBe(false);
+    expect(consoleSpy).toHaveBeenCalled();
   });
 });

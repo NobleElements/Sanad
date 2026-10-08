@@ -10,5 +10,6 @@ export default defineConfig({
     // Undo vi.spyOn and vi.stubGlobal (e.g. fetch) after every test so nothing leaks between tests.
     restoreMocks: true,
     unstubGlobals: true,
+    pool: 'vmThreads',
   },
 });

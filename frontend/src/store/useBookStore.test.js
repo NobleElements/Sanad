@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import useBookStore from './useBookStore';
 import { API_URL } from '../config';
-import { mockFetch, jsonResponse, jsonBody, errorResponse } from '../test/fetchMock';
+import { mockFetch, jsonResponse, jsonBody } from '../test/fetchMock';
 
 describe('useBookStore', () => {
   beforeEach(() => {

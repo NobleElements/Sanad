@@ -21,9 +21,10 @@ export default function SearchableSelect({
   useEffect(() => {
     if (value) {
       const selected = options.find(o => o.id === value);
-      if (selected) setSearch(selected.name);
+      const target = selected ? selected.name : '';
+      setSearch(prev => prev === target ? prev : target);
     } else {
-      setSearch('');
+      setSearch(prev => prev === '' ? prev : '');
     }
   }, [value, options]);
 

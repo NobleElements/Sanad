@@ -2,7 +2,7 @@
 // This wraps `create` to remember each store's initial state and restore it after every test.
 // Enabled for all tests by vi.mock('zustand') in src/test/setup.js.
 // See https://zustand.docs.pmnd.rs/guides/testing
-import { act } from '@testing-library/react';
+import { act, cleanup } from '@testing-library/react';
 import { afterEach, vi } from 'vitest';
 
 const { create: actualCreate } = await vi.importActual('zustand');
@@ -20,6 +20,7 @@ export const create = (stateCreator) =>
   typeof stateCreator === 'function' ? createUncurried(stateCreator) : createUncurried;
 
 afterEach(() => {
+  cleanup();
   act(() => {
     storeResetFns.forEach((resetFn) => resetFn());
   });

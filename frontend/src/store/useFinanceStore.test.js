@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import useFinanceStore from './useFinanceStore';
 import useUIStore from './useUIStore';
 import { API_URL } from '../config';
@@ -115,6 +115,7 @@ describe('useFinanceStore', () => {
   });
 
   it('reorderAssets updates optimistically and reverts on error', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const a1 = { id: 'a1', name: 'First' };
     const a2 = { id: 'a2', name: 'Second' };
     useFinanceStore.setState({ assets: [a1, a2] });
@@ -127,6 +128,7 @@ describe('useFinanceStore', () => {
 
     expect(useFinanceStore.getState().assets).toEqual([a1, a2]);
     expect(hasToast('Failed to save asset order', 'error')).toBe(true);
+    expect(consoleSpy).toHaveBeenCalled();
   });
 
   it('addDebt calls POST, refreshes assets/debts, and adds success toast', async () => {

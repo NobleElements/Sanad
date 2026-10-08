@@ -241,7 +241,10 @@ const useTaskStore = create((set, get) => ({
   },
 
   closeTaskModal: () => {
-    set({ isTaskModalOpen: false, activeTask: null, activeTaskDetails: null });
+    const s = get();
+    if (s.isTaskModalOpen || s.activeTask !== null || s.activeTaskDetails !== null) {
+      set({ isTaskModalOpen: false, activeTask: null, activeTaskDetails: null });
+    }
   },
 
   renameProject: async (oldName, newName) => {
