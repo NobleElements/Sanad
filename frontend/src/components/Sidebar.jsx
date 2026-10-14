@@ -11,7 +11,9 @@ export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }) {
   const logout = useAuthStore((state) => state.logout);
   const isAdmin = useAuthStore((state) => state.isAdmin);
   const features = useSettingsStore((state) => state.features);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const isCollapsed = useUIStore((state) => state.isSidebarCollapsed);
+  const toggleCollapse = useUIStore((state) => state.toggleSidebar);
+  const setSidebarCollapsed = useUIStore((state) => state.setSidebarCollapsed);
 
   // Auto collapse on small screens
   useEffect(() => {
@@ -23,16 +25,16 @@ export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }) {
         setIsMobileMenuOpen && setIsMobileMenuOpen(false);
       }
       if (window.innerWidth < 1024 && window.innerWidth >= 768) {
-        setIsCollapsed(true);
-      } else if (window.innerWidth >= 1024) {
-        setIsCollapsed(isCalendarAndAutoCollapse);
+        setSidebarCollapsed(true);
+      } else if (window.innerWidth >= 1024 && isCalendarAndAutoCollapse) {
+        setSidebarCollapsed(true);
       }
     };
     window.addEventListener('resize', handleResize);
     // initial check
     handleResize();
     return () => window.removeEventListener('resize', handleResize);
-  }, [setIsMobileMenuOpen, location.pathname]);
+  }, [setIsMobileMenuOpen, location.pathname, setSidebarCollapsed]);
 
   const getLinkClass = (path) => {
     const isActive = location.pathname === path || (path !== '/' && path !== '/dashboard' && location.pathname.startsWith(path + '/'));
@@ -70,7 +72,7 @@ export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }) {
             </Link>
           )}
           <button 
-            onClick={() => setIsCollapsed(!isCollapsed)} 
+            onClick={toggleCollapse} 
             className="hidden md:block p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-slate-100 transition-colors"
           >
             {isCollapsed ? <Menu className="w-6 h-6" /> : <Menu className="w-5 h-5" />}

@@ -4,6 +4,7 @@ import TipTapEditor from '../components/TipTapEditor';
 import { Plus, Search, FolderOpen, FileText, Trash2, Pencil, X, Check, BookOpen, ArrowUp, ArrowDown, ListFilter, ChevronDown, Menu } from 'lucide-react';
 import useNotebookStore from '../store/useNotebookStore';
 import useConfirmStore from '../store/useConfirmStore';
+import useUIStore from '../store/useUIStore';
 import { timeAgo } from '../utils/dateUtils';
 import usePageTitle from '../hooks/usePageTitle';
 import { extractImagesFromHtml, deleteImages } from '../utils/imageUtils';
@@ -25,6 +26,7 @@ export default function Notebook() {
     createNote: storeCreateNote, updateNote, deleteNote: storeDeleteNote, uploadImage, moveNote
   } = useNotebookStore();
   const { showConfirm } = useConfirmStore();
+  const isOffline = useUIStore(state => state.isOffline);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [notebookSortBy, setNotebookSortBy] = useState('editDate');
@@ -34,7 +36,7 @@ export default function Notebook() {
 
   // UI state
   const [isCreatingNotebook, setIsCreatingNotebook] = useState(false);
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(true);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(!urlNoteId);
   const [newNotebookName, setNewNotebookName] = useState('');
   const [editingNotebookId, setEditingNotebookId] = useState(null);
   const [editingNotebookName, setEditingNotebookName] = useState('');
@@ -213,6 +215,7 @@ export default function Notebook() {
   };
 
   const deleteNotebook = async (id) => {
+    if (isOffline) return;
     showConfirm({
       title: 'Delete Notebook',
       message: 'Delete this notebook and all its notes?',
@@ -232,7 +235,7 @@ export default function Notebook() {
   // --- Note CRUD ---
 
   const createNote = async () => {
-    if (!selectedNotebookId) return;
+    if (!selectedNotebookId || isOffline) return;
     const note = await storeCreateNote(selectedNotebookId);
     if (note) {
       navigate(`/notebook/${note.id}`);
@@ -249,16 +252,25 @@ export default function Notebook() {
     }
   };
 
-  const deleteNote = async (id) => {
-    const success = await storeDeleteNote(id);
-    if (success && selectedNote?.id === id) {
-      setSelectedNote(null);
-      setNoteTitle('');
-      setNoteContent('');
-      initialImagesRef.current = [];
-      uploadedSessionImagesRef.current = [];
-      navigate('/notebook');
-    }
+  const deleteNote = (id) => {
+    if (isOffline) return;
+    showConfirm({
+      title: 'Delete Note',
+      message: 'Are you sure you want to delete this note?',
+      confirmText: 'Delete',
+      variant: 'danger',
+      onConfirm: async () => {
+        const success = await storeDeleteNote(id);
+        if (success && selectedNote?.id === id) {
+          setSelectedNote(null);
+          setNoteTitle('');
+          setNoteContent('');
+          initialImagesRef.current = [];
+          uploadedSessionImagesRef.current = [];
+          navigate('/notebook');
+        }
+      }
+    });
   };
 
   // --- Image upload ---
@@ -397,8 +409,9 @@ export default function Notebook() {
               </div>
               <button
                 onClick={() => setIsCreatingNotebook(true)}
-                className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-400 transition-colors"
-                title="New Notebook"
+                disabled={isOffline}
+                title={isOffline ? "Not available offline" : "New Notebook"}
+                className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Plus className="w-3.5 h-3.5" />
               </button>
@@ -471,13 +484,17 @@ export default function Notebook() {
                   <div className="hidden group-hover:flex items-center gap-0.5 flex-shrink-0">
                     <button
                       onClick={(e) => { e.stopPropagation(); setEditingNotebookId(nb.id); setEditingNotebookName(nb.name); }}
-                      className="p-0.5 rounded hover:bg-slate-200 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400 dark:text-slate-500 transition-colors"
+                      disabled={isOffline}
+                      title={isOffline ? "Not available offline" : "Rename Notebook"}
+                      className="p-0.5 rounded hover:bg-slate-200 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400 dark:text-slate-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Pencil className="w-3 h-3" />
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); deleteNotebook(nb.id); }}
-                      className="p-0.5 rounded hover:bg-red-100 text-slate-400 dark:text-slate-500 hover:text-red-600 transition-colors"
+                      disabled={isOffline}
+                      title={isOffline ? "Not available offline" : "Delete Notebook"}
+                      className="p-0.5 rounded hover:bg-red-100 text-slate-400 dark:text-slate-500 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Trash2 className="w-3 h-3" />
                     </button>
@@ -520,8 +537,9 @@ export default function Notebook() {
             {searchResults === null && selectedNotebookId && (
               <button
                 onClick={createNote}
-                className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-400 transition-colors"
-                title="New Note"
+                disabled={isOffline}
+                title={isOffline ? "Not available offline" : "New Note"}
+                className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Plus className="w-3.5 h-3.5" />
               </button>
@@ -574,7 +592,9 @@ export default function Notebook() {
                 </div>
                 <button
                   onClick={(e) => { e.stopPropagation(); deleteNote(note.id); }}
-                  className="hidden group-hover:block p-0.5 rounded hover:bg-red-100 text-slate-400 dark:text-slate-500 hover:text-red-600 transition-colors flex-shrink-0"
+                  disabled={isOffline}
+                  title={isOffline ? "Not available offline" : "Delete Note"}
+                  className="hidden group-hover:block p-0.5 rounded hover:bg-red-100 text-slate-400 dark:text-slate-500 hover:text-red-600 transition-colors flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Trash2 className="w-3 h-3" />
                 </button>

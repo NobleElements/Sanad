@@ -68,4 +68,45 @@ describe('Notebook autosave initialization shield', () => {
       body: jsonBody({ title: 'Loaded note', content: '<p dir="auto">Loaded body (normalized) and edited</p>' })
     }));
   });
+
+  it('shows confirmation modal before deleting a note and deletes on confirm', async () => {
+    const { fireEvent } = await import('@testing-library/react');
+    const useConfirmStore = (await import('../store/useConfirmStore')).default;
+    useConfirmStore.setState({ isOpen: false });
+
+    const fetchMock = mockFetch({
+      'GET /api/notebooks': jsonResponse([
+        { id: 'nb-1', name: 'Work', notes: [{ id: 'n-1', title: 'Loaded note', notebookId: 'nb-1', updatedAt: note.updatedAt }] }
+      ]),
+      'GET /api/notes/n-1': jsonResponse(note),
+      'DELETE /api/notes/n-1': jsonResponse(null, { status: 204 })
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/notebook/n-1']}>
+        <Routes>
+          <Route path="/notebook/:noteId" element={<Notebook />} />
+          <Route path="/notebook" element={<div>Notebook Root</div>} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    const deleteBtn = await screen.findByTitle('Delete Note');
+    fireEvent.click(deleteBtn);
+
+    const confirmState = useConfirmStore.getState();
+    expect(confirmState.isOpen).toBe(true);
+    expect(confirmState.title).toBe('Delete Note');
+    expect(confirmState.message).toBe('Are you sure you want to delete this note?');
+    expect(confirmState.variant).toBe('danger');
+
+    // Confirming deletion calls the DELETE endpoint
+    await act(async () => {
+      await confirmState.onConfirm();
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(`${API_URL}/notes/n-1`, expect.objectContaining({
+      method: 'DELETE'
+    }));
+  });
 });

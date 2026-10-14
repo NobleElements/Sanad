@@ -4,8 +4,11 @@ const useUIStore = create((set) => ({
   theme: 'light',
   toasts: [],
   isOffline: typeof navigator !== 'undefined' ? !navigator.onLine : false,
+  isSidebarCollapsed: false,
   
   setOfflineStatus: (status) => set({ isOffline: status }),
+  toggleSidebar: () => set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed })),
+  setSidebarCollapsed: (collapsed) => set({ isSidebarCollapsed: collapsed }),
   
   toggleTheme: () => set((state) => ({ theme: state.theme === 'light' ? 'dark' : 'light' })),
   

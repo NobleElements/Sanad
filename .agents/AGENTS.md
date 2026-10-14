@@ -17,9 +17,6 @@
   addToast('Message content', 'success' | 'error' | 'info');
   ```
 
-### Landing Page Layout
-- When adding or removing "Showcase" feature sections on the landing page (`LandingPage.jsx`), always maintain the alternating layout pattern (`flex-col lg:flex-row` followed by `flex-col lg:flex-row-reverse`). Ensure that the classes of subsequent sections are updated accordingly so the visual rhythm is preserved.
-
 ### Offline Mutating Actions
 - **Read-Only Enforcement**: Any UI element (button, form, icon) that triggers a data mutation (Create, Edit, Delete, Save, Log) must be disabled when the application is offline.
 - **Implementation**: 
@@ -41,12 +38,6 @@
 ### Web Notifications API
 - **Stateful Permissions**: When requesting `Notification.requestPermission()` in a React component, always store the returned permission in a React state variable (e.g., `const [permission, setPermission] = useState(...)`). Relying solely on the global `Notification.permission` inside a `useEffect` closure will prevent the component from re-rendering and activating its logic immediately after the user clicks "Allow" on the initial prompt.
 
-### Calendar UI
-- **Responsive View Toggles**: Use a `<select>` dropdown menu for view toggles on mobile, and an inline button group on desktop.
-- **Tasks Sidebar**: Ensure the Tasks sidebar is hidden on mobile screens but visible on desktop.
-- **Sidebar State Persistence**: Always persist the open/closed state of both the left and right sidebars to `localStorage` so they are preserved on reload.
-- **Views**: The default calendar view is `week`. Do not implement or suggest an `agenda` view.
-
 ### Frontend Architecture & Libraries
 - **State Management**: Use `Zustand` for global state. Store files must be named `use<Domain>Store.js` (e.g., `useTaskStore.js`) and placed in the `frontend/src/store/` directory.
 - **Styling**: Use TailwindCSS for all styling. Do not introduce heavy component libraries (like Material-UI, Chakra, or Ant Design).
@@ -58,7 +49,7 @@
 ### Progressive Web App (PWA) / Workbox
 - **Service Worker Route Matching**: When configuring `workbox.runtimeCaching` (e.g., in `vite-plugin-pwa`), do NOT use strictly anchored regular expressions like `/^\/api\//` to match API routes. The `request.url` evaluated by the Service Worker is often an absolute URL (e.g., `http://localhost:4173/api/...`), so an anchored regex will fail to match, completely breaking cache fallbacks and Network timeouts.
 - **Solution**: Use a non-anchored RegExp (e.g., `/\/api\//i`) or a callback function (e.g., `({ url }) => url.pathname.startsWith('/api/')`) to accurately intercept relative paths regardless of the host origin.
-- **Offline Cache Warm-Up**: When creating a new domain model or adding new GET API routes to the frontend, you MUST append the new endpoint URL to the `endpointsToCache` array inside `frontend/src/utils/offlineSync.js`. This ensures the endpoint is automatically pre-fetched and cached in the background when the app loads, keeping the offline read-only experience fully populated.
+- **Offline Cache Warm-Up**: When creating a new domain model or adding new GET API routes to the frontend, you MUST append the new endpoint URL to the array returned by `getEndpointsToCache()` inside `frontend/src/utils/offlineSync.js`. This ensures the endpoint is automatically pre-fetched and cached in the background when the app loads, keeping the offline read-only experience fully populated.
 - **Delta Sync for Large Collections**: When pre-fetching large collections (like Notes or Tasks) for offline use, do NOT download the full payload of all items on every app launch. Instead, implement a `/api/[entity]/sync` endpoint that accepts a `?since=timestamp` query parameter and returns an array of modified IDs. The frontend should then individually fetch only those specific modified IDs to populate the Workbox cache.
 
 ### Rich Text Editing (TipTap) & Autosave
@@ -67,10 +58,6 @@
   1. Always use an `isInitializingRef` guard (with a ~500ms timeout) wrapping the initial data population logic (e.g. inside the `fetch` resolution). 
   2. Inside your `onChange` handler, use `if (isInitializingRef.current) return;` to safely ignore these programmatic events.
   3. When programmatically setting content using TipTap's API, explicitly pass `false` for `emitUpdate` (e.g., `editor.commands.setContent(content, false)`).
-
-### Custom Apps & CORS Proxy
-- **Bypassing CORS**: When writing JavaScript for custom HTML apps, requests to external servers may fail due to CORS restrictions.
-- **Solution**: Route these requests through the backend proxy at `/api/apps/proxy`. The frontend app should send a `POST` request to this endpoint with the payload `{ url: string, method: string, headers: object, body: string }` and authenticate using the `Sanad.Auth` token from `localStorage`.
 
 ## Backend Conventions
 
