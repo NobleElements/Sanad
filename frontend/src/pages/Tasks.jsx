@@ -367,23 +367,25 @@ export default function Tasks() {
                                               </p>
 
                                               {/* Metadata row */}
-                                              <div className="flex flex-wrap items-center gap-2 mt-2">
-                                                {/* Project Badge */}
-                                                {task.project && (
-                                                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${getTagColor(task.project)}`}>
-                                                    <FolderKanban className="w-3 h-3" />
-                                                    {task.project}
-                                                  </span>
-                                                )}
+                                              {((!projectFilter && task.project) || estTime) && (
+                                                <div className="flex flex-wrap items-center gap-2 mt-2">
+                                                  {/* Project Badge */}
+                                                  {!projectFilter && task.project && (
+                                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${getTagColor(task.project)}`}>
+                                                      <FolderKanban className="w-3 h-3" />
+                                                      {task.project}
+                                                    </span>
+                                                  )}
 
-                                                {/* Estimated Time Badge */}
-                                                {estTime && (
-                                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 text-xs font-medium text-gray-500 dark:text-gray-400">
-                                                    <Timer className="w-3 h-3" />
-                                                    {estTime}
-                                                  </span>
-                                                )}
-                                              </div>
+                                                  {/* Estimated Time Badge */}
+                                                  {estTime && (
+                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 text-xs font-medium text-gray-500 dark:text-gray-400">
+                                                      <Timer className="w-3 h-3" />
+                                                      {estTime}
+                                                    </span>
+                                                  )}
+                                                </div>
+                                              )}
 
                                               {/* Tags */}
                                               {taskTags.length > 0 && (
@@ -422,7 +424,7 @@ export default function Tasks() {
                                               {task.title}
                                             </p>
                                             <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
-                                              {task.project && (
+                                              {!projectFilter && task.project && (
                                                 <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${getTagColor(task.project)}`}>
                                                   {task.project}
                                                 </span>

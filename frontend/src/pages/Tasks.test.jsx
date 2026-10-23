@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Tasks from './Tasks';
 import useTaskStore from '../store/useTaskStore';
@@ -13,6 +13,7 @@ describe('Tasks Page Component', () => {
 
   beforeEach(() => {
     vi.restoreAllMocks();
+    localStorage.clear();
   });
 
   it('renders loading spinner when tasks are not loaded', () => {
@@ -77,6 +78,54 @@ describe('Tasks Page Component', () => {
     expect(screen.getByText('Task One')).toBeInTheDocument();
     expect(screen.getByText('Task Three')).toBeInTheDocument();
     expect(screen.queryByText('Task Two')).not.toBeInTheDocument();
+  });
+
+  it('hides project tag in cards when a project is selected via project filter in kanban view', () => {
+    useTaskStore.setState({ tasks: sampleTasks, isLoaded: true });
+    render(
+      <MemoryRouter>
+        <Tasks />
+      </MemoryRouter>
+    );
+
+    // With All Projects selected, project tag is visible in the card
+    const taskOneCard = screen.getByText('Task One').closest('.kanban-card');
+    expect(within(taskOneCard).getByText('SanadProject')).toBeInTheDocument();
+
+    // Select SanadProject
+    const selects = screen.getAllByRole('combobox');
+    const projectSelect = selects.find(s => s.querySelector('option[value="SanadProject"]'));
+    fireEvent.change(projectSelect, { target: { value: 'SanadProject' } });
+
+    // The project tag should now be hidden in the card
+    expect(within(taskOneCard).queryByText('SanadProject')).not.toBeInTheDocument();
+
+    // Reset back to All Projects
+    fireEvent.change(projectSelect, { target: { value: '' } });
+    expect(within(taskOneCard).getByText('SanadProject')).toBeInTheDocument();
+  });
+
+  it('hides project tag in cards when a project is selected via project filter in list view', () => {
+    localStorage.setItem('sanad_tasks_viewMode', 'list');
+    useTaskStore.setState({ tasks: sampleTasks, isLoaded: true });
+    render(
+      <MemoryRouter>
+        <Tasks />
+      </MemoryRouter>
+    );
+
+    // With All Projects selected, project tag is visible in the card container
+    const taskOneTitle = screen.getByText('Task One');
+    const cardRow = taskOneTitle.closest('.group');
+    expect(within(cardRow).getByText('SanadProject')).toBeInTheDocument();
+
+    // Select SanadProject
+    const selects = screen.getAllByRole('combobox');
+    const projectSelect = selects.find(s => s.querySelector('option[value="SanadProject"]'));
+    fireEvent.change(projectSelect, { target: { value: 'SanadProject' } });
+
+    // The project tag should now be hidden in the list card
+    expect(within(cardRow).queryByText('SanadProject')).not.toBeInTheDocument();
   });
 
   it('toggles Done column visibility when hide/show completed button is clicked', () => {
