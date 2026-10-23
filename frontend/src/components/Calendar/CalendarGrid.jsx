@@ -6,12 +6,13 @@ import {
 import { Droppable, Draggable } from '@hello-pangea/dnd';
 import useCalendarStore from '../../store/useCalendarStore';
 
-import { expandEvents } from '../../utils/calendarUtils';
+import { expandEvents, calculateCalendarScrollTop } from '../../utils/calendarUtils';
 
 export default function CalendarGrid({ viewMode, viewDate, onEventClick, onSlotClick, onNavigateToDay }) {
   const { events, categories, settings, hiddenCategoryIds, updateEvent } = useCalendarStore();
   const firstDayOfWeek = settings.firstDayOfWeek;
   const scrollRef = React.useRef(null);
+  const headerRef = React.useRef(null);
   
   // Resizing state
   const [resizingState, setResizingState] = React.useState(null);
@@ -188,13 +189,26 @@ export default function CalendarGrid({ viewMode, viewDate, onEventClick, onSlotC
   }, [resizingState, updateEvent]);
 
   React.useEffect(() => {
-    if (scrollRef.current && (viewMode === 'week' || viewMode === '3days' || viewMode === 'today')) {
-      // Small delay to ensure render is complete before scrolling
-      setTimeout(() => {
-        if (scrollRef.current) scrollRef.current.scrollTop = settings.workHourStart * 60 - 10;
+    if (viewMode === 'week' || viewMode === '3days' || viewMode === 'today') {
+      // Small delay to ensure layout and dimensions are calculated before scrolling
+      const timer = setTimeout(() => {
+        const container = scrollRef.current;
+        if (!container) return;
+
+        const headerHeight = headerRef.current ? headerRef.current.offsetHeight : 0;
+        const targetScroll = calculateCalendarScrollTop(
+          new Date(),
+          container.clientHeight,
+          headerHeight,
+          container.scrollHeight
+        );
+
+        container.scrollTop = targetScroll;
       }, 50);
+
+      return () => clearTimeout(timer);
     }
-  }, [viewMode, viewDate, settings.workHourStart]);
+  }, [viewMode, viewDate]);
 
   const getDaysToRender = () => {
     let start, end;
@@ -571,7 +585,7 @@ export default function CalendarGrid({ viewMode, viewDate, onEventClick, onSlotC
       <div className="flex-1 overflow-y-auto relative" ref={scrollRef}>
         
         {/* Sticky Header Group */}
-        <div className="sticky top-0 z-30 flex flex-col bg-white dark:bg-slate-900 shadow-sm border-b border-slate-200 dark:border-slate-800">
+        <div ref={headerRef} className="sticky top-0 z-30 flex flex-col bg-white dark:bg-slate-900 shadow-sm border-b border-slate-200 dark:border-slate-800">
           {/* Header Row (Days) */}
           <div className="flex shrink-0 ml-16 bg-white dark:bg-slate-900">
             {days.map(day => (

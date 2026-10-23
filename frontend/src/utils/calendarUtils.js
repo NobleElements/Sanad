@@ -38,3 +38,34 @@ export const expandEvents = (events, start, end) => {
   });
   return expanded;
 };
+
+/**
+ * Calculates the target scrollTop for the calendar timeline so that the given time of day
+ * is centered vertically within the visible timeline area.
+ * 
+ * @param {Date} [time=new Date()] The time of day to center.
+ * @param {number} [containerHeight=0] The clientHeight of the scrollable container.
+ * @param {number} [headerHeight=0] The offsetHeight of the sticky header.
+ * @param {number} [scrollHeight=0] The total scrollHeight of the scrollable container.
+ * @returns {number} The clamped scrollTop position in pixels.
+ */
+export const calculateCalendarScrollTop = (
+  time = new Date(),
+  containerHeight = 0,
+  headerHeight = 0,
+  scrollHeight = 0
+) => {
+  const currentMinutes = time.getHours() * 60 + time.getMinutes();
+  const visibleTimelineHeight = containerHeight - headerHeight;
+  const visibleHeight = visibleTimelineHeight > 0 ? visibleTimelineHeight : containerHeight;
+
+  // Center the target time in the visible timeline area
+  const targetScrollTop = currentMinutes - (visibleHeight > 0 ? visibleHeight / 2 : 300);
+  const maxScroll = scrollHeight > containerHeight ? scrollHeight - containerHeight : 0;
+
+  if (maxScroll > 0) {
+    return Math.max(0, Math.min(Math.round(targetScrollTop), maxScroll));
+  }
+  return Math.max(0, Math.round(targetScrollTop));
+};
+
