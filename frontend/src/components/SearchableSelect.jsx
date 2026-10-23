@@ -16,15 +16,20 @@ export default function SearchableSelect({
   const [search, setSearch] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
+  const isTypingRef = useRef(false);
 
   // Sync search input with value when it changes externally
   useEffect(() => {
+    if (isTypingRef.current) {
+      isTypingRef.current = false;
+      return;
+    }
     if (value) {
       const selected = options.find(o => o.id === value);
-      const target = selected ? selected.name : '';
-      setSearch(prev => prev === target ? prev : target);
+      const target = selected ? selected.name : (typeof value === 'string' ? value : '');
+      setSearch(target);
     } else {
-      setSearch(prev => prev === '' ? prev : '');
+      setSearch('');
     }
   }, [value, options]);
 
@@ -36,6 +41,7 @@ export default function SearchableSelect({
         if (value) {
             const selected = options.find(o => o.id === value);
             if (selected) setSearch(selected.name);
+            else if (typeof value === 'string') setSearch(value);
         } else {
             setSearch('');
         }
@@ -61,8 +67,10 @@ export default function SearchableSelect({
 
   const handleCreate = async () => {
     if (onCreate && search.trim() && !exactMatch) {
-      await onCreate(search.trim());
+      const newName = search.trim();
+      setSearch(newName);
       setIsOpen(false);
+      await onCreate(newName);
     }
   };
 
@@ -75,6 +83,7 @@ export default function SearchableSelect({
           placeholder={placeholder}
           value={search}
           onChange={(e) => {
+            isTypingRef.current = true;
             setSearch(e.target.value);
             if (value) onChange(''); // clear selection if they start typing
             setIsOpen(true);
