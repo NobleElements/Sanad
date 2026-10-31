@@ -21,6 +21,7 @@ export default function Habits() {
   const [newHabit, setNewHabit] = useState({ name: '', icon: '🌟', frequency: 'Daily' });
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [expandedHabits, setExpandedHabits] = useState(new Set());
+  const [isCreating, setIsCreating] = useState(false);
   const isOffline = useUIStore(state => state.isOffline);
 
   useEffect(() => {
@@ -46,12 +47,17 @@ export default function Habits() {
   }, [habitIdParam, habits]);
 
   const handleCreate = async () => {
-    if (!newHabit.name.trim()) return;
-    const success = await createHabit(newHabit);
-    if (success) {
-      setIsAddModalOpen(false);
-      setNewHabit({ name: '', icon: '🌟', frequency: 'Daily' });
-      setShowEmojiPicker(false);
+    if (!newHabit.name.trim() || isCreating || isOffline) return;
+    setIsCreating(true);
+    try {
+      const success = await createHabit(newHabit);
+      if (success) {
+        setIsAddModalOpen(false);
+        setNewHabit({ name: '', icon: '🌟', frequency: 'Daily' });
+        setShowEmojiPicker(false);
+      }
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -328,7 +334,7 @@ export default function Habits() {
               </button>
               <button
                 onClick={handleCreate}
-                disabled={!newHabit.name.trim() || isOffline}
+                disabled={!newHabit.name.trim() || isOffline || isCreating}
                 title={isOffline ? "Not available offline" : ""}
                 className="bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 dark:bg-indigo-500 disabled:bg-indigo-400 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg font-medium transition-colors shadow-sm"
               >

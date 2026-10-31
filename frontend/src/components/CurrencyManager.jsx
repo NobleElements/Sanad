@@ -11,6 +11,7 @@ export default function CurrencyManager() {
   const [name, setName] = useState('');
   const [symbol, setSymbol] = useState('');
   const [rate, setRate] = useState('');
+  const [isAdding, setIsAdding] = useState(false);
 
   const [editingId, setEditingId] = useState(null);
   const [editRate, setEditRate] = useState('');
@@ -20,11 +21,17 @@ export default function CurrencyManager() {
 
   const handleAdd = async (e) => {
     e.preventDefault();
+    if (isAdding) return;
     const parsedRate = parseFloat(rate);
     if (isNaN(parsedRate) || parsedRate <= 0) return;
-    const success = await addCurrency(code.toUpperCase(), name, symbol, parsedRate);
-    if (success) {
-      setCode(''); setName(''); setSymbol(''); setRate('');
+    setIsAdding(true);
+    try {
+      const success = await addCurrency(code.toUpperCase(), name, symbol, parsedRate);
+      if (success) {
+        setCode(''); setName(''); setSymbol(''); setRate('');
+      }
+    } finally {
+      setIsAdding(false);
     }
   };
 
@@ -142,7 +149,7 @@ export default function CurrencyManager() {
               <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 dark:text-slate-500 mb-1">Exchange Rate (1 {code || 'X'} = ? {defaultCurrency?.code || 'Default'})</label>
               <input type="number" step="0.000001" value={rate} onChange={e=>setRate(e.target.value)} className="w-full border border-slate-300 dark:border-slate-600 rounded p-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none dark:bg-slate-700 dark:text-slate-100" required />
             </div>
-            <button type="submit" className="bg-slate-800 hover:bg-slate-900 text-white p-2 rounded text-sm font-semibold transition-colors mt-1">Add Currency</button>
+            <button type="submit" disabled={isAdding} className="bg-slate-800 hover:bg-slate-900 text-white p-2 rounded text-sm font-semibold transition-colors mt-1 disabled:opacity-50 disabled:cursor-not-allowed">Add Currency</button>
           </form>
         </div>
       </div>

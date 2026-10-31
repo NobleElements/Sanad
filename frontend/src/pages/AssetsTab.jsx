@@ -95,6 +95,7 @@ export default function AssetsTab() {
   // Editing full item state in widget
   const [editingFullAsset, setEditingFullAsset] = useState(null);
   const [editingFullDebt, setEditingFullDebt] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const scrollToForm = () => {
     if (formRef.current) {
@@ -172,42 +173,48 @@ export default function AssetsTab() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (formType === 'asset') {
-      if (editingFullAsset) {
-        const assetToUpdate = assets.find(a => a.id === editingFullAsset);
-        if (assetToUpdate) {
-          const updatedAssetObj = {
-            ...assetToUpdate,
-            name,
-            type,
-            currencyId: currencyId || null,
-            icon: icon || null
-          };
-          const success = await updateAsset(updatedAssetObj, parseFloat(amount));
+    if (isSubmitting || isOffline) return;
+    setIsSubmitting(true);
+    try {
+      if (formType === 'asset') {
+        if (editingFullAsset) {
+          const assetToUpdate = assets.find(a => a.id === editingFullAsset);
+          if (assetToUpdate) {
+            const updatedAssetObj = {
+              ...assetToUpdate,
+              name,
+              type,
+              currencyId: currencyId || null,
+              icon: icon || null
+            };
+            const success = await updateAsset(updatedAssetObj, parseFloat(amount));
+            if (success) clearForm();
+          }
+        } else {
+          const success = await addAsset(name, type, parseFloat(amount), currencyId || null, icon || null);
           if (success) clearForm();
         }
       } else {
-        const success = await addAsset(name, type, parseFloat(amount), currencyId || null, icon || null);
-        if (success) clearForm();
-      }
-    } else {
-      if (editingFullDebt) {
-        const debtToUpdate = debts.find(d => d.id === editingFullDebt);
-        if (debtToUpdate) {
-          const updatedDebtObj = {
-            ...debtToUpdate,
-            name,
-            type,
-            currencyId: currencyId || null,
-            icon: icon || null
-          };
-          const success = await updateDebt(updatedDebtObj, parseFloat(amount));
+        if (editingFullDebt) {
+          const debtToUpdate = debts.find(d => d.id === editingFullDebt);
+          if (debtToUpdate) {
+            const updatedDebtObj = {
+              ...debtToUpdate,
+              name,
+              type,
+              currencyId: currencyId || null,
+              icon: icon || null
+            };
+            const success = await updateDebt(updatedDebtObj, parseFloat(amount));
+            if (success) clearForm();
+          }
+        } else {
+          const success = await addDebt(name, type, parseFloat(amount), currencyId || null, icon || null);
           if (success) clearForm();
         }
-      } else {
-        const success = await addDebt(name, type, parseFloat(amount), currencyId || null, icon || null);
-        if (success) clearForm();
       }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -646,7 +653,7 @@ export default function AssetsTab() {
                 <div className="flex gap-2 mt-2">
                   <button 
                     type="submit" 
-                    disabled={isOffline}
+                    disabled={isOffline || isSubmitting}
                     title={isOffline ? "Not available offline" : undefined}
                     className={`flex-1 text-white p-2 rounded font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${formType === 'debt' ? 'bg-rose-600 hover:bg-rose-700 dark:bg-rose-500 dark:hover:bg-rose-600' : 'bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600'}`}
                   >

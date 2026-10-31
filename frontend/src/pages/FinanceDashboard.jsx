@@ -72,13 +72,20 @@ export default function FinanceDashboard() {
   const [setupCode, setSetupCode] = useState('');
   const [setupName, setSetupName] = useState('');
   const [setupSymbol, setSetupSymbol] = useState('');
+  const [isSettingUp, setIsSettingUp] = useState(false);
 
   const handleSetup = async (e) => {
     e.preventDefault();
-    const success = await addCurrency(setupCode.toUpperCase(), setupName, setupSymbol, 1.0);
-    if (success) {
-      setSetupCode(''); setSetupName(''); setSetupSymbol('');
-      // After this finishes, currencies will be updated and setup screen will disappear
+    if (isSettingUp || isOffline) return;
+    setIsSettingUp(true);
+    try {
+      const success = await addCurrency(setupCode.toUpperCase(), setupName, setupSymbol, 1.0);
+      if (success) {
+        setSetupCode(''); setSetupName(''); setSetupSymbol('');
+        // After this finishes, currencies will be updated and setup screen will disappear
+      }
+    } finally {
+      setIsSettingUp(false);
     }
   };
 
@@ -86,6 +93,7 @@ export default function FinanceDashboard() {
   const [desc, setDesc] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [logDate, setLogDate] = useState(getLocalDateStr());
+  const [isLogging, setIsLogging] = useState(false);
 
   // inline transaction editing state
   const [editingTxId, setEditingTxId] = useState(null);
@@ -163,13 +171,19 @@ export default function FinanceDashboard() {
 
   const handleLog = async (e) => {
     e.preventDefault();
-    const dateToLog = getDateToLog(logDate);
-    const success = await addTransaction(parseFloat(amount), categoryId, desc, 'Expense', dateToLog);
-    if (success) {
-      setCategoryId('');
-      setAmount(''); 
-      setDesc('');
-      setLogDate(getLocalDateStr());
+    if (isLogging || isOffline) return;
+    setIsLogging(true);
+    try {
+      const dateToLog = getDateToLog(logDate);
+      const success = await addTransaction(parseFloat(amount), categoryId, desc, 'Expense', dateToLog);
+      if (success) {
+        setCategoryId('');
+        setAmount(''); 
+        setDesc('');
+        setLogDate(getLocalDateStr());
+      }
+    } finally {
+      setIsLogging(false);
     }
   };
 
@@ -291,7 +305,14 @@ export default function FinanceDashboard() {
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Symbol (e.g. $)</label>
               <input type="text" value={setupSymbol} onChange={e=>setSetupSymbol(e.target.value)} className="w-full border border-slate-300 dark:border-slate-600 rounded p-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none dark:bg-slate-700 dark:text-slate-100" required maxLength={10} />
             </div>
-            <button type="submit" className="mt-4 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 dark:bg-indigo-500 text-white p-3 rounded font-semibold transition-colors">Set Default Currency</button>
+            <button
+              type="submit"
+              disabled={isOffline || isSettingUp}
+              title={isOffline ? "Not available offline" : undefined}
+              className="mt-4 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 dark:bg-indigo-500 text-white p-3 rounded font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSettingUp ? 'Saving...' : 'Set Default Currency'}
+            </button>
           </form>
         </div>
       </div>
@@ -541,7 +562,14 @@ export default function FinanceDashboard() {
                       />
                     </div>
                     <input type="text" placeholder="Description" value={desc} onChange={e=>setDesc(e.target.value)} className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded p-2 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                    <button type="submit" disabled={!categoryId} className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Log Expense</button>
+                    <button
+                      type="submit"
+                      disabled={isOffline || isLogging || !categoryId}
+                      title={isOffline ? "Not available offline" : undefined}
+                      className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isLogging ? 'Logging...' : 'Log Expense'}
+                    </button>
                   </form>
                 </div>
               </div>
