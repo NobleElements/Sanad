@@ -15,7 +15,7 @@ namespace Sanad.Api.Migrations.Admin
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "10.0.8");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.12");
 
             modelBuilder.Entity("Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey", b =>
                 {
@@ -101,7 +101,11 @@ namespace Sanad.Api.Migrations.Admin
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ApiKey");
+
                     b.HasIndex("DatastoreId");
+
+                    b.HasIndex("PaddleCustomerId");
 
                     b.HasIndex("TierId");
 
@@ -172,6 +176,8 @@ namespace Sanad.Api.Migrations.Admin
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Token");
 
                     b.HasIndex("UserId");
 

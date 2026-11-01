@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Sanad.Api.Data;
@@ -75,26 +76,36 @@ public class ShareService : IShareService
         if (user == null) return new List<ShareLinkDto>();
 
         var links = await _adminDb.SharedLinks.Where(l => l.UserId == user.Id).ToListAsync();
+        if (links.Count == 0) return new List<ShareLinkDto>();
+
+        var folderIds = links.Where(l => l.FolderId.HasValue).Select(l => l.FolderId!.Value).Distinct().ToList();
+        var fileIds = links.Where(l => l.FileItemId.HasValue).Select(l => l.FileItemId!.Value).Distinct().ToList();
+
+        var folderNames = folderIds.Count > 0
+            ? await _db.Folders
+                .AsNoTracking()
+                .Where(f => folderIds.Contains(f.Id))
+                .ToDictionaryAsync(f => f.Id, f => f.Name)
+            : new Dictionary<int, string>();
+
+        var fileNames = fileIds.Count > 0
+            ? await _db.FileItems
+                .AsNoTracking()
+                .Where(f => fileIds.Contains(f.Id))
+                .ToDictionaryAsync(f => f.Id, f => f.Name)
+            : new Dictionary<int, string>();
 
         // Enrich with names
-        var result = new List<ShareLinkDto>();
+        var result = new List<ShareLinkDto>(links.Count);
         foreach (var link in links)
         {
-            if (link.FolderId.HasValue)
+            if (link.FolderId is { } folderId && folderNames.TryGetValue(folderId, out var folderName))
             {
-                var folder = await _db.Folders.FindAsync(link.FolderId.Value);
-                if (folder != null)
-                {
-                    result.Add(new ShareLinkDto(link.Token, link.Permission, "folder", folder.Name, folder.Id));
-                }
+                result.Add(new ShareLinkDto(link.Token, link.Permission, "folder", folderName, folderId));
             }
-            else if (link.FileItemId.HasValue)
+            else if (link.FileItemId is { } fileId && fileNames.TryGetValue(fileId, out var fileName))
             {
-                var file = await _db.FileItems.FindAsync(link.FileItemId.Value);
-                if (file != null)
-                {
-                    result.Add(new ShareLinkDto(link.Token, link.Permission, "file", file.Name, file.Id));
-                }
+                result.Add(new ShareLinkDto(link.Token, link.Permission, "file", fileName, fileId));
             }
         }
 

@@ -68,5 +68,41 @@ public class SanadDbContext : DbContext
             .WithMany()
             .HasForeignKey(d => d.CurrencyId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Transaction>()
+            .HasIndex(t => t.Date);
+
+        modelBuilder.Entity<MonthlyBudget>()
+            .HasIndex(b => new { b.Year, b.Month });
+
+        modelBuilder.Entity<Note>()
+            .HasIndex(n => n.UpdatedAt);
+
+        modelBuilder.Entity<Note>()
+            .HasIndex(n => new { n.NotebookId, n.UpdatedAt });
+
+        modelBuilder.Entity<Thought>()
+            .HasIndex(t => t.CreatedAt);
+
+        modelBuilder.Entity<HabitLog>()
+            .HasIndex(l => new { l.HabitId, l.Date });
+
+        modelBuilder.Entity<Folder>()
+            .HasIndex(f => new { f.ParentId, f.Name });
+
+        modelBuilder.Entity<FileItem>()
+            .HasIndex(fi => new { fi.FolderId, fi.Name });
+
+        modelBuilder.Entity<TaskItem>()
+            .HasIndex(t => new { t.Status, t.Order, t.CreatedAt });
+
+        modelBuilder.Entity<TaskItem>()
+            .HasIndex(t => new { t.Order, t.CreatedAt });
+
+        modelBuilder.Entity<AssetSnapshot>()
+            .HasIndex(s => s.RecordedAt);
+
+        modelBuilder.Entity<DebtSnapshot>()
+            .HasIndex(s => s.RecordedAt);
     }
 }

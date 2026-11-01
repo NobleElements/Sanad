@@ -15,7 +15,7 @@ namespace Sanad.Api.Migrations.Sanad
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "10.0.8");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.12");
 
             modelBuilder.Entity("Sanad.Api.Models.Asset", b =>
                 {
@@ -77,6 +77,8 @@ namespace Sanad.Api.Migrations.Sanad
                     b.HasKey("Id");
 
                     b.HasIndex("AssetId");
+
+                    b.HasIndex("RecordedAt");
 
                     b.ToTable("AssetSnapshots");
                 });
@@ -309,6 +311,8 @@ namespace Sanad.Api.Migrations.Sanad
 
                     b.HasIndex("DebtId");
 
+                    b.HasIndex("RecordedAt");
+
                     b.ToTable("DebtSnapshots");
                 });
 
@@ -370,7 +374,7 @@ namespace Sanad.Api.Migrations.Sanad
 
                     b.HasKey("Id");
 
-                    b.HasIndex("FolderId");
+                    b.HasIndex("FolderId", "Name");
 
                     b.ToTable("FileItems");
                 });
@@ -393,7 +397,7 @@ namespace Sanad.Api.Migrations.Sanad
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ParentId");
+                    b.HasIndex("ParentId", "Name");
 
                     b.ToTable("Folders");
                 });
@@ -446,7 +450,7 @@ namespace Sanad.Api.Migrations.Sanad
 
                     b.HasKey("Id");
 
-                    b.HasIndex("HabitId");
+                    b.HasIndex("HabitId", "Date");
 
                     b.ToTable("HabitLogs");
                 });
@@ -467,6 +471,8 @@ namespace Sanad.Api.Migrations.Sanad
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Year", "Month");
 
                     b.ToTable("MonthlyBudgets");
                 });
@@ -495,7 +501,9 @@ namespace Sanad.Api.Migrations.Sanad
 
                     b.HasKey("Id");
 
-                    b.HasIndex("NotebookId");
+                    b.HasIndex("UpdatedAt");
+
+                    b.HasIndex("NotebookId", "UpdatedAt");
 
                     b.ToTable("Notes");
                 });
@@ -693,6 +701,10 @@ namespace Sanad.Api.Migrations.Sanad
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Order", "CreatedAt");
+
+                    b.HasIndex("Status", "Order", "CreatedAt");
+
                     b.ToTable("TaskItems");
                 });
 
@@ -709,6 +721,8 @@ namespace Sanad.Api.Migrations.Sanad
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
 
                     b.ToTable("Thoughts");
                 });
@@ -741,6 +755,8 @@ namespace Sanad.Api.Migrations.Sanad
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
+
+                    b.HasIndex("Date");
 
                     b.ToTable("Transactions");
                 });

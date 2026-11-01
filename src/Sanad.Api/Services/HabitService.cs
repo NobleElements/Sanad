@@ -83,7 +83,8 @@ public class HabitService : IHabitService
         if (habit == null || habit.IsDeleted) return null;
 
         var targetDate = date.Date;
-        var log = await _db.HabitLogs.FirstOrDefaultAsync(l => l.HabitId == id && l.Date.Date == targetDate);
+        var nextDate = targetDate.AddDays(1);
+        var log = await _db.HabitLogs.FirstOrDefaultAsync(l => l.HabitId == id && l.Date >= targetDate && l.Date < nextDate);
         if (log != null)
         {
             log.Completed = !log.Completed;

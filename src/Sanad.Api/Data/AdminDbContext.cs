@@ -32,6 +32,15 @@ public class AdminDbContext : DbContext, IDataProtectionKeyContext
             .IsUnique();
 
         modelBuilder.Entity<AppUser>()
+            .HasIndex(u => u.ApiKey);
+
+        modelBuilder.Entity<AppUser>()
+            .HasIndex(u => u.PaddleCustomerId);
+
+        modelBuilder.Entity<SharedLink>()
+            .HasIndex(s => s.Token);
+
+        modelBuilder.Entity<AppUser>()
             .HasOne(u => u.Tier)
             .WithMany()
             .HasForeignKey(u => u.TierId)

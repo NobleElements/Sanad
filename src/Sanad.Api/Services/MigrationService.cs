@@ -72,6 +72,7 @@ public class MigrationService
         await db.SaveChangesAsync();
 
         _cache.Set($"migrating_{user.Username}", false, TimeSpan.FromMinutes(5));
+        _cache.Remove($"tenant_dspath_{user.Username}");
 
         _logger.LogInformation($"Migration successful for user {userId}. Updated datastore mapping.");
 
