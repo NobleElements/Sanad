@@ -64,7 +64,7 @@ function ThoughtCard({
   const cardContent = (
     <div
       id={`thought-${thought.id}`}
-      className={`relative z-10 bg-white dark:bg-slate-800 p-6 rounded-xl border transition-all duration-300 dark:text-slate-100 ${
+      className={`group relative z-10 bg-white dark:bg-slate-800 p-6 rounded-xl border transition-all duration-300 dark:text-slate-100 ${
         isHighlighted
           ? 'border-indigo-500 ring-2 ring-indigo-500/50 bg-indigo-50/40 dark:bg-indigo-950/40 shadow-md'
           : hasMultipleInPile
@@ -94,7 +94,7 @@ function ThoughtCard({
                 }}
                 disabled={isOffline}
                 title={isOffline ? 'Not available offline' : ''}
-                className="text-xs text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                className="text-xs text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
                 Edit
               </button>
@@ -106,7 +106,7 @@ function ThoughtCard({
                 }}
                 disabled={isOffline}
                 title={isOffline ? 'Not available offline' : ''}
-                className="text-xs text-slate-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                className="text-xs text-slate-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
                 Delete
               </button>
