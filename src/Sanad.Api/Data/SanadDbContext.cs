@@ -8,6 +8,7 @@ public class SanadDbContext : DbContext
     public SanadDbContext(DbContextOptions<SanadDbContext> options) : base(options) { }
 
     public DbSet<Thought> Thoughts => Set<Thought>();
+    public DbSet<ThoughtCollection> ThoughtCollections => Set<ThoughtCollection>();
     public DbSet<TaskItem> TaskItems => Set<TaskItem>();
     public DbSet<TaskComment> TaskComments => Set<TaskComment>();
     public DbSet<TaskAttachment> TaskAttachments => Set<TaskAttachment>();
@@ -80,6 +81,18 @@ public class SanadDbContext : DbContext
 
         modelBuilder.Entity<Note>()
             .HasIndex(n => new { n.NotebookId, n.UpdatedAt });
+
+        modelBuilder.Entity<Thought>()
+            .HasOne(t => t.Collection)
+            .WithMany()
+            .HasForeignKey(t => t.CollectionId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<Thought>()
+            .HasIndex(t => t.CollectionId);
+
+        modelBuilder.Entity<Thought>()
+            .HasIndex(t => new { t.IsPinned, t.CreatedAt });
 
         modelBuilder.Entity<Thought>()
             .HasIndex(t => t.CreatedAt);

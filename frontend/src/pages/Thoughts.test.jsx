@@ -24,6 +24,9 @@ describe('Thoughts Page Component', () => {
     useUIStore.setState({ isOffline: false });
     useThoughtsStore.setState({
       thoughts: [],
+      collections: [],
+      activeCollectionId: null,
+      viewMode: 'timeline',
       hasMore: false,
       isLoaded: true
     });
@@ -122,5 +125,105 @@ describe('Thoughts Page Component', () => {
     expect(screen.getByDisplayValue('First thought of the day')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Save/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Cancel/i })).toBeInTheDocument();
+  });
+
+  it('renders Google Keep grid view with pinned thoughts section', () => {
+    const pinnedThought = {
+      id: 'thought-pinned',
+      content: 'Pinned crucial note',
+      isPinned: true,
+      color: 'sand',
+      createdAt: new Date().toISOString()
+    };
+    useThoughtsStore.setState({
+      thoughts: [pinnedThought, sampleThought1],
+      viewMode: 'grid',
+      isLoaded: true
+    });
+
+    render(
+      <MemoryRouter>
+        <Thoughts />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText(/Pinned \(1\)/i)).toBeInTheDocument();
+    expect(screen.getByText('Pinned crucial note')).toBeInTheDocument();
+    expect(screen.getByText('First thought of the day')).toBeInTheDocument();
+  });
+
+  it('renders compact view with skim rows', () => {
+    useThoughtsStore.setState({
+      thoughts: [sampleThought1, sampleThought2],
+      viewMode: 'compact',
+      isLoaded: true
+    });
+
+    render(
+      <MemoryRouter>
+        <Thoughts />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('First thought of the day')).toBeInTheDocument();
+    expect(screen.getByText('Second thought of the day')).toBeInTheDocument();
+  });
+
+  it('renders collection tabs and allows switching view mode', () => {
+    const mockCollection = { id: 'col-1', name: 'Work', color: '#3B82F6', thoughtCount: 2 };
+    useThoughtsStore.setState({
+      collections: [mockCollection],
+      thoughts: [sampleThought1],
+      viewMode: 'grid',
+      isLoaded: true
+    });
+
+    render(
+      <MemoryRouter>
+        <Thoughts />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('All Thoughts')).toBeInTheDocument();
+    expect(screen.getAllByText('Uncategorized').length).toBeGreaterThan(0);
+    expect(screen.getByText('Work')).toBeInTheDocument();
+
+    const timelineToggle = screen.getByTitle('Timeline View');
+    fireEvent.click(timelineToggle);
+    expect(useThoughtsStore.getState().viewMode).toBe('timeline');
+  });
+
+  it('bounds long thought card height and displays See more button in grid view', () => {
+    const longThought = {
+      id: 'thought-long',
+      content: 'Line 1\nLine 2\nLine 3\nLine 4\nLine 5\nLine 6\nLine 7\nLine 8\nLine 9\nLine 10',
+      createdAt: new Date().toISOString()
+    };
+
+    // Mock scrollHeight to simulate overflow
+    vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockReturnValue(450);
+
+    useThoughtsStore.setState({
+      thoughts: [longThought],
+      viewMode: 'grid',
+      isLoaded: true
+    });
+
+    render(
+      <MemoryRouter>
+        <Thoughts />
+      </MemoryRouter>
+    );
+
+    const seeMoreBtn = screen.getByRole('button', { name: /See more/i });
+    expect(seeMoreBtn).toBeInTheDocument();
+
+    // Toggle expand
+    fireEvent.click(seeMoreBtn);
+    expect(screen.getByRole('button', { name: /See less/i })).toBeInTheDocument();
+
+    // Toggle collapse
+    fireEvent.click(screen.getByRole('button', { name: /See less/i }));
+    expect(screen.getByRole('button', { name: /See more/i })).toBeInTheDocument();
   });
 });

@@ -124,6 +124,48 @@ public class DomainServicesTests
 
             db.ChangeTracker.Clear();
             Assert.Empty(await thoughtService.GetThoughtsAsync());
+
+            // Collections & Keep Features
+            var col1 = await thoughtService.CreateCollectionAsync("Work", "#3B82F6");
+            var col2 = await thoughtService.CreateCollectionAsync("Personal", "#10B981");
+            Assert.NotNull(col1);
+            Assert.Equal("Work", col1.Name);
+
+            var t1 = await thoughtService.CreateThoughtAsync("Work note", col1.Id, "#FEF3C7", isPinned: true);
+            var t2 = await thoughtService.CreateThoughtAsync("Uncategorized note");
+            var t3 = await thoughtService.CreateThoughtAsync("Another work note", col1.Id);
+
+            var collections = await thoughtService.GetCollectionsAsync();
+            Assert.Equal(2, collections.Count);
+            var workDto = collections.First(c => c.Id == col1.Id);
+            Assert.Equal(2, workDto.ThoughtCount);
+
+            // Filter by collection
+            var workThoughts = await thoughtService.GetThoughtsAsync(collectionId: col1.Id);
+            Assert.Equal(2, workThoughts.Count);
+            Assert.True(workThoughts[0].IsPinned); // Pinned thought should come first
+
+            // Filter by uncategorized
+            var uncatThoughts = await thoughtService.GetThoughtsAsync(collectionId: "__UNCATEGORIZED__");
+            Assert.Single(uncatThoughts);
+            Assert.Equal("Uncategorized note", uncatThoughts[0].Content);
+
+            // Move t1 to Personal (col2)
+            var moved = await thoughtService.UpdateThoughtAsync(t1.Id, collectionId: col2.Id);
+            Assert.NotNull(moved);
+            Assert.Equal(col2.Id, moved.CollectionId);
+
+            // Delete col2 without deleting thoughts (should unassign)
+            var delCol2 = await thoughtService.DeleteCollectionAsync(col2.Id, deleteThoughts: false);
+            Assert.True(delCol2);
+            var t1After = (await thoughtService.GetThoughtsAsync()).First(t => t.Id == t1.Id);
+            Assert.Null(t1After.CollectionId);
+
+            // Delete col1 with deleting thoughts
+            var delCol1 = await thoughtService.DeleteCollectionAsync(col1.Id, deleteThoughts: true);
+            Assert.True(delCol1);
+            var remaining = await thoughtService.GetThoughtsAsync();
+            Assert.DoesNotContain(remaining, t => t.Id == t3.Id);
         }
     }
 

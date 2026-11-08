@@ -117,4 +117,55 @@ describe('useThoughtsStore', () => {
     }));
     expect(hasToast('Thought updated', 'success')).toBe(true);
   });
+
+  it('fetchCollections loads collections from API', async () => {
+    const mockCollections = [{ id: 'c1', name: 'Ideas', color: '#6366F1', thoughtCount: 3 }];
+    mockFetch({
+      'GET /api/thought-collections': jsonResponse(mockCollections)
+    });
+
+    await useThoughtsStore.getState().fetchCollections();
+    expect(useThoughtsStore.getState().collections).toEqual(mockCollections);
+  });
+
+  it('createCollection creates and refreshes collections', async () => {
+    const mockCol = { id: 'c2', name: 'Work', color: '#3B82F6' };
+    mockFetch({
+      'POST /api/thought-collections': jsonResponse(mockCol),
+      'GET /api/thought-collections': jsonResponse([mockCol])
+    });
+
+    const res = await useThoughtsStore.getState().createCollection('Work', '#3B82F6');
+    expect(res).toEqual(mockCol);
+    expect(hasToast('Collection created', 'success')).toBe(true);
+  });
+
+  it('moveThought patches collectionId and refreshes thoughts', async () => {
+    mockFetch({
+      'PATCH /api/thoughts/t1/move': jsonResponse({ id: 't1', collectionId: 'c2' }),
+      'GET /api/thoughts?page=1&pageSize=20': jsonResponse([{ id: 't1', collectionId: 'c2' }]),
+      'GET /api/thought-collections': jsonResponse([])
+    });
+
+    const success = await useThoughtsStore.getState().moveThought('t1', 'c2');
+    expect(success).toBe(true);
+    expect(hasToast('Thought moved', 'success')).toBe(true);
+  });
+
+  it('togglePinThought patches pin and refreshes thoughts', async () => {
+    mockFetch({
+      'PATCH /api/thoughts/t1/pin': jsonResponse({ id: 't1', isPinned: true }),
+      'GET /api/thoughts?page=1&pageSize=20': jsonResponse([{ id: 't1', isPinned: true }])
+    });
+
+    const success = await useThoughtsStore.getState().togglePinThought('t1', true);
+    expect(success).toBe(true);
+    expect(hasToast('Thought pinned', 'success')).toBe(true);
+  });
+
+  it('viewMode persists to localStorage', () => {
+    useThoughtsStore.getState().setViewMode('compact');
+    expect(useThoughtsStore.getState().viewMode).toBe('compact');
+    expect(localStorage.getItem('sanad_thoughts_viewMode')).toBe('compact');
+  });
 });

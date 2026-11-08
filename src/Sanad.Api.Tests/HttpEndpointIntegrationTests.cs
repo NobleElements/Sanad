@@ -65,6 +65,49 @@ public class HttpEndpointIntegrationTests : IClassFixture<CustomWebApplicationFa
         // Delete non-existent thought returns 404
         var delNotFound = await client.DeleteAsync($"/api/thoughts/{thoughtId}");
         Assert.Equal(HttpStatusCode.NotFound, delNotFound.StatusCode);
+
+        // Thought Collections lifecycle
+        var createColRes = await client.PostAsJsonAsync("/api/thought-collections", new { name = "Project Ideas", color = "#6366F1" });
+        Assert.Equal(HttpStatusCode.OK, createColRes.StatusCode);
+        var colObj = await createColRes.Content.ReadFromJsonAsync<JsonElement>();
+        var colId = colObj.GetProperty("id").GetString()!;
+        Assert.Equal("Project Ideas", colObj.GetProperty("name").GetString());
+
+        // Create thought with collection and pinned
+        var createPinnedRes = await client.PostAsJsonAsync("/api/thoughts", new { content = "Pinned idea", collectionId = colId, isPinned = true, color = "#FEF3C7" });
+        Assert.Equal(HttpStatusCode.OK, createPinnedRes.StatusCode);
+        var pinnedObj = await createPinnedRes.Content.ReadFromJsonAsync<JsonElement>();
+        var pinnedId = pinnedObj.GetProperty("id").GetString()!;
+        Assert.True(pinnedObj.GetProperty("isPinned").GetBoolean());
+        Assert.Equal(colId, pinnedObj.GetProperty("collectionId").GetString());
+
+        // Get collections with counts
+        var getColsRes = await client.GetAsync("/api/thought-collections");
+        Assert.Equal(HttpStatusCode.OK, getColsRes.StatusCode);
+        var cols = await getColsRes.Content.ReadFromJsonAsync<List<JsonElement>>();
+        Assert.NotNull(cols);
+        var foundCol = cols.First(c => c.GetProperty("id").GetString() == colId);
+        Assert.Equal(1, foundCol.GetProperty("thoughtCount").GetInt32());
+
+        // Filter thoughts by collectionId
+        var filterRes = await client.GetAsync($"/api/thoughts?collectionId={colId}");
+        Assert.Equal(HttpStatusCode.OK, filterRes.StatusCode);
+        var filteredList = await filterRes.Content.ReadFromJsonAsync<List<JsonElement>>();
+        Assert.Single(filteredList);
+
+        // Move thought to uncategorized
+        var moveRes = await client.PatchAsJsonAsync($"/api/thoughts/{pinnedId}/move", new { collectionId = (string?)null });
+        Assert.Equal(HttpStatusCode.OK, moveRes.StatusCode);
+
+        // Toggle pin
+        var pinRes = await client.PatchAsJsonAsync($"/api/thoughts/{pinnedId}/pin", new { isPinned = false });
+        Assert.Equal(HttpStatusCode.OK, pinRes.StatusCode);
+        var unpinnedObj = await pinRes.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.False(unpinnedObj.GetProperty("isPinned").GetBoolean());
+
+        // Delete collection
+        var delColRes = await client.DeleteAsync($"/api/thought-collections/{colId}");
+        Assert.Equal(HttpStatusCode.NoContent, delColRes.StatusCode);
     }
 
     [Fact]

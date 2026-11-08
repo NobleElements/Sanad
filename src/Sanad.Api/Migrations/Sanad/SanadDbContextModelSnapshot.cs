@@ -713,6 +713,12 @@ namespace Sanad.Api.Migrations.Sanad
                     b.Property<string>("Id")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("CollectionId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Color")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Content")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -720,11 +726,45 @@ namespace Sanad.Api.Migrations.Sanad
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("IsPinned")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("CollectionId");
 
                     b.HasIndex("CreatedAt");
 
+                    b.HasIndex("IsPinned", "CreatedAt");
+
                     b.ToTable("Thoughts");
+                });
+
+            modelBuilder.Entity("Sanad.Api.Models.ThoughtCollection", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Color")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ThoughtCollections");
                 });
 
             modelBuilder.Entity("Sanad.Api.Models.Transaction", b =>
@@ -992,6 +1032,16 @@ namespace Sanad.Api.Migrations.Sanad
                         .IsRequired();
 
                     b.Navigation("TaskItem");
+                });
+
+            modelBuilder.Entity("Sanad.Api.Models.Thought", b =>
+                {
+                    b.HasOne("Sanad.Api.Models.ThoughtCollection", "Collection")
+                        .WithMany()
+                        .HasForeignKey("CollectionId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Collection");
                 });
 
             modelBuilder.Entity("Sanad.Api.Models.Transaction", b =>

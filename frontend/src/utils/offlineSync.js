@@ -44,6 +44,7 @@ export const getEndpointsToCache = (now = new Date()) => {
     '/books',
     '/habits',
     '/thoughts?page=1',
+    '/thought-collections',
     '/notebooks',
     '/notes/latest',
     '/finances/currencies',
